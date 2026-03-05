@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -433,7 +434,7 @@
     <div class="header">
       <div class="header-left">
         <h1>Contractor Invoice Submission</h1>
-        <p>The Loomex Group - Response and Readiness Division</p>
+        <p>The Loomex Group - Emergency Management Division</p>
       </div>
       <div class="header-badge">Independent Contractor</div>
     </div>
@@ -532,7 +533,7 @@
     </div>
 
     <div class="page-footer">
-      <p>Submitted invoices are processed by The Loomex Group finance team. For questions contact EOC Finance</p>
+      <p>Submitted invoices are processed by The Loomex Group finance team. For questions contact EOC Staffing.</p>
     </div>
   </div>
 
@@ -541,7 +542,7 @@
     // Replace these two values before deploying. Store the secret somewhere safe
     // (environment config, GitHub Actions secret injected at build time, etc.)
     // The actual Airtable API key NEVER appears here - it lives in Power Automate.
-    const WEBHOOK_URL    = 'https://defaultf37e3a4c5aaa4bf993d2cc21b157eb.4c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e4c67c7cb4de487eab112e096dc09da8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vd_-8tPf3ZzakGE5ULyBa8MixjSzbmCD2p7YCrU3IYk';
+    const WEBHOOK_URL    = 'https://defaultf37e3a4c5aaa4bf993d2cc21b157eb.4c.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/6c1da29de1964e7a930df72ed6482a42/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=dU7hXIKzmoq7w-YJQKnvAsDX07LZCW6IXa_x8zgjh64';
     const WEBHOOK_SECRET = 'adshasdfklhjasdlfkjasdlfkjdaslfj972634897263498263489726349827366514ZXCZfhjjh';
     // ─────────────────────────────────────────────────────────────────────────────
 
@@ -647,13 +648,76 @@
       return true;
     }
 
+    function buildInvoiceHTML(data) {
+      const logRows = data.dailyLog.map(r => `
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e0e0e0;font-family:Arial,sans-serif;font-size:13px;">${r.date}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e0e0e0;font-family:Arial,sans-serif;font-size:13px;text-align:center;">${r.hours}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e0e0e0;font-family:Arial,sans-serif;font-size:13px;">${r.description}</td>
+        </tr>`).join('');
+
+      return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8">
+<style>
+body{font-family:Arial,sans-serif;color:#333;margin:0;padding:0;}
+.header{background-color:#1a3a5c;padding:32px 40px;}
+.header h1{color:#fff;font-size:32px;margin:0;letter-spacing:-0.5px;}
+.header p{color:rgba(255,255,255,0.6);font-size:13px;margin:4px 0 0;}
+.invoice-meta{padding:32px 40px;border-bottom:2px solid #e8f5ee;}
+.from-to{display:flex;gap:80px;margin-bottom:20px;}
+.from-to div h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#00A651;margin:0 0 8px;}
+.from-to div p{font-size:14px;margin:2px 0;color:#333;}
+.inv-number{font-size:22px;font-weight:bold;color:#1a3a5c;font-family:'Courier New',monospace;margin-bottom:10px;}
+.meta-table td{font-size:13px;padding:3px 24px 3px 0;color:#555;}
+.log-section{padding:32px 40px;}
+.log-section h3{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#00A651;margin:0 0 16px;}
+.log-table{width:100%;border-collapse:collapse;}
+.log-table thead tr{background:#1a3a5c;}
+.log-table thead td{color:rgba(255,255,255,0.8);font-size:11px;text-transform:uppercase;letter-spacing:0.8px;padding:10px 12px;}
+.log-table tbody tr:nth-child(even){background:#f9fdf9;}
+.log-table tfoot tr{background:#e8f5ee;}
+.log-table tfoot td{padding:10px 12px;font-weight:bold;color:#1a3a5c;font-size:14px;}
+.attestation{margin:0 40px 32px;background:#f5f7fa;border-left:3px solid #00A651;padding:16px 20px;font-size:12px;color:#555;line-height:1.6;}
+.footer{background:#6D6E71;padding:14px 40px;text-align:center;}
+.footer p{color:rgba(255,255,255,0.7);font-size:11px;margin:0;}
+</style>
+</head>
+<body>
+<div class="header"><h1>INVOICE</h1><p>The Loomex Group - Emergency Management Division</p></div>
+<div class="invoice-meta">
+  <div class="from-to">
+    <div><h4>From</h4><p><strong>${data.contractorName}</strong></p><p>${data.contractorId}</p></div>
+    <div><h4>To</h4><p><strong>The Loomex Group</strong></p><p>Emergency Management Division</p></div>
+  </div>
+  <div class="inv-number">${data.invoiceNumber}</div>
+  <table class="meta-table">
+    <tr><td>Invoice Date</td><td>${data.invoiceDate}</td></tr>
+    <tr><td>Period</td><td>${data.periodStart} to ${data.periodEnd}</td></tr>
+    <tr><td>Site</td><td>${data.site}</td></tr>
+    <tr><td>Submitted</td><td>${data.submittedAt}</td></tr>
+  </table>
+</div>
+<div class="log-section">
+  <h3>Daily Hours Log</h3>
+  <table class="log-table">
+    <thead><tr><td style="width:160px;">Date</td><td style="width:80px;text-align:center;">Hours</td><td>Description of Work</td></tr></thead>
+    <tbody>${logRows}</tbody>
+    <tfoot><tr><td>Total Hours</td><td style="text-align:center;">${data.totalHours}</td><td></td></tr></tfoot>
+  </table>
+</div>
+<div class="attestation">By submitting this invoice, <strong>${data.contractorName}</strong> certifies that the hours and descriptions listed above are accurate and reflect work performed for The Loomex Group during the stated period. Payment will be calculated by The Loomex Group finance team based on the applicable rate on file.</div>
+<div class="footer"><p>The Loomex Group - Emergency Management Division &nbsp;|&nbsp; Submitted via Loomex Contractor Portal</p></div>
+</body></html>`;
+    }
+
     async function submitInvoice() {
       if (!validate()) return;
 
-      const rows      = collectRows();
-      const totalHrs  = rows.reduce((s, r) => s + r.hours, 0);
+      const rows     = collectRows();
+      const totalHrs = rows.reduce((s, r) => s + r.hours, 0);
 
-      const payload = {
+      const data = {
         contractorName: document.getElementById('contractorName').value.trim(),
         contractorId:   document.getElementById('contractorId').value.trim(),
         invoiceNumber:  document.getElementById('invoiceNumber').value.trim(),
@@ -665,6 +729,8 @@
         dailyLog:       rows,
         submittedAt:    new Date().toISOString()
       };
+
+      const payload = { ...data, invoiceHTML: buildInvoiceHTML(data) };
 
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
@@ -707,7 +773,7 @@
         }, 5000);
 
       } catch (err) {
-        showStatus(`Submission failed: ${err.message}. Please try again or contact EOC Finance.`, 'error');
+        showStatus(`Submission failed: ${err.message}. Please try again or contact EOC Staffing.`, 'error');
         btn.disabled    = false;
         btn.textContent = 'Submit Invoice';
       }
