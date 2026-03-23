@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Approval -- Loomex EOC</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --green: #00A651;
+      --green-dark: #007a3d;
+      --green-light: #e8f5ee;
+      --green-mid: #c8e6d4;
+      --navy: #1a3a5c;
+      --grey-footer: #6D6E71;
+      --grey-border: #d8dde3;
+      --grey-bg: #f5f7fa;
+      --white: #ffffff;
+      --text: #2c3e50;
+      --text-muted: #6b7c93;
+      --error: #cc2936;
+      --error-bg: #fdf0f0;
+      --shadow-card: 0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--grey-bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(0,166,81,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 90%, rgba(26,58,92,0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container { max-width: 820px; margin: 0 auto; position: relative; z-index: 1; }
+
+    /* HEADER */
+    .header {
+      background: var(--navy);
+      border-radius: 12px 12px 0 0;
+      padding: 28px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header-left h1 { color: var(--white); font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-left p  { color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 4px; }
+    .header-badge {
+      background: var(--green);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+      font-family: 'DM Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    /* CARD */
+    .card { background: var(--white); box-shadow: var(--shadow-card); }
+    .card-section { padding: 32px 36px; border-bottom: 1px solid #eef0f3; }
+    .card-section:last-of-type { border-bottom: none; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--green-mid); }
+
+    /* STATE BOXES */
+    .state-box { padding: 56px 36px; text-align: center; }
+    .state-icon { font-size: 2.5rem; margin-bottom: 14px; }
+    .state-box h2 { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .state-box p  { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-lg {
+      width: 40px; height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 18px;
+    }
+
+    /* SUMMARY GRID */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .summary-item {
+      padding: 12px 16px;
+      background: var(--grey-bg);
+      border: 1.5px solid var(--grey-border);
+      border-radius: 8px;
+    }
+    .summary-item .s-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+    }
+    .summary-item .s-val { font-size: 14px; font-weight: 600; color: var(--text); }
+    .summary-item.total-item { background: var(--green-light); border-color: var(--green-mid); }
+    .summary-item.total-item .s-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    /* ALREADY APPROVED */
+    .approved-banner {
+      display: none;
+      padding: 12px 18px;
+      background: var(--green-light);
+      border: 1.5px solid var(--green-mid);
+      border-radius: 8px;
+      color: var(--green-dark);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    /* EXPENSE TABLE */
+    .exp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .exp-table thead th {
+      background: var(--navy);
+      color: rgba(255,255,255,0.8);
+      padding: 9px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .exp-table thead th:first-child { border-radius: 6px 0 0 0; }
+    .exp-table thead th:last-child  { border-radius: 0 6px 0 0; }
+    .exp-table tbody tr { border-bottom: 1px solid #eef0f3; }
+    .exp-table tbody tr:last-child { border-bottom: none; }
+    .exp-table tbody tr:hover td { background: #fafbfc; }
+    .exp-table td { padding: 9px 12px; vertical-align: middle; }
+    .exp-table tfoot td {
+      padding: 10px 12px;
+      font-weight: 700;
+      border-top: 2px solid var(--navy);
+      font-size: 14px;
+      color: var(--navy);
+    }
+
+    .type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .badge-hotel   { background: #dbeafe; color: #1e40af; }
+    .badge-meal    { background: #fce7f3; color: #9d174d; }
+    .badge-mileage { background: #d1fae5; color: #065f46; }
+    .badge-rental  { background: #ede9fe; color: #5b21b6; }
+    .badge-misc    { background: #f3f4f6; color: #374151; }
+
+    .exceeded-y { background: #fef3c7; color: #92400e; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
+    .exceeded-n { background: #d1fae5; color: #065f46; font-weight: 700; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
+
+    /* FIELDS */
+    .field-group { display: flex; flex-direction: column; gap: 6px; max-width: 360px; }
+    label { font-size: 12px; font-weight: 600; color: var(--navy); }
+    label .req { color: var(--green); margin-left: 2px; }
+
+    input[type="text"] {
+      border: 1.5px solid var(--grey-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      width: 100%;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(0,166,81,0.12);
+    }
+    input.invalid { border-color: var(--error); box-shadow: 0 0 0 3px rgba(204,41,54,0.08); }
+
+    /* SIGNATURE */
+    .sig-container {
+      border: 1.5px solid var(--grey-border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+      position: relative;
+      margin-top: 16px;
+    }
+    #sig-canvas { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: none; }
+    .sig-clear-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: white;
+      border: 1.5px solid var(--grey-border);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+    .sig-clear-btn:hover { border-color: var(--error); color: var(--error); }
+    .sig-hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
+    /* ATTESTATION */
+    .attestation {
+      background: var(--green-light);
+      border: 1.5px solid var(--green-mid);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--navy);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .attestation strong { color: var(--green-dark); }
+
+    /* ACTION NOTE */
+    .action-note {
+      padding: 12px 16px;
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #9a3412;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* FOOTER ACTIONS */
+    .form-footer {
+      padding: 24px 36px;
+      border-top: 1px solid #eef0f3;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .status-msg {
+      font-size: 13.5px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: none;
+      line-height: 1.5;
+    }
+    .status-msg.success { background: var(--green-light); color: var(--green-dark); border: 1.5px solid var(--green-mid); display: block; }
+    .status-msg.error   { background: var(--error-bg); color: var(--error); border: 1.5px solid rgba(204,41,54,0.2); display: block; }
+
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .btn-approve {
+      flex: 1;
+      min-width: 200px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 24px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: -0.2px;
+    }
+    .btn-approve:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-1px); }
+    .btn-approve:active { transform: translateY(0); }
+    .btn-approve:disabled { background: #a0adb8; cursor: not-allowed; transform: none; }
+
+    .btn-contact {
+      flex: 1;
+      min-width: 200px;
+      background: white;
+      color: var(--error);
+      border: 1.5px solid #fca5a5;
+      border-radius: 10px;
+      padding: 13px 24px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: -0.2px;
+    }
+    .btn-contact:hover { background: var(--error-bg); border-color: var(--error); }
+
+    /* PAGE FOOTER */
+    .page-footer {
+      background: var(--grey-footer);
+      border-radius: 0 0 12px 12px;
+      padding: 14px 36px;
+      text-align: center;
+    }
+    .page-footer p { color: rgba(255,255,255,0.7); font-size: 12px; }
+
+    @keyframes spinsmall { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spinsmall 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 0 0 48px; }
+      .header { padding: 20px; border-radius: 0; flex-wrap: wrap; }
+      .card { border-radius: 0; }
+      .card-section { padding: 24px 20px; }
+      .page-footer { border-radius: 0; padding: 14px 20px; }
+      .form-footer { padding: 20px; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .btn-row { flex-direction: column; }
+      .btn-approve, .btn-contact { min-width: unset; width: 100%; text-align: center; }
+      .exp-table { font-size: 12px; }
+      .exp-table td, .exp-table th { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <h1>Expense Approval</h1>
+      <p>The Loomex Group -- EOC Admin Review</p>
+    </div>
+    <div class="header-badge">EOC Admin</div>
+  </div>
+
+  <div class="card">
+
+    <!-- LOADING -->
+    <div id="stateLoading" class="card-section state-box">
+      <div class="spinner-lg"></div>
+      <h2>Loading submission...</h2>
+      <p>Retrieving expense report from EOC system</p>
+    </div>
+
+    <!-- ERROR -->
+    <div id="stateError" class="card-section state-box" style="display:none">
+      <div class="state-icon">⚠️</div>
+      <h2>Submission not found</h2>
+      <p>This link may have expired (links are valid for 7 days) or the token is invalid.<br>Contact the contractor to resubmit if needed.</p>
+    </div>
+
+    <!-- CONTENT -->
+    <div id="contentWrap" style="display:none">
+
+      <!-- SECTION 1: Summary -->
+      <div class="card-section">
+        <div class="section-label">Submission Summary</div>
+        <div class="approved-banner" id="approvedBanner"></div>
+        <div class="summary-grid" id="summaryGrid"></div>
+      </div>
+
+      <!-- SECTION 2: Expense Details -->
+      <div class="card-section">
+        <div class="section-label">Expense Details</div>
+        <div style="overflow-x:auto">
+          <table class="exp-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Detail</th>
+                <th>Actual</th>
+                <th>Claimed</th>
+                <th>Exceeded?</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="expTableBody"></tbody>
+            <tfoot id="expTableFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECTION 3: Admin Approval -->
+      <div class="card-section">
+        <div class="section-label">Admin Approval &amp; Signature</div>
+        <div class="attestation">
+          By approving below, <strong>I confirm that this expense report has been reviewed and is compliant with contract terms and reimbursement conditions</strong>. This will be forwarded to Finance for payment processing.
+        </div>
+        <div class="field-group">
+          <label for="adminName">Your Name <span class="req">*</span></label>
+          <input type="text" id="adminName" placeholder="Full name of approving admin">
+        </div>
+        <div class="sig-container">
+          <canvas id="sig-canvas"></canvas>
+          <button class="sig-clear-btn" onclick="clearSig()">Clear</button>
+        </div>
+        <p class="sig-hint">Draw your signature above using your mouse or finger</p>
+      </div>
+
+      <!-- FOOTER ACTIONS -->
+      <div class="form-footer">
+        <div class="action-note">
+          <strong>Approving</strong> will generate a countersigned copy of this expense report and send it to Finance via Power Automate. If you have questions about any line items, use <strong>Contact Contractor</strong> to follow up before approving.
+        </div>
+        <div class="status-msg" id="statusMsg"></div>
+        <div class="btn-row">
+          <button class="btn-approve" id="approveBtn" onclick="approveSubmission()">&#10003; Approve &amp; Send to Finance</button>
+          <button class="btn-contact" id="contactBtn">&#9993; Contact Contractor</button>
+        </div>
+      </div>
+
+    </div><!-- contentWrap -->
+
+  </div><!-- card -->
+
+  <div class="page-footer">
+    <p>The Loomex Group Ltd -- EOC Admin Portal -- For support contact eocadmin@loomex.ca</p>
+  </div>
+
+</div>
+
+<script>
+  const WORKER_URL = 'https://loomex-expense.YOUR_ACCOUNT.workers.dev';
+  const token = new URLSearchParams(window.location.search).get('token');
+  let submission = null;
+
+  // ---- SIGNATURE ----
+  const canvas = document.getElementById('sig-canvas');
+  const ctx    = canvas.getContext('2d');
+  let drawing  = false;
+  let hasSig   = false;
+
+  function resizeCanvas() {
+    const w = canvas.parentElement.clientWidth;
+    canvas.width  = w;
+    canvas.height = 160;
+    ctx.strokeStyle = '#1a3a5c';
+    ctx.lineWidth   = 2.2;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const src  = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  }
+  canvas.addEventListener('mousedown',  e => { drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); });
+  canvas.addEventListener('mousemove',  e => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasSig = true; });
+  canvas.addEventListener('mouseup',    () => drawing = false);
+  canvas.addEventListener('mouseleave', () => drawing = false);
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); }, { passive: false });
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasSig = true; }, { passive: false });
+  canvas.addEventListener('touchend',   () => drawing = false);
+  function clearSig() { ctx.clearRect(0, 0, canvas.width, canvas.height); hasSig = false; }
+
+  // ---- STATE ----
+  function showState(state) {
+    document.getElementById('stateLoading').style.display  = state === 'loading'  ? 'block' : 'none';
+    document.getElementById('stateError').style.display    = state === 'error'    ? 'block' : 'none';
+    document.getElementById('contentWrap').style.display   = state === 'content'  ? 'block' : 'none';
+  }
+
+  // ---- LOAD ----
+  async function loadSubmission() {
+    if (!token) { showState('error'); return; }
+    try {
+      const res = await fetch(`${WORKER_URL}/expense-submission?token=${token}`);
+      if (!res.ok) { showState('error'); return; }
+      submission = await res.json();
+      renderSubmission(submission);
+      showState('content');
+    } catch {
+      showState('error');
+    }
+  }
+
+  const BADGE_CLS = { hotel: 'badge-hotel', meal: 'badge-meal', mileage: 'badge-mileage', rental: 'badge-rental', misc: 'badge-misc' };
+  const BADGE_LBL = { hotel: 'Hotel', meal: 'Meal', mileage: 'Mileage', rental: 'Rental Car', misc: 'Misc' };
+  function fmt(n) { return `$${parseFloat(n || 0).toFixed(2)}`; }
+
+  function renderSubmission(sub) {
+    const fd = sub.formData;
+
+    // Already approved
+    if (sub.status === 'approved') {
+      const b = document.getElementById('approvedBanner');
+      b.textContent = `✓ This expense report was approved by ${sub.approvedBy} on ${new Date(sub.approvedAt).toLocaleDateString('en-CA')}.`;
+      b.style.display = 'block';
+      document.getElementById('approveBtn').disabled = true;
+      document.getElementById('approveBtn').textContent = `Approved by ${sub.approvedBy}`;
+    }
+
+    // Contact button
+    document.getElementById('contactBtn').onclick = () => {
+      window.location.href = `mailto:${fd.contractorEmail}?subject=Re: Expense Report - ${fd.activation} (${fd.periodStart} to ${fd.periodEnd})&body=Hi ${fd.contractorName},%0A%0ARegarding your expense submission (Ref: ${token}),%0A%0A`;
+    };
+
+    // Summary grid
+    const items = [
+      { l: 'Contractor',   v: fd.contractorName },
+      { l: 'Email',        v: fd.contractorEmail },
+      { l: 'Activation',   v: fd.activation },
+      { l: 'Job Number',   v: fd.jobNumber || 'N/A' },
+      { l: 'Site',         v: fd.site },
+      { l: 'Period',       v: `${fd.periodStart} to ${fd.periodEnd}` },
+      { l: 'Submitted',    v: new Date(sub.submittedAt).toLocaleString('en-CA') },
+      { l: 'Total Claimed', v: fmt(fd.total), total: true },
+    ];
+    document.getElementById('summaryGrid').innerHTML = items.map(i => `
+      <div class="summary-item${i.total ? ' total-item' : ''}">
+        <div class="s-label">${i.l}</div>
+        <div class="s-val">${i.v}</div>
+      </div>
+    `).join('');
+
+    // Expense table
+    const tbody = document.getElementById('expTableBody');
+    tbody.innerHTML = fd.rows.map(r => {
+      const badgeCls = BADGE_CLS[r.type] || 'badge-misc';
+      const badgeLbl = BADGE_LBL[r.type] || r.type;
+      let detail = '', actual = '—', claimed = '', exceeded = '—';
+
+      if (r.type === 'meal') {
+        detail  = r.mealPeriod || '—';
+        actual  = fmt(r.mealsActual);
+        claimed = fmt(r.mealClaimed);
+        exceeded = r.exceeded === 'Y'
+          ? '<span class="exceeded-y">Exceeded</span>'
+          : r.exceeded === 'N' ? '<span class="exceeded-n">Within limit</span>' : '—';
+      } else if (r.type === 'mileage') {
+        detail  = `${r.description || '—'} (${r.km} km)`;
+        claimed = fmt(r.value);
+      } else {
+        detail  = r.description || '—';
+        actual  = fmt(r.amount);
+        claimed = fmt(r.value);
+      }
+
+      return `<tr>
+        <td><span class="type-badge ${badgeCls}">${badgeLbl}</span></td>
+        <td>${r.date || '—'}</td>
+        <td>${detail}</td>
+        <td>${actual}</td>
+        <td>${claimed}</td>
+        <td>${exceeded}</td>
+        <td><strong>${fmt(r.value)}</strong></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('expTableFoot').innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:right">Total Claimed</td>
+        <td>${fmt(fd.total)}</td>
+      </tr>`;
+  }
+
+  // ---- BUILD APPROVED EXCEL ----
+  function buildApprovedExcel(fd, adminName) {
+    const wb = XLSX.utils.book_new();
+    const d  = [];
+    d.push(['THE LOOMEX GROUP LTD']);
+    d.push(['CONTRACTOR EXPENSE REPORT -- APPROVED']);
+    d.push([]);
+    d.push(['Contractor:', fd.contractorName, '', 'Activation:', fd.activation]);
+    d.push(['Email:', fd.contractorEmail, '', 'Job Number:', fd.jobNumber || 'N/A']);
+    d.push(['Site:', fd.site, '', 'Period:', `${fd.periodStart} to ${fd.periodEnd}`]);
+    d.push([]);
+    d.push(['Type', 'Date', 'Description / Detail', 'Actual ($)', 'Claimed ($)', 'Exceeded?', 'Total ($)']);
+
+    fd.rows.forEach(r => {
+      if (r.type === 'meal') {
+        d.push(['Meal', r.date, r.mealPeriod, (r.mealsActual||0).toFixed(2), (r.mealClaimed||0).toFixed(2), r.exceeded, (r.value||0).toFixed(2)]);
+      } else if (r.type === 'mileage') {
+        d.push(['Mileage', r.date, `${r.description} (${r.km} km)`, '', (r.value||0).toFixed(2), '', (r.value||0).toFixed(2)]);
+      } else {
+        const lbl = { hotel: 'Hotel', rental: 'Rental Car', misc: 'Misc' }[r.type] || r.type;
+        d.push([lbl, r.date, r.description, (r.amount||0).toFixed(2), (r.amount||0).toFixed(2), '', (r.value||0).toFixed(2)]);
+      }
+    });
+
+    d.push([]);
+    d.push(['', '', '', '', '', 'TOTAL CLAIMED:', (fd.total||0).toFixed(2)]);
+    d.push([]);
+    d.push(['CONTRACTOR CERTIFICATION']);
+    d.push([`${fd.contractorName} -- Signature captured electronically on submission.`]);
+    d.push([]);
+    d.push(['EOC ADMIN APPROVAL']);
+    d.push(['Approved By:', adminName, '', 'Date:', new Date().toLocaleDateString('en-CA')]);
+    d.push(['Admin signature captured electronically on approval.']);
+
+    const ws = XLSX.utils.aoa_to_sheet(d);
+    ws['!cols'] = [{wch:14},{wch:12},{wch:34},{wch:12},{wch:12},{wch:10},{wch:13}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Expense Report');
+    return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+  }
+
+  // ---- STATUS ----
+  function showStatus(msg, type) {
+    const el = document.getElementById('statusMsg');
+    el.innerHTML = msg;
+    el.className = `status-msg ${type}`;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ---- APPROVE ----
+  async function approveSubmission() {
+    const adminName = document.getElementById('adminName').value.trim();
+    if (!adminName) {
+      document.getElementById('adminName').classList.add('invalid');
+      showStatus('Please enter your name before approving.', 'error'); return;
+    }
+    if (!hasSig) { showStatus('Please draw your signature before approving.', 'error'); return; }
+
+    const btn = document.getElementById('approveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Processing...';
+
+    try {
+      const adminSignatureBase64  = canvas.toDataURL('image/png');
+      const approvedExcelBase64   = buildApprovedExcel(submission.formData, adminName);
+
+      const res = await fetch(`${WORKER_URL}/expense-approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, adminName, adminSignatureBase64, approvedExcelBase64 })
+      });
+
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Approval failed');
+
+      showStatus(`<strong>&#10003; Approved and sent to Finance.</strong><br>The approved expense report for <strong>${submission.formData.contractorName}</strong> has been forwarded to Finance via Power Automate.`, 'success');
+      btn.textContent = `&#10003; Approved by ${adminName}`;
+
+    } catch (err) {
+      showStatus(`Approval failed: ${err.message}`, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '&#10003; Approve &amp; Send to Finance';
+    }
+  }
+
+  loadSubmission();
+</script>
+</body>
+</html>
