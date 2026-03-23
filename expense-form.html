@@ -921,15 +921,25 @@
       showStatus('Please enter a valid email address.', 'error'); return false;
     }
     if (rows.length === 0) { showStatus('Please add at least one expense item.', 'error'); return false; }
+
+    // Check dates on each row
+    let missingDate = false;
+    document.querySelectorAll('.expense-row').forEach(rowEl => {
+      const id = parseInt(rowEl.id.replace('row-', ''));
+      const type = document.getElementById(`type-${id}`)?.value;
+      if (!type) return;
+      const dateEl = document.getElementById(`f-date-${id}`);
+      if (dateEl && !dateEl.value) {
+        dateEl.classList.add('invalid');
+        missingDate = true;
+      } else if (dateEl) {
+        dateEl.classList.remove('invalid');
+      }
+    });
+    if (missingDate) { showStatus('Please enter a date for each expense item.', 'error'); return false; }
+
     if (!hasSig) { showStatus('Please draw your signature before submitting.', 'error'); return false; }
     return true;
-  }
-
-  function showStatus(msg, type) {
-    const el = document.getElementById('statusMsg');
-    el.innerHTML = msg;
-    el.className = `status-msg ${type}`;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   // ---- SUBMIT ----
