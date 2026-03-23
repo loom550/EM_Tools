@@ -1021,6 +1021,7 @@
       if (!result.success) throw new Error(result.error || 'Unknown error');
       showStatus(`<strong>&#10003; Submitted successfully.</strong><br>Your expense report has been sent to EOC Admin for review. A copy has been emailed to <strong>${formData.contractorEmail}</strong>.<br><small style="opacity:0.75">Reference: ${result.token}</small>`, 'success');
       btn.style.display = 'none';
+    } catch (err) {
       showStatus(`Submission failed: ${err.message}. Please try again or email eocadmin@loomex.ca directly.`, 'error');
       btn.disabled = false;
       btn.innerHTML = 'Submit Expense Report';
