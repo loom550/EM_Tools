@@ -906,58 +906,7 @@
     ws['A22'] = { t: 's', v: 'Contractor signature captured electronically on submission via Loomex Expense Portal.' };
 
     return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-  } else if (r.type === 'mileage') {
-        d.push(['Mileage', r.date, `${r.description} (${r.km} km)`, '', r.value.toFixed(2), '', r.value.toFixed(2)]);
-      } else {
-        const lbl = { hotel: 'Hotel', rental: 'Rental Car', misc: 'Misc' }[r.type] || r.type;
-        d.push([lbl, r.date, r.description, r.amount.toFixed(2), r.amount.toFixed(2), '', r.value.toFixed(2)]);
-      }
-    });
-
-    d.push([]);
-    d.push(['', '', '', '', '', 'TOTAL CLAIMED:', fd.total.toFixed(2)]);
-    d.push([]);
-    d.push(['CERTIFICATION']);
-    d.push(['I certify these expenses are accurate and comply with my contract with The Loomex Group Ltd.']);
-    d.push([]);
-    d.push(['Contractor:', fd.contractorName, '', 'Date:', new Date().toLocaleDateString('en-CA')]);
-    d.push(['Signature captured electronically on submission.']);
-    d.push([]);
-    d.push(['EOC ADMIN APPROVAL']);
-    d.push(['Approved By:', '', '', 'Date:', '']);
-    d.push(['Signature:', '(Pending admin review)']);
-
-    const ws = XLSX.utils.aoa_to_sheet(d);
-    ws['!cols'] = [{wch:14},{wch:12},{wch:34},{wch:12},{wch:12},{wch:10},{wch:13}];
-    XLSX.utils.book_append_sheet(wb, ws, 'Expense Report');
-    return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
   }
-
-  // ---- VALIDATE ----
-  function validate(rows) {
-    const required = ['contractorName','contractorEmail','activation','site','periodStart','periodEnd'];
-    let ok = true;
-    required.forEach(fid => {
-      const el = document.getElementById(fid);
-      if (!el.value.trim()) { el.classList.add('invalid'); ok = false; }
-      else el.classList.remove('invalid');
-    });
-    if (!ok) { showStatus('Please complete all required fields.', 'error'); return false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('contractorEmail').value.trim())) {
-      showStatus('Please enter a valid email address.', 'error'); return false;
-    }
-    if (rows.length === 0) { showStatus('Please add at least one expense item.', 'error'); return false; }
-    if (!hasSig) { showStatus('Please draw your signature before submitting.', 'error'); return false; }
-    return true;
-  }
-
-  function showStatus(msg, type) {
-    const el = document.getElementById('statusMsg');
-    el.innerHTML = msg;
-    el.className = `status-msg ${type}`;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
   // ---- VALIDATE ----
   function validate(rows) {
     const required = ['contractorName','contractorEmail','activation','site','periodStart','periodEnd'];
