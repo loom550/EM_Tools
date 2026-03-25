@@ -160,7 +160,6 @@
     .expense-row {
       border: 1.5px solid var(--grey-border);
       border-radius: 10px;
-      overflow: hidden;
       transition: border-color 0.15s;
     }
     .expense-row:focus-within { border-color: #a8c5da; }
@@ -224,12 +223,12 @@
     .row-remove-btn:hover { color: var(--error); background: var(--error-bg); }
 
     .row-fields {
-      padding: 14px 16px;
+      padding: 14px 20px 14px 16px;
       display: grid;
       gap: 12px;
     }
     .fields-standard { grid-template-columns: 150px 1fr 140px; }
-    .fields-meal     { grid-template-columns: 150px 160px 130px 130px minmax(160px, auto); }
+    .fields-meal     { grid-template-columns: 150px 160px 130px 130px auto; }
     .fields-mileage  { grid-template-columns: 150px 1fr 120px 130px; }
 
     .auto-field {
@@ -257,9 +256,13 @@
       font-size: 12px;
       font-weight: 700;
       border: 1.5px solid;
-      white-space: nowrap;
+      white-space: normal;
       min-width: 130px;
       width: 100%;
+      text-align: center;
+      height: auto;
+      min-height: 42px;
+      padding: 6px 12px;
     }
     .exceeded-yes { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
     .exceeded-no  { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
