@@ -618,6 +618,7 @@ function renderDrawer() {
       if (!c) continue;
       const remaining = getRemainingAvailDates(c);
       const isDraft   = !rec.confirmed;
+      console.log('rec object:', JSON.stringify(rec));
       const rid       = rec.recordId;
 
       html += `<div class="assigned-card ${isDraft ? 'draft' : ''}">
