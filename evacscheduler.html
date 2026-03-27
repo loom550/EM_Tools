@@ -416,7 +416,7 @@ function getRemainingAvailDates(contractor) {
 
 function getAssignedOn(site, roleName, shift, ds) {
   return assignments.filter(a =>
-    a.location     === site &&
+    (a.location === site || a.location === '' || !a.location) &&
     a.roleAssigned === roleName &&
     a.shift        === (shift === 'day' ? 'Day' : 'Night') &&
     isInRange(ds, a.startDate, a.endDate)
@@ -693,6 +693,7 @@ async function doAssign(contractorRecordId, autoStart, autoEnd, btn) {
         shift:        shift === 'day' ? 'Day' : 'Night',
       }),
     });
+    console.log("assign result:", JSON.stringify(result));
     assignments.push({
       recordId: result.id, contractorRecordId,
       location: currentSite, startDate: autoStart, endDate: autoEnd,
