@@ -387,12 +387,12 @@ function renderGrid(){
     activeRoles.forEach(function(roleName){
       var req=roleReqs[roleName]||1,rid=roleName.replace(/[^a-zA-Z0-9]/g,'_');
       html+='<tr><td class="role-col"><div class="role-cell-inner '+shift+'-row">'+
-        '<div class="role-name-wrap" onclick="toggleReqEdit('+JSON.stringify(roleName)+','+JSON.stringify(shift)+')">'+
+        '<div class="role-name-wrap" onclick="toggleReqEdit(\''+roleName+'\',\''+shift+'\')">'+
         '<span class="role-name">'+roleName+'</span>'+
         '<div class="role-req"><span id="req-label-'+rid+'-'+shift+'">Req: '+req+'/shift</span>'+
-        '<input type="number" id="req-input-'+rid+'-'+shift+'" class="req-edit" value="'+req+'" min="1" max="20" style="display:none" onchange="updateReq('+JSON.stringify(roleName)+',this.value)" onblur="hideReqEdit('+JSON.stringify(rid)+','+JSON.stringify(shift)+')" onclick="event.stopPropagation()">'+
+        '<input type="number" id="req-input-'+rid+'-'+shift+'" class="req-edit" value="'+req+'" min="1" max="20" style="display:none" onchange="updateReq(\''+roleName+'\',this.value)" onblur="hideReqEdit(\''+rid+'\',\''+shift+'\')" onclick="event.stopPropagation()">'+'
         '</div></div>'+
-        (isIC?'':'<button class="remove-role-btn" onclick="removeRoleFromGrid('+JSON.stringify(roleName)+')" title="Remove">&#215;</button>')+
+        (isIC?'':'<button class="remove-role-btn" onclick="removeRoleFromGrid(\''+roleName+'\')" title="Remove">&#215;</button>')+
         '</div></td>';
       dates.forEach(function(d){
         var ds=dateStr(d),asgnd=getAssignedOn(currentSite,roleName,shift,ds);
