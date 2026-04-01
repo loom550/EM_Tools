@@ -466,11 +466,6 @@ async function saveProfile(){
       phone:document.getElementById('prof-phone').value.trim(),
       address:document.getElementById('prof-address').value.trim(),
     })});
-    // Update local auth if email changed
-    if(newEmail&&newEmail!==auth.email){
-      auth.email=newEmail;
-      localStorage.setItem('loomi_avail_auth',JSON.stringify(auth));
-    }
     showToast('Profile updated!','success');
   }catch(e){showToast('Save failed: '+e.message,'error');}
   finally{btn.disabled=false;btn.textContent='Save Changes';}
