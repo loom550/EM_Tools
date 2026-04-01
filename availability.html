@@ -366,8 +366,9 @@ var activation = null; // {title, startDate, endDate}
 var windows = []; // [{start, end}]
 var deployments = []; // [{startDate, endDate, location, travelRequired}]
 var today = new Date().toISOString().slice(0,10);
-var calYear = new Date().getFullYear();
-var calMonth = new Date().getMonth();
+var _today = new Date();
+var calYear = _today.getFullYear();
+var calMonth = _today.getMonth();
 var selecting = false;
 var selStart = null, selEnd = null;
 
@@ -486,8 +487,10 @@ async function initApp(){
     activation = await api('/avail-activation');
     document.getElementById('welcome-act').textContent=activation.title+' \u2013 Active Activation';
     if(activation.startDate){
-      var d=new Date(activation.startDate+'T00:00:00');
-      calYear=d.getFullYear(); calMonth=d.getMonth();
+      var actStart=new Date(activation.startDate+'T00:00:00');
+      var now=new Date();
+      // Only jump to activation start if it's in the future
+      if(actStart > now){ calYear=actStart.getFullYear(); calMonth=actStart.getMonth(); }
     }
   }catch(e){}
   await loadWindows();
@@ -529,15 +532,29 @@ function renderCalendar(){
     else if(inSel) cls+=' selecting';
     else if(avail) cls+=' available';
     else cls+=' normal';
-    var onclick = '';
-    if(deployed) onclick = 'onDayClick(\''+ds+'\',true)';
-    else if(inAct&&!past) onclick = 'onDayClick(\''+ds+'\',false)';
-    html+='<div class="'+cls+'" onclick="'+onclick+'">'+d+'</div>';
+    var data = '';
+    if(deployed) data = ' data-day="'+ds+'" data-deployed="1"';
+    else if(inAct&&!past) data = ' data-day="'+ds+'"';
+    html+='<div class="'+cls+'"'+data+'>'+d+'</div>';
   }
   grid.innerHTML=html;
+  attachCalendarEvents();
 }
 
-function onDayClick(ds, isDeployed){
+// Calendar click delegation - attached after render
+function attachCalendarEvents(){
+  var grid = document.getElementById('cal-grid');
+  if(!grid) return;
+  grid.onclick = function(e){
+    var day = e.target.closest('[data-day]');
+    if(!day) return;
+    var ds = day.dataset.day;
+    var dep = day.dataset.deployed === '1';
+    onDayClick(ds, dep);
+  };
+}
+
+function onDayClick(ds, isDeployedDay){
   if(isDeployed){
     var dep = getDeployment(ds);
     if(dep) showDeploymentPopup(dep);
