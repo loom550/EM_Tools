@@ -241,6 +241,18 @@
     .btn-dec.approve.active { background: var(--green); color: white; border-color: var(--green); }
     .btn-dec.reject  { color: var(--error); }
     .btn-dec.reject.active  { background: var(--error); color: white; border-color: var(--error); }
+    .hst-input {
+      width: 80px;
+      padding: 4px 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
+      color: var(--green-dark);
+      background: #f0fdf4;
+      text-align: right;
+    }
+    .hst-input:focus { outline: none; border-color: var(--green-mid); }
     .reason-input {
       width: 100%; margin-top: 6px;
       border: 1.5px solid var(--grey-border); border-radius: 6px;
@@ -487,6 +499,7 @@
                 <th>Detail</th>
                 <th>Actual</th>
                 <th>Claimed</th>
+                <th>HST</th>
                 <th>Exceeded?</th>
                 <th>Total</th>
               </tr>
@@ -625,7 +638,7 @@
     };
 
     // Init all decisions to approved
-    rowDecisions = (fd.rows || []).map((_, i) => ({ rowIndex: i, approved: true, reason: '' }));
+    rowDecisions = (fd.rows || []).map((r, i) => ({ rowIndex: i, approved: true, reason: '', hst: r.hst || 0 }));
 
     // Summary grid (starts with claimed total; approved total item added after)
     renderSummaryGrid();
@@ -699,6 +712,10 @@
       const tr = document.createElement('tr');
       tr.className = 'expense-row row-approved';
       tr.id = `erow-${i}`;
+      const isHstEligible = (r.type === 'hotel' || r.type === 'rental' || r.type === 'misc');
+      const hstCell = isHstEligible
+        ? `<input type="number" class="hst-input" id="hst-${i}" value="${r.hst || 0}" step="0.01" min="0" oninput="rowDecisions[${i}].hst = parseFloat(this.value) || 0; renderSummaryGrid();">`
+        : `<span style="color:var(--text-muted)">—</span>`;
       tr.innerHTML = `
         <td style="color:var(--text-muted);font-size:12px;font-weight:700;">#${i + 1}</td>
         <td><span class="type-badge ${badgeCls}">${badgeLbl}</span></td>
@@ -706,6 +723,7 @@
         <td>${detail}</td>
         <td>${actual}</td>
         <td>${claimed}</td>
+        <td>${hstCell}</td>
         <td>${exceeded}</td>
         <td><strong>${fmt(r.value)}</strong></td>
       `;
@@ -716,7 +734,7 @@
       const tr2 = document.createElement('tr');
       tr2.className = 'detail-row';
       tr2.id = `drow-${i}`;
-      tr2.innerHTML = `<td colspan="8">
+      tr2.innerHTML = `<td colspan="9">
         <div class="detail-inner" id="detail-inner-${i}">
           <div class="receipts-inline" id="receipts-${i}">
             ${rowReceipts.length === 0 ? '<span class="no-receipts">No receipts</span>' : '<span class="no-receipts">Loading receipts...</span>'}
@@ -738,7 +756,7 @@
 
     document.getElementById('expTableFoot').innerHTML = `
       <tr>
-        <td colspan="7" style="text-align:right">Total Claimed</td>
+        <td colspan="8" style="text-align:right">Total Claimed</td>
         <td>${fmt(fd.total)}</td>
       </tr>`;
   }
@@ -827,6 +845,20 @@
         if (col === 2 && d.reason) {
           ws[cellRef].v = (ws[cellRef].v || '') + ` [REJECTED: ${d.reason}]`;
         }
+      }
+    });
+
+    // Write admin-edited HST back to column G for approved eligible rows
+    rowDecisions.forEach(d => {
+      if (d.approved === false) return;
+      const row = (fd.rows || [])[d.rowIndex];
+      if (!row) return;
+      if (row.type === 'hotel' || row.type === 'rental' || row.type === 'misc') {
+        const excelRow = FIRST_ROW + d.rowIndex;
+        const cellRef = XLSX.utils.encode_cell({ r: excelRow - 1, c: 6 }); // column G = index 6
+        if (!ws[cellRef]) ws[cellRef] = {};
+        ws[cellRef].t = 'n';
+        ws[cellRef].v = d.hst || 0;
       }
     });
 
