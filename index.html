@@ -201,7 +201,7 @@
   <div class="card">
 
     <div class="intro">
-      <p>This portal provides tools for the activation as well as tools for contractors deployed under Loomex activations. Contact <strong style="color:var(--green)">eocadmin@loomex.ca</strong> for support.</p>
+      <p>This portal provides tools for the activation as well as tools for contractors deployed under Loomex activations. Contact <strong style="color:var(--green)">eocadmin [at] loomex.ca</strong> for support.</p>
     </div>
 
     <div class="tools-list">
@@ -236,14 +236,14 @@
 
       <div class="section-label" style="margin-top: 8px;">Contractor Forms</div>
 
-      <button class="tool-card" onclick="openAvailabilityModal()">
+      <a class="tool-card" href="https://tools.loomex.ca/availability">
         <div class="tool-icon icon-green">&#128197;</div>
         <div class="tool-info">
           <h3>Availability Form <span class="tool-badge badge-live">Live</span></h3>
           <p>Submit your availability for upcoming deployment periods.</p>
         </div>
         <span class="tool-arrow">&#8250;</span>
-      </button>
+      </a>
 
       <a class="tool-card" href="./expense-form.html">
         <div class="tool-icon icon-green">&#129534;</div>
@@ -280,6 +280,15 @@
         <span class="tool-arrow">&#8250;</span>
       </a>
 
+      <a class="tool-card navy-card" href="https://evacscheduling.loomex-it.workers.dev/masterlog">
+        <div class="tool-icon icon-navy">&#128221;</div>
+        <div class="tool-info">
+          <h3>Master Log</h3>
+          <p>Live log of key EOC tasks and 213s across the activation.</p>
+        </div>
+        <span class="tool-arrow">&#8250;</span>
+      </a>
+
       <a class="tool-card navy-card" href="https://tools.loomex.ca/expenseadmin.html">
         <div class="tool-icon icon-navy">&#128188;</div>
         <div class="tool-info">
@@ -293,7 +302,7 @@
         <div class="tool-icon icon-navy">&#128202;</div>
         <div class="tool-info">
           <h3>Site Performance</h3>
-          <p>Site Command weekly survey form for contract compliance of personnel.</p>
+          <p>Track key operational metrics and performance indicators across active hubs.</p>
         </div>
         <span class="tool-arrow">&#8250;</span>
       </a>
@@ -345,7 +354,7 @@
 
 <script>
 var AUTH_KEY = 'eoc_authed';
-var PW_HASH = 'cccf9594bbe788e33faca2a3d5662cf78b1182a72563ab435ee8ad050cc990ef';
+var PW_HASH = 'e3c652f0ba0b4801205814f8b6bc49672c4c74e25b497770bb89b22cdeb4e951';
 
 function hashPassword(pw) {
   return crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw)).then(function(buf) {
