@@ -914,6 +914,8 @@
       const id   = parseInt(rowEl.id.replace('row-', ''));
       const type = document.getElementById(`type-${id}`)?.value;
       if (!HST_TYPES.includes(type)) continue;
+      const amt  = parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
+      if (amt <= 0) continue;  // no amount entered -- nothing to confirm
       const hstEl = document.getElementById(`f-hst-${id}`);
       if (!hstEl) continue;
       if (!hstEl.classList.contains('confirmed')) return false;
