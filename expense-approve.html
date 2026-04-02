@@ -1007,7 +1007,8 @@
       let desc = row.description || '';
       if (row.type === 'meal')    desc = row.mealPeriod || '';
       if (row.type === 'mileage') desc = (row.description || '') + ' (' + row.km + ' km)';
-      const hst = ['hotel','rental','misc'].includes(row.type)
+      if (row.type === 'evacuee') desc = (row.evacueeItems || []).map(function(it) { return it.category; }).filter(Boolean).join(', ');
+      const hst = ['hotel','rental','misc','evacuee'].includes(row.type)
         ? '$' + parseFloat(row.hst || 0).toFixed(2) : '--';
       return [i + 1, TYPE_LABELS[row.type] || row.type, row.date || '', desc,
               '$' + parseFloat(row.value || 0).toFixed(2), hst];
