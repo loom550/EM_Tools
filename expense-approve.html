@@ -821,79 +821,67 @@
       .reduce((s, r) => s + parseFloat(r.value || 0), 0);
   }
 
-  // ── BUILD APPROVED EXCEL (approved rows only, recalculated totals) ──────────
+  // ── BUILD APPROVED EXCEL (approved rows only, built from scratch) ─────────
   function buildApprovedExcel(fd, adminName) {
-    const wb = XLSX.read(EXPENSE_TEMPLATE_B64, { type: 'base64', cellStyles: true });
-    const ws = wb.Sheets[wb.SheetNames[0]];
+    const wb = XLSX.utils.book_new();
 
-    function setCell(ref, t, v) {
-      if (!ws[ref]) ws[ref] = {};
-      ws[ref].t = t; ws[ref].v = v;
-      if (ws[ref].f) delete ws[ref].f;
-    }
-
-    setCell('A1', 's', submission.reportNumber || '');
-    setCell('B2', 's', fd.contractorName);
-    setCell('B3', 's', fd.activation + ' | ' + fd.site + ' | ' + fd.periodStart + ' to ' + fd.periodEnd);
-
-    // Clear all potential data rows
-    for (let r = 6; r <= 30; r++) {
-      ['A','B','C','D','E','F','G','H'].forEach(col => {
-        const ref = col + r;
-        if (!ws[ref]) ws[ref] = {};
-        ws[ref].t = 's'; ws[ref].v = '';
-        if (ws[ref].f) delete ws[ref].f;
-      });
-    }
-
-    // Approved rows only with admin-edited HST
     const approvedRows = (fd.rows || [])
       .map((r, i) => ({ ...r, hst: rowDecisions[i]?.hst || 0 }))
       .filter((_, i) => rowDecisions[i]?.approved !== false);
 
-    let totalHotel = 0, totalRental = 0, totalMileage = 0,
-        totalMeals = 0, totalHST = 0, totalMisc = 0;
+    let totalHotel=0, totalRental=0, totalMileage=0, totalMeals=0, totalHST=0, totalMisc=0;
 
-    approvedRows.forEach((row, i) => {
-      const r = 6 + i;
-      setCell('A' + r, 's', row.date || '');
+    const dataRows = approvedRows.map(row => {
       let desc = row.description || '';
       if (row.type === 'meal')    desc = row.mealPeriod || '';
-      if (row.type === 'mileage') desc = (row.description || '') + ' (' + row.km + ' km @ $0.59)';
+      if (row.type === 'mileage') desc = (row.description || '') + ' (' + (row.km || 0) + ' km @ $0.59)';
       if (row.type === 'evacuee') desc = row.evacueeCategory || '';
-      setCell('B' + r, 's', desc);
-
-      const val = parseFloat(row.value || 0);
-      if (row.type === 'hotel')   { setCell('C' + r, 'n', val); totalHotel   += val; }
-      if (row.type === 'rental')  { setCell('D' + r, 'n', val); totalRental  += val; }
-      if (row.type === 'mileage') { setCell('E' + r, 'n', val); totalMileage += val; }
-      if (row.type === 'meal')    { setCell('F' + r, 'n', val); totalMeals   += val; }
-      if (row.type === 'misc' || row.type === 'evacuee') { setCell('H' + r, 'n', val); totalMisc += val; }
-
-      const hst = parseFloat(row.hst || 0);
-      if (['hotel','rental','misc','evacuee'].includes(row.type)) {
-        setCell('G' + r, 'n', hst);
-        totalHST += hst;
-      }
+      const val  = parseFloat(row.value || 0);
+      const hst  = ['hotel','rental','misc','evacuee'].includes(row.type) ? parseFloat(row.hst || 0) : 0;
+      let hotel=0, rental=0, mileage=0, meals=0, misc=0;
+      if (row.type === 'hotel')                                { hotel   = val; }
+      if (row.type === 'rental')                               { rental  = val; }
+      if (row.type === 'mileage')                              { mileage = val; }
+      if (row.type === 'meal')                                 { meals   = val; }
+      if (row.type === 'misc' || row.type === 'evacuee')       { misc    = val; }
+      totalHotel+=hotel; totalRental+=rental; totalMileage+=mileage;
+      totalMeals+=meals; totalHST+=hst; totalMisc+=misc;
+      return [row.date||'', desc,
+        hotel||'', rental||'', mileage||'', meals||'', hst||'', misc||''];
     });
 
-    // Totals row
-    const totRow = 6 + approvedRows.length + 1;
-    setCell('A' + totRow, 's', 'APPROVED TOTAL');
-    setCell('C' + totRow, 'n', totalHotel);
-    setCell('D' + totRow, 'n', totalRental);
-    setCell('E' + totRow, 'n', totalMileage);
-    setCell('F' + totRow, 'n', totalMeals);
-    setCell('G' + totRow, 'n', totalHST);
-    setCell('H' + totRow, 'n', totalMisc);
+    const grandTotal = totalHotel + totalRental + totalMileage + totalMeals + totalHST + totalMisc;
 
-    // Approval metadata
-    const apvRow = totRow + 2;
-    setCell('A' + apvRow, 's', 'Approved');
-    setCell('B' + apvRow, 's', adminName);
-    setCell('C' + apvRow, 's', new Date().toLocaleDateString('en-CA'));
+    const aoa = [
+      // Row 1-3: report header
+      [submission.reportNumber || '', '', '', '', '', '', '', ''],
+      ['Contractor:', fd.contractorName],
+      ['Period:', fd.activation + ' | ' + fd.site + ' | ' + fd.periodStart + ' to ' + fd.periodEnd],
+      [],
+      // Row 5: column headers
+      ['Date', 'Description', 'Hotel/Accommodation', 'Rental Car', 'Mileage', 'Meals', 'HST', 'Misc/Other'],
+      // Data rows follow
+      ...dataRows,
+      // Blank separator
+      [],
+      // Totals row
+      ['APPROVED TOTAL', '', totalHotel, totalRental, totalMileage, totalMeals, totalHST, totalMisc],
+      ['GRAND TOTAL', '', '', '', '', '', '', grandTotal],
+      [],
+      // Metadata
+      ['Approved By:', adminName],
+      ['Approved On:', new Date().toLocaleDateString('en-CA')],
+    ];
 
-    return XLSX.write(wb, { type: 'base64', bookType: 'xlsx', cellStyles: true });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Column widths
+    ws['!cols'] = [
+      {wch:12},{wch:38},{wch:20},{wch:14},{wch:12},{wch:10},{wch:10},{wch:14}
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Expense Report');
+    return XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
   }
 
   // ── BUILD APPROVED PDF ────────────────────────────────────────────────────────
