@@ -650,6 +650,7 @@
 
     // Expense table
     renderExpenseTable();
+    initTableDelegation();
   }
 
   function renderSummaryGrid() {
@@ -719,7 +720,7 @@
       tr.id = `erow-${i}`;
       const isHstEligible = (r.type === 'hotel' || r.type === 'rental' || r.type === 'misc' || r.type === 'evacuee');
       const hstCell = isHstEligible
-  ? `<span style="color:inherit; white-space: nowrap;">$<input type="number" class="hst-input" id="hst-${i}" value="${r.hst || 0}" step="0.01" min="0" oninput="rowDecisions[${i}].hst = parseFloat(this.value) || 0; renderSummaryGrid();"></span>`
+  ? `<span style="color:inherit; white-space: nowrap;">$<input type="number" class="hst-input" id="hst-${i}" data-hst-row="${i}" value="${r.hst || 0}" step="0.01" min="0"></span>`
   : `<span style="color:var(--text-muted)">—</span>`;
       tr.innerHTML = `
         <td style="color:var(--text-muted);font-size:12px;font-weight:700;">#${i + 1}</td>
@@ -745,11 +746,11 @@
             ${rowReceipts.length === 0 ? '<span class="no-receipts">No receipts</span>' : '<span class="no-receipts">Loading receipts...</span>'}
           </div>
           <div class="decision-controls">
-            <button class="btn-dec approve active" id="abtn-${i}" onclick="setDecision(${i}, true)">&#10003; Approve</button>
-            <button class="btn-dec reject" id="rbtn-${i}" onclick="setDecision(${i}, false)">&#10005; Reject</button>
+            <button class="btn-dec approve active" id="abtn-${i}" data-row="${i}" data-dec="1">&#10003; Approve</button>
+            <button class="btn-dec reject" id="rbtn-${i}" data-row="${i}" data-dec="0">&#10005; Reject</button>
           </div>
           <div id="reason-wrap-${i}" style="display:none;width:100%;">
-            <textarea class="reason-input" id="reason-${i}" placeholder="Rejection reason (required)" oninput="rowDecisions[${i}].reason = this.value; renderSummaryGrid();"></textarea>
+            <textarea class="reason-input" id="reason-${i}" data-reason-row="${i}" placeholder="Rejection reason (required)"></textarea>
           </div>
         </div>
       </td>`;
@@ -764,6 +765,38 @@
         <td colspan="8" style="text-align:right">Total Claimed</td>
         <td>${fmt(fd.total)}</td>
       </tr>`;
+  }
+
+  // ---- EVENT DELEGATION (replaces all inline onclick/oninput on table) ----
+  function initTableDelegation() {
+    const table = document.getElementById('expTableBody');
+    if (!table) return;
+
+    // Approve / Reject buttons
+    table.addEventListener('click', function(e) {
+      const btn = e.target.closest('[data-dec]');
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.row, 10);
+      const approved = btn.dataset.dec === '1';
+      setDecision(idx, approved);
+    });
+
+    // HST inputs
+    table.addEventListener('input', function(e) {
+      const hstEl = e.target.closest('[data-hst-row]');
+      if (hstEl) {
+        const idx = parseInt(hstEl.dataset.hstRow, 10);
+        rowDecisions[idx].hst = parseFloat(hstEl.value) || 0;
+        renderSummaryGrid();
+        return;
+      }
+      const reasonEl = e.target.closest('[data-reason-row]');
+      if (reasonEl) {
+        const idx = parseInt(reasonEl.dataset.reasonRow, 10);
+        rowDecisions[idx].reason = reasonEl.value;
+        renderSummaryGrid();
+      }
+    });
   }
 
   // ---- LOAD RECEIPTS FROM R2 ----
