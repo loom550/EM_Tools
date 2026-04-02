@@ -220,6 +220,12 @@
     .fields-meal     { grid-template-columns: 150px 160px 130px 130px auto; }
     .fields-mileage  { grid-template-columns: 150px 1fr 120px 130px; }
     .fields-evacuee  { grid-template-columns: 150px 1fr 140px 140px; }
+    .evac-item-row { display: grid; grid-template-columns: 1fr 130px 28px; gap: 8px; margin-bottom: 6px; align-items: end; }
+    .add-evac-item-btn { background: none; border: 1.5px dashed var(--grey-border); border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: var(--green); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; margin-top: 4px; }
+    .add-evac-item-btn:hover { background: var(--green-light); border-color: var(--green-mid); }
+    .evac-remove-btn { background: none; border: none; color: #c0c8d0; cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px; border-radius: 4px; transition: color 0.15s; }
+    .evac-remove-btn:hover { color: var(--error); }
+    .evac-hst-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef0f3; display: flex; align-items: center; gap: 10px; }
 
     .auto-field {
       background: #f0fdf4 !important;
@@ -600,6 +606,7 @@ width: 100%;
   const WORKER_URL = 'https://loomex-expense.loomex-it.workers.dev';
   const MEAL_ALLOWANCES = { Breakfast: 15, Lunch: 20, Dinner: 45 };
   const rowReceipts = {}; // stores files per row: { rowId: [{name, type, data}] }
+  const evacueeItemCounts = {}; // tracks sub-item counter per evacuee row
 
   // ---- PERIOD CHANGE -- update min/max on all row date inputs ----
   function handlePeriodChange() {
@@ -699,36 +706,26 @@ width: 100%;
     const placeholder = type === 'hotel' ? 'Hotel name / location' : type === 'rental' ? 'Rental company / vehicle' : 'Description';
 
     if (type === 'evacuee') {
+      evacueeItemCounts[id] = 0;
       return `
-        <div class="row-fields fields-evacuee">
+        <div class="row-fields" style="display:grid;grid-template-columns:150px 1fr;gap:12px;">
           <div class="field-group">
             <label>Date</label>
             <input type="date" id="f-date-${id}" ${da}>
           </div>
-          <div class="field-group">
-            <label>Category</label>
-            <select id="f-evcat-${id}">
-              <option value="">Select category...</option>
-              <option value="Cleaning Services">Cleaning Services</option>
-              <option value="Laundry Services">Laundry Services</option>
-              <option value="Transportation Services">Transportation Services</option>
-              <option value="Personal Care Products">Personal Care Products</option>
-              <option value="Recreation">Recreation</option>
-              <option value="Child Care">Child Care</option>
-              <option value="Health Services">Health Services</option>
-            </select>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--navy);letter-spacing:0.2px;display:block;margin-bottom:8px;">Categories &amp; Amounts</label>
+            <div id="evac-items-${id}"></div>
+            <button type="button" class="add-evac-item-btn" onclick="addEvacItem(${id})">+ Add Category</button>
+            <div class="evac-hst-row">
+              <div class="field-group" style="flex:0 0 180px;">
+                <label>HST (13%, auto)</label>
+                <input type="text" id="f-hst-${id}" class="auto-field" readonly placeholder="Auto">
+              </div>
+              <button type="button" class="hst-confirm-btn" id="f-hstbtn-${id}" onclick="confirmEvacHst(${id})" style="margin-top:22px;">&#10003; Confirm HST</button>
+            </div>
           </div>
-          <div class="field-group">
-            <label>Amount ($)</label>
-            <input type="number" id="f-amount-${id}" placeholder="0.00" step="0.01" min="0" oninput="recalc(${id})">
-          </div>
-          <div class="field-group">
-            <label>HST (13%, auto)</label>
-            <input type="text" id="f-hst-${id}" class="auto-field" readonly placeholder="Auto">
-            <button type="button" class="hst-confirm-btn" id="f-hstbtn-${id}" onclick="confirmEvacHst(${id})">&#10003; Confirm HST</button>
-          </div>
-        </div>`;
-    }
+        </div>`;\n    }
 
     return `
       <div class="row-fields fields-standard">
@@ -789,6 +786,7 @@ width: 100%;
     const receiptsEl = document.getElementById(`receipts-${id}`);
     const badgeEl    = document.getElementById(`badge-${id}`);
     fieldsEl.innerHTML = type ? renderFields(id, type) : '';
+    if (type === 'evacuee') addEvacItem(id);
     receiptsEl.style.display = type ? 'block' : 'none';
     if (type && TYPE_CONFIG[type]) {
       const cfg = TYPE_CONFIG[type];
@@ -812,6 +810,50 @@ width: 100%;
   function confirmEvacHst(id) {
     const btn = document.getElementById(`f-hstbtn-${id}`);
     if (btn) { btn.textContent = '✓ HST Confirmed'; btn.classList.add('confirmed'); }
+  }
+
+  function addEvacItem(rowId) {
+    if (!evacueeItemCounts[rowId]) evacueeItemCounts[rowId] = 0;
+    evacueeItemCounts[rowId]++;
+    const itemId = evacueeItemCounts[rowId];
+    const container = document.getElementById(`evac-items-${rowId}`);
+    if (!container) return;
+    const div = document.createElement('div');
+    div.className = 'evac-item-row';
+    div.id = `evac-item-${rowId}-${itemId}`;
+    div.innerHTML =
+      '<select id="f-evcat-' + rowId + '-' + itemId + '">' +
+        '<option value="">Select category...</option>' +
+        '<option value="Cleaning Services">Cleaning Services</option>' +
+        '<option value="Laundry Services">Laundry Services</option>' +
+        '<option value="Transportation Services">Transportation Services</option>' +
+        '<option value="Personal Care Products">Personal Care Products</option>' +
+        '<option value="Recreation">Recreation</option>' +
+        '<option value="Child Care">Child Care</option>' +
+        '<option value="Health Services">Health Services</option>' +
+      '</select>' +
+      '<input type="number" id="f-evamt-' + rowId + '-' + itemId + '" placeholder="0.00" step="0.01" min="0" oninput="recalcEvacuee(' + rowId + ')">' +
+      '<button type="button" class="evac-remove-btn" onclick="removeEvacItem(' + rowId + ',' + itemId + ')" title="Remove">\xD7</button>';
+    container.appendChild(div);
+  }
+
+  function removeEvacItem(rowId, itemId) {
+    document.getElementById('evac-item-' + rowId + '-' + itemId)?.remove();
+    recalcEvacuee(rowId);
+  }
+
+  function recalcEvacuee(rowId) {
+    const container = document.getElementById('evac-items-' + rowId);
+    if (!container) return;
+    let total = 0;
+    container.querySelectorAll('input[type="number"]').forEach(function(inp) { total += parseFloat(inp.value) || 0; });
+    total = parseFloat(total.toFixed(2));
+    const hst = parseFloat((total * 0.13).toFixed(2));
+    const he = document.getElementById('f-hst-' + rowId);
+    if (he) he.value = total > 0 ? '$' + hst.toFixed(2) : '';
+    const hb = document.getElementById('f-hstbtn-' + rowId);
+    if (hb) { hb.textContent = '✓ Confirm HST'; hb.classList.remove('confirmed'); }
+    updateTotal();
   }
 
   function recalc(id) {
@@ -844,15 +886,6 @@ width: 100%;
       }
     }
 
-    if (type === 'evacuee') {
-      const amount = parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
-      const hst = parseFloat((amount * 0.13).toFixed(2));
-      const he = document.getElementById(`f-hst-${id}`);
-      if (he) he.value = amount > 0 ? '$' + hst.toFixed(2) : '';
-      const hb = document.getElementById(`f-hstbtn-${id}`);
-      if (hb) { hb.textContent = '✓ Confirm HST'; hb.classList.remove('confirmed'); }
-    }
-
     updateTotal();
   }
 
@@ -871,7 +904,15 @@ width: 100%;
       const site    = document.getElementById('site').value;
       return (period && actual > 0) ? parseFloat(Math.min(actual, max).toFixed(2)) : 0;
     }
+    if (type === 'evacuee') {
+      const container = document.getElementById('evac-items-' + id);
+      if (!container) return 0;
+      let total = 0;
+      container.querySelectorAll('input[type="number"]').forEach(function(inp) { total += parseFloat(inp.value) || 0; });
+      return parseFloat(total.toFixed(2));
+    }
     return parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
+  }
   }
 
   function updateTotal() {
@@ -980,10 +1021,19 @@ width: 100%;
         const km = parseFloat(document.getElementById(`f-km-${id}`)?.value) || 0;
         rows.push({ type, date, description: document.getElementById(`f-desc-${id}`)?.value || '', km, value, receipts });
       } else if (type === 'evacuee') {
-        const amount = parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
-        const hst    = parseFloat((amount * 0.13).toFixed(2));
-        const evacueeCategory = document.getElementById(`f-evcat-${id}`)?.value || '';
-        rows.push({ type, date, evacueeCategory, amount, hst, value, receipts });
+        const container = document.getElementById('evac-items-' + id);
+        const evacueeItems = [];
+        if (container) {
+          container.querySelectorAll('[id^="evac-item-' + id + '-"]').forEach(function(itemEl) {
+            const parts = itemEl.id.split('-');
+            const itemId = parts[parts.length - 1];
+            const category = document.getElementById('f-evcat-' + id + '-' + itemId)?.value || '';
+            const amt = parseFloat(document.getElementById('f-evamt-' + id + '-' + itemId)?.value) || 0;
+            if (category || amt) evacueeItems.push({ category, amount: amt });
+          });
+        }
+        const hst = parseFloat((value * 0.13).toFixed(2));
+        rows.push({ type, date, evacueeItems, hst, value, receipts });
       } else {
         rows.push({ type, date, description: document.getElementById(`f-desc-${id}`)?.value || '', amount: parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0, value, receipts });
       }
