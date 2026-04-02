@@ -238,11 +238,11 @@
       border: 1.5px solid var(--grey-border); background: var(--white); cursor: pointer;
       font-family: 'DM Sans', sans-serif; transition: all 0.12s; white-space: nowrap;
     }
-    .btn-dec.approve { color: var(--green); }
-    .btn-dec.approve:hover { background: var(--green-light); border-color: var(--green); }
+    .btn-dec.approve { color: var(--green); border-color: var(--green); }
+    .btn-dec.approve:hover { background: var(--green-light); }
     .btn-dec.approve.active { background: var(--green); color: white; border-color: var(--green); }
-    .btn-dec.reject  { color: var(--error); }
-    .btn-dec.reject:hover  { background: var(--error-bg); border-color: var(--error); }
+    .btn-dec.reject  { color: var(--error); border-color: var(--error); }
+    .btn-dec.reject:hover  { background: var(--error-bg); }
     .btn-dec.reject.active  { background: var(--error); color: white; border-color: var(--error); }
     .hst-input {
       width: 70px;
@@ -741,7 +741,7 @@
             ${rowReceipts.length === 0 ? '<span class="no-receipts">No receipts</span>' : '<span class="no-receipts">Loading receipts...</span>'}
           </div>
           <div class="decision-controls">
-            <button class="btn-dec approve active" id="abtn-${i}" onclick="setDecision(${i}, true)">&#10003; Approve</button>
+            <button class="btn-dec approve" id="abtn-${i}" onclick="setDecision(${i}, true)">&#10003; Approve</button>
             <button class="btn-dec reject" id="rbtn-${i}" onclick="setDecision(${i}, false)">&#10005; Reject</button>
           </div>
           <div id="reason-wrap-${i}" style="display:none;width:100%;">
