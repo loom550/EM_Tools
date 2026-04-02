@@ -141,6 +141,18 @@
     .field-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
     /* SITE NOTICE */
+    .site-notice {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--warn-bg);
+      border: 1.5px solid var(--warn-border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--warn-text);
+      line-height: 1.5;
+    }
+    .site-notice strong { display: block; margin-bottom: 2px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* EXPENSE ROWS */
     .expense-rows { display: flex; flex-direction: column; gap: 12px; }
@@ -195,26 +207,6 @@
     .badge-mileage { background: #d1fae5; color: #065f46; }
     .badge-rental  { background: #ede9fe; color: #5b21b6; }
     .badge-misc    { background: #f3f4f6; color: #374151; }
-    .badge-evacuee { background: #ffe4e6; color: #9f1239; }
-
-    /* HST field UX */
-    .hst-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .hst-input-field {
-      border: 1.5px solid var(--grey-border); border-radius: 8px;
-      padding: 8px 12px; font-size: 14px; font-family: inherit;
-      width: 110px; color: var(--text); background: #fff8e1;
-      transition: border-color 0.15s;
-    }
-    .hst-input-field.confirmed { background: var(--green-light); border-color: var(--green-mid); }
-    .hst-input-field:focus { outline: none; border-color: var(--amber); }
-    .hst-confirm-btn {
-      padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700;
-      border: 1.5px solid var(--amber); background: #fff8e1; color: #7a5200;
-      cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap;
-    }
-    .hst-confirm-btn.confirmed { background: var(--green); border-color: var(--green-dark); color: white; }
-    .hst-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-    .hst-hint.confirmed { color: var(--green-dark); font-weight: 600; }
 
     .row-remove-btn {
       background: none;
@@ -267,7 +259,7 @@
       border: 1.5px solid;
       white-space: nowrap;
       min-width: 130px;
-      max-width: 160px;
+width: 100%;
     }
     .exceeded-yes { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
     .exceeded-no  { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
@@ -554,6 +546,15 @@
           </div>
         </div>
       </div>
+
+      <div id="notice-kingston" class="site-notice">
+        <strong>Kingston Site</strong>
+        Breakfast and lunch are provided by catering and are not eligible for reimbursement. Only Dinner claims will be accepted.
+      </div>
+      <div id="notice-timmins" class="site-notice">
+        <strong>Timmins Site</strong>
+        Breakfast is provided by the Holiday Inn and is not eligible for reimbursement at this location.
+      </div>
     </div>
 
     <!-- SECTION 2: Expense Items -->
@@ -630,7 +631,9 @@
   function handleSiteChange() {
     const site = document.getElementById('site').value;
     document.getElementById('totalDisplay').innerHTML = '$0.00<span>CAD</span>';
-            document.querySelectorAll('.expense-row').forEach(row => {
+    document.getElementById('notice-kingston').style.display = site === 'Kingston' ? 'block' : 'none';
+    document.getElementById('notice-timmins').style.display  = site === 'Timmins'  ? 'block' : 'none';
+    document.querySelectorAll('.expense-row').forEach(row => {
       const id = parseInt(row.id.replace('row-', ''));
       if (document.getElementById(`type-${id}`)?.value === 'meal') recalc(id);
     });
@@ -642,7 +645,6 @@
     mileage: { label: 'Mileage',    badgeCls: 'badge-mileage' },
     rental:  { label: 'Rental Car', badgeCls: 'badge-rental'  },
     misc:    { label: 'Misc',       badgeCls: 'badge-misc'    },
-    evacuee: { label: 'Evacuee',    badgeCls: 'badge-evacuee' },
   };
 
   // ---- RENDER FIELDS BY TYPE ----
@@ -707,42 +709,6 @@
         </div>`;
     }
 
-    // Evacuee Costs
-    if (type === 'evacuee') {
-      return `
-        <div class="row-fields fields-standard">
-          <div class="field-group">
-            <label>Date</label>
-            <input type="date" id="f-date-${id}" ${da}>
-          </div>
-          <div class="field-group">
-            <label>Category</label>
-            <select id="f-evcat-${id}" oninput="recalc(${id})">
-              <option value="">Select category...</option>
-              <option value="Cleaning Services">Cleaning Services</option>
-              <option value="Laundry Services">Laundry Services</option>
-              <option value="Transportation Services">Transportation Services</option>
-              <option value="Personal Care Products">Personal Care Products</option>
-              <option value="Recreation">Recreation</option>
-              <option value="Child Care">Child Care</option>
-              <option value="Health Services">Health Services</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label>Amount ($)</label>
-            <input type="number" id="f-amount-${id}" placeholder="0.00" step="0.01" min="0" oninput="calcHst(${id}); recalc(${id})">
-          </div>
-          <div class="field-group">
-            <label>HST</label>
-            <div class="hst-row">
-              <input type="number" class="hst-input-field" id="f-hst-${id}" placeholder="0.00" step="0.01" min="0" oninput="markHstDirty(${id})">
-              <button type="button" class="hst-confirm-btn" id="hst-btn-${id}" onclick="confirmHst(${id})">Confirm HST</button>
-            </div>
-            <div class="hst-hint" id="hst-hint-${id}">Enter amount above to auto-calculate</div>
-          </div>
-        </div>`;
-    }
-
     const placeholder = type === 'hotel' ? 'Hotel name / location' : type === 'rental' ? 'Rental company / vehicle' : 'Description';
     return `
       <div class="row-fields fields-standard">
@@ -756,15 +722,7 @@
         </div>
         <div class="field-group">
           <label>Amount ($)</label>
-          <input type="number" id="f-amount-${id}" placeholder="0.00" step="0.01" min="0" oninput="calcHst(${id}); recalc(${id})">
-        </div>
-        <div class="field-group">
-          <label>HST</label>
-          <div class="hst-row">
-            <input type="number" class="hst-input-field" id="f-hst-${id}" placeholder="0.00" step="0.01" min="0" oninput="markHstDirty(${id})">
-            <button type="button" class="hst-confirm-btn" id="hst-btn-${id}" onclick="confirmHst(${id})">Confirm HST</button>
-          </div>
-          <div class="hst-hint" id="hst-hint-${id}">Enter amount above to auto-calculate</div>
+          <input type="number" id="f-amount-${id}" placeholder="0.00" step="0.01" min="0" oninput="recalc(${id})">
         </div>
       </div>`;
   }
@@ -786,7 +744,6 @@
           <option value="mileage">Mileage</option>
           <option value="rental">Rental Car</option>
           <option value="misc">Misc</option>
-          <option value="evacuee">Evacuee Costs</option>
         </select>
         <span class="type-badge" id="badge-${id}"></span>
         <button class="row-remove-btn" onclick="removeRow(${id})" title="Remove item">
@@ -845,13 +802,20 @@
       const period   = document.getElementById(`f-mealperiod-${id}`)?.value || '';
       const actual   = parseFloat(document.getElementById(`f-actual-${id}`)?.value) || 0;
       const max      = MEAL_ALLOWANCES[period] || 0;
-      const claimed  = (period && actual > 0) ? parseFloat(Math.min(actual, max).toFixed(2)) : 0;
-      const exceeded = period && actual > max;
+      const site     = document.getElementById('site').value;
+      const ineligible = period && (
+        (site === 'Kingston' && (period === 'Breakfast' || period === 'Lunch')) ||
+        (site === 'Timmins'  && period === 'Breakfast')
+      );
+      const claimed  = (period && actual > 0 && !ineligible) ? parseFloat(Math.min(actual, max).toFixed(2)) : 0;
+      const exceeded = period && actual > max && !ineligible;
       const claimedEl = document.getElementById(`f-claimed-${id}`);
       const excEl     = document.getElementById(`f-exceeded-${id}`);
-      if (claimedEl) claimedEl.value = (period && actual > 0 ? `\$${claimed.toFixed(2)}` : '');
+      if (claimedEl) claimedEl.value = ineligible ? '$0.00' : (period && actual > 0 ? `$${claimed.toFixed(2)}` : '');
       if (excEl) {
-        if (!period || actual === 0) {
+        if (ineligible) {
+          excEl.textContent = `Not eligible at ${site}`; excEl.className = 'exceeded-badge exceeded-yes';
+        } else if (!period || actual === 0) {
           excEl.textContent = '--'; excEl.className = 'exceeded-badge exceeded-na';
         } else if (exceeded) {
           excEl.textContent = 'Exceeded'; excEl.className = 'exceeded-badge exceeded-yes';
@@ -862,65 +826,6 @@
     }
 
     updateTotal();
-  }
-
-  // ---- HST FUNCTIONS ----
-  const HST_TYPES = ['hotel', 'rental', 'misc', 'evacuee'];
-
-  function calcHst(id) {
-    const type = document.getElementById(`type-${id}`)?.value;
-    if (!HST_TYPES.includes(type)) return;
-    const amt   = parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
-    const hstEl = document.getElementById(`f-hst-${id}`);
-    const btnEl = document.getElementById(`hst-btn-${id}`);
-    const hintEl = document.getElementById(`hst-hint-${id}`);
-    if (!hstEl) return;
-    if (amt > 0) {
-      hstEl.value = (amt * 0.13).toFixed(2);
-      hstEl.classList.remove('confirmed');
-      btnEl?.classList.remove('confirmed');
-      if (hintEl) { hintEl.textContent = 'HST auto-calculated — confirm before submitting'; hintEl.classList.remove('confirmed'); }
-    } else {
-      hstEl.value = '';
-      hstEl.classList.remove('confirmed');
-      btnEl?.classList.remove('confirmed');
-      if (hintEl) { hintEl.textContent = 'Enter amount above to auto-calculate'; hintEl.classList.remove('confirmed'); }
-    }
-  }
-
-  function confirmHst(id) {
-    const hstEl  = document.getElementById(`f-hst-${id}`);
-    const btnEl  = document.getElementById(`hst-btn-${id}`);
-    const hintEl = document.getElementById(`hst-hint-${id}`);
-    if (!hstEl) return;
-    hstEl.classList.add('confirmed');
-    btnEl?.classList.add('confirmed');
-    if (btnEl) btnEl.textContent = '✓ Confirmed';
-    if (hintEl) { hintEl.textContent = '✓ HST confirmed'; hintEl.classList.add('confirmed'); }
-  }
-
-  function markHstDirty(id) {
-    const hstEl  = document.getElementById(`f-hst-${id}`);
-    const btnEl  = document.getElementById(`hst-btn-${id}`);
-    const hintEl = document.getElementById(`hst-hint-${id}`);
-    hstEl?.classList.remove('confirmed');
-    btnEl?.classList.remove('confirmed');
-    if (btnEl) btnEl.textContent = 'Confirm HST';
-    if (hintEl) { hintEl.textContent = 'HST edited — confirm before submitting'; hintEl.classList.remove('confirmed'); }
-  }
-
-  function allHstConfirmed() {
-    for (const rowEl of document.querySelectorAll('.expense-row')) {
-      const id   = parseInt(rowEl.id.replace('row-', ''));
-      const type = document.getElementById(`type-${id}`)?.value;
-      if (!HST_TYPES.includes(type)) continue;
-      const amt  = parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
-      if (amt <= 0) continue;  // no amount entered -- nothing to confirm
-      const hstEl = document.getElementById(`f-hst-${id}`);
-      if (!hstEl) continue;
-      if (!hstEl.classList.contains('confirmed')) return false;
-    }
-    return true;
   }
 
   // ---- GET ROW VALUE ----
@@ -936,7 +841,11 @@
       const actual  = parseFloat(document.getElementById(`f-actual-${id}`)?.value) || 0;
       const max     = MEAL_ALLOWANCES[period] || 0;
       const site    = document.getElementById('site').value;
-      return (period && actual > 0) ? parseFloat(Math.min(actual, max).toFixed(2)) : 0;
+      const ineligible = period && (
+        (site === 'Kingston' && (period === 'Breakfast' || period === 'Lunch')) ||
+        (site === 'Timmins'  && period === 'Breakfast')
+      );
+      return (period && actual > 0 && !ineligible) ? parseFloat(Math.min(actual, max).toFixed(2)) : 0;
     }
     return parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
   }
@@ -1042,16 +951,16 @@
         const actual     = parseFloat(document.getElementById(`f-actual-${id}`)?.value) || 0;
         const max        = MEAL_ALLOWANCES[period] || 0;
         const site       = document.getElementById('site').value;
-        rows.push({ type, date, mealPeriod: period, mealsActual: actual, mealClaimed: value, exceeded: period && actual > max ? 'Y' : (period ? 'N' : '-'), mealIneligible: false, value, receipts });
+        const ineligible = !!(period && (
+          (site === 'Kingston' && (period === 'Breakfast' || period === 'Lunch')) ||
+          (site === 'Timmins'  && period === 'Breakfast')
+        ));
+        rows.push({ type, date, mealPeriod: period, mealsActual: actual, mealClaimed: value, exceeded: period && actual > max ? 'Y' : (period ? 'N' : '-'), mealIneligible: ineligible, value, receipts });
       } else if (type === 'mileage') {
         const km = parseFloat(document.getElementById(`f-km-${id}`)?.value) || 0;
         rows.push({ type, date, description: document.getElementById(`f-desc-${id}`)?.value || '', km, value, receipts });
-      } else if (type === 'evacuee') {
-        const hst = parseFloat(document.getElementById(`f-hst-${id}`)?.value) || 0;
-        rows.push({ type, date, evacueeCategory: document.getElementById(`f-evcat-${id}`)?.value || '', amount: parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0, hst, value, receipts });
       } else {
-        const hst = HST_TYPES.includes(type) ? (parseFloat(document.getElementById(`f-hst-${id}`)?.value) || 0) : 0;
-        rows.push({ type, date, description: document.getElementById(`f-desc-${id}`)?.value || '', amount: parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0, hst, value, receipts });
+        rows.push({ type, date, description: document.getElementById(`f-desc-${id}`)?.value || '', amount: parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0, value, receipts });
       }
     }
     return rows;
@@ -1090,17 +999,20 @@
       setCell(`A${r}`, 's', row.date || '');
       let desc = row.description || '';
       if (row.type === 'meal') {
-        desc = row.mealPeriod + (row.mealsActual > ({ Breakfast: 15, Lunch: 20, Dinner: 45 }[row.mealPeriod] || 0) ? ' (exceeded -- claimed at allowance)' : '');
+        if (row.mealIneligible) {
+          desc = `${row.mealPeriod} (NOT ELIGIBLE at ${fd.site} -- EOC review required)`;
+        } else {
+          desc = row.mealPeriod + (row.mealsActual > ({ Breakfast: 15, Lunch: 20, Dinner: 45 }[row.mealPeriod] || 0) ? ' (exceeded -- claimed at allowance)' : '');
+        }
       }
       if (row.type === 'mileage') desc = `${row.description || ''} (${row.km} km @ $0.59)`;
-      if (row.type === 'evacuee') desc = row.evacueeCategory || '';
       setCell(`B${r}`, 's', desc);
       setCell(`C${r}`, 'n', row.type === 'hotel'   ? row.value : 0);
       setCell(`D${r}`, 'n', row.type === 'rental'  ? row.value : 0);
       setCell(`E${r}`, 'n', row.type === 'mileage' ? row.value : 0);
-      setCell(`F${r}`, 'n', row.type === 'meal' ? row.value : 0);
-      setCell(`G${r}`, 'n', HST_TYPES.includes(row.type) ? (row.hst || 0) : 0);
-      setCell(`H${r}`, 'n', (row.type === 'misc' || row.type === 'evacuee') ? row.value : 0);
+      setCell(`F${r}`, 'n', row.type === 'meal' ? (row.mealIneligible ? row.mealsActual : row.value) : 0);
+      setCell(`G${r}`, 'n', 0);
+      setCell(`H${r}`, 'n', row.type === 'misc' ? row.value : 0);
     }
 
     return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
@@ -1213,7 +1125,7 @@
       const signatureBase64 = canvas.toDataURL('image/png');
       const excelBase64     = buildExcel(formData);
       const allReceipts = [];
-      const typeLabels = { hotel: 'Hotel', meal: 'Meal', mileage: 'Mileage', rental: 'Rental', misc: 'Misc', evacuee: 'Evacuee' };
+      const typeLabels = { hotel: 'Hotel', meal: 'Meal', mileage: 'Mileage', rental: 'Rental', misc: 'Misc' };
       rows.forEach((row, ri) => {
         (row.receipts || []).forEach((rec, rj) => {
           const typeLabel = typeLabels[row.type] || row.type;
