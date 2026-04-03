@@ -80,13 +80,36 @@
     tbody tr:hover td { background: #fafbfc; }
     td { padding: 11px 14px; vertical-align: middle; }
     td.mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+    /* Status badges */
     .status-badge {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
     }
-    .status-pending  { background: #fff8e1; color: #7a5200; }
-    .status-approved { background: var(--green-light); color: var(--green-dark); }
-    .status-rejected { background: #fef2f2; color: #9f1239; }
+    .status-pending          { background: #fff8e1; color: #7a5200; }
+    .status-approved         { background: var(--green-light); color: var(--green-dark); }
+    .status-rejected         { background: #fef2f2; color: #9f1239; }
+    .status-finance-approved { background: #eff6ff; color: #1d4ed8; }
+
+    /* Finance approve button -- only shown on approved rows */
+    .btn-finance {
+      display: inline-block; margin-top: 5px; padding: 3px 8px;
+      border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer;
+      font-family: inherit; border: 1.5px solid #bfdbfe; background: #eff6ff; color: #1d4ed8;
+      transition: all 0.12s; white-space: nowrap;
+    }
+    .btn-finance:hover { background: #dbeafe; }
+
+    /* Delete button */
+    .btn-delete {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 6px; border: 1.5px solid #fecaca;
+      background: #fff5f5; color: #dc2626; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; line-height: 1;
+      transition: all 0.12s;
+    }
+    .btn-delete:hover { background: #fee2e2; border-color: #dc2626; }
+
     .sp-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 11px; font-weight: 600; color: #1d4ed8; text-decoration: none; white-space: nowrap; }
     .sp-link:hover { background: #dbeafe; }
     .no-sp { color: var(--text-muted); font-size: 12px; }
@@ -142,10 +165,11 @@
     <div class="card">
       <div class="toolbar">
         <input type="text" id="searchInput" placeholder="Search by name, report #, activation..." oninput="renderTable()">
-        <button class="filter-btn active" id="f-all"      onclick="setFilter('all')">All</button>
-        <button class="filter-btn"        id="f-pending"  onclick="setFilter('pending')">Pending</button>
-        <button class="filter-btn"        id="f-approved" onclick="setFilter('approved')">Approved</button>
-        <button class="filter-btn"        id="f-rejected" onclick="setFilter('rejected')">Rejected</button>
+        <button class="filter-btn active" id="f-all"              onclick="setFilter('all')">All</button>
+        <button class="filter-btn"        id="f-pending"          onclick="setFilter('pending')">Pending</button>
+        <button class="filter-btn"        id="f-approved"         onclick="setFilter('approved')">Approved</button>
+        <button class="filter-btn"        id="f-finance-approved" onclick="setFilter('finance-approved')">Finance Approved</button>
+        <button class="filter-btn"        id="f-rejected"         onclick="setFilter('rejected')">Rejected</button>
         <span class="count-badge" id="countBadge"></span>
         <button class="refresh-btn" onclick="loadSubmissions()">&#8635; Refresh</button>
       </div>
@@ -170,6 +194,7 @@
               <th>Total</th>
               <th>Status</th>
               <th>Documents</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -191,14 +216,14 @@
 
   // ── LOGIN ────────────────────────────────────────────────────────────────────
   async function login() {
-    const pwd    = document.getElementById('passwordInput').value;
-    const btn    = document.getElementById('loginBtn');
-    const errEl  = document.getElementById('loginError');
+    const pwd   = document.getElementById('passwordInput').value;
+    const btn   = document.getElementById('loginBtn');
+    const errEl = document.getElementById('loginError');
     errEl.textContent = '';
     if (!pwd) { errEl.textContent = 'Please enter a password.'; return; }
     btn.disabled = true; btn.textContent = 'Signing in...';
     try {
-      const res = await fetch(`${WORKER_URL}/expense-admin-auth`, {
+      const res  = await fetch(`${WORKER_URL}/expense-admin-auth`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pwd })
       });
@@ -239,10 +264,44 @@
   // ── FILTER ───────────────────────────────────────────────────────────────────
   function setFilter(f) {
     activeFilter = f;
-    ['all','pending','approved','rejected'].forEach(id => {
+    ['all','pending','approved','finance-approved','rejected'].forEach(id => {
       document.getElementById(`f-${id}`).classList.toggle('active', id === f);
     });
     renderTable();
+  }
+
+  // ── DELETE ───────────────────────────────────────────────────────────────────
+  async function deleteReport(reportNumber) {
+    if (!confirm(`Remove ${reportNumber} from the tracker? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`${WORKER_URL}/expense-admin-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}:${sessionTs}` },
+        body: JSON.stringify({ reportNumber })
+      });
+      if (!res.ok) { alert('Failed to delete. Try again.'); return; }
+      allData = allData.filter(e => e.reportNumber !== reportNumber);
+      renderTable();
+    } catch(e) {
+      alert('Connection error.');
+    }
+  }
+
+  // ── MARK FINANCE APPROVED ────────────────────────────────────────────────────
+  async function markFinanceApproved(reportNumber) {
+    try {
+      const res = await fetch(`${WORKER_URL}/expense-admin-set-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}:${sessionTs}` },
+        body: JSON.stringify({ reportNumber, status: 'finance-approved' })
+      });
+      if (!res.ok) { alert('Failed to update status. Try again.'); return; }
+      const entry = allData.find(e => e.reportNumber === reportNumber);
+      if (entry) entry.status = 'finance-approved';
+      renderTable();
+    } catch(e) {
+      alert('Connection error.');
+    }
   }
 
   // ── RENDER TABLE ─────────────────────────────────────────────────────────────
@@ -251,10 +310,10 @@
     let rows = allData.filter(s => {
       if (activeFilter !== 'all' && s.status !== activeFilter) return false;
       if (!q) return true;
-      return (s.reportNumber || '').toLowerCase().includes(q)
-          || (s.contractorName || '').toLowerCase().includes(q)
-          || (s.activation || '').toLowerCase().includes(q)
-          || (s.site || '').toLowerCase().includes(q);
+      return (s.reportNumber    || '').toLowerCase().includes(q)
+          || (s.contractorName  || '').toLowerCase().includes(q)
+          || (s.activation      || '').toLowerCase().includes(q)
+          || (s.site            || '').toLowerCase().includes(q);
     });
 
     document.getElementById('countBadge').textContent = `${rows.length} submission${rows.length !== 1 ? 's' : ''}`;
@@ -268,15 +327,23 @@
     document.getElementById('tableWrap').style.display  = 'block';
     document.getElementById('stateEmpty').style.display = 'none';
 
-    const statusHTML = { pending: '<span class="status-badge status-pending">⏳ Pending</span>', approved: '<span class="status-badge status-approved">✓ Approved</span>', rejected: '<span class="status-badge status-rejected">✗ Rejected</span>' };
+    const statusHTML = {
+      'pending':          '<span class="status-badge status-pending">&#9203; Pending</span>',
+      'approved':         '<span class="status-badge status-approved">&#10003; Approved</span>',
+      'rejected':         '<span class="status-badge status-rejected">&#10007; Rejected</span>',
+      'finance-approved': '<span class="status-badge status-finance-approved">&#10003;&#10003; Finance Approved</span>'
+    };
 
     document.getElementById('tableBody').innerHTML = rows.map(s => {
-      const submitted = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-      const period    = s.periodStart && s.periodEnd ? `${s.periodStart} to ${s.periodEnd}` : '—';
-      const total     = s.total != null ? `$${parseFloat(s.total).toFixed(2)}` : '—';
-      const status    = statusHTML[s.status] || `<span class="status-badge">${s.status}</span>`;
+      const submitted  = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+      const period     = s.periodStart && s.periodEnd ? `${s.periodStart} to ${s.periodEnd}` : '—';
+      const total      = s.total != null ? `$${parseFloat(s.total).toFixed(2)}` : '—';
+      const status     = statusHTML[s.status] || `<span class="status-badge">${s.status}</span>`;
       const approvedBy = s.approvedBy ? `<br><span style="font-size:11px;color:var(--text-muted)">${s.approvedBy}</span>` : '';
-      const spLink    = s.spFolderUrl
+      const financeBtn = s.status === 'approved'
+        ? `<br><button class="btn-finance" onclick="markFinanceApproved('${s.reportNumber}')">Mark Finance Approved</button>`
+        : '';
+      const spLink = s.spFolderUrl
         ? `<a class="sp-link" href="${s.spFolderUrl}" target="_blank">&#128193; SharePoint</a>`
         : `<span class="no-sp">—</span>`;
       return `<tr>
@@ -287,8 +354,9 @@
         <td style="white-space:nowrap">${period}</td>
         <td style="white-space:nowrap">${submitted}</td>
         <td class="mono"><strong>${total}</strong></td>
-        <td>${status}${approvedBy}</td>
+        <td>${status}${approvedBy}${financeBtn}</td>
         <td>${spLink}</td>
+        <td><button class="btn-delete" onclick="deleteReport('${s.reportNumber}')" title="Remove from tracker">&times;</button></td>
       </tr>`;
     }).join('');
   }
