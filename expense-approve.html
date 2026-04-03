@@ -488,6 +488,7 @@
         <div class="section-label">Submission Summary</div>
         <div class="processed-banner" id="processedBanner"></div>
         <div class="summary-grid" id="summaryGrid"></div>
+        <div id="deploymentBadge" style="margin-top:12px;min-height:28px;"></div>
       </div>
 
       <!-- SECTION 2: Expense Details + Per-Row Decisions -->
@@ -559,7 +560,9 @@
 </div>
 
 <script>
-  const WORKER_URL = 'https://loomex-expense.loomex-it.workers.dev';
+  const WORKER_URL      = 'https://loomex-expense.loomex-it.workers.dev';
+  const SCHEDULER_URL   = 'https://evacscheduling.loomex-it.workers.dev';
+  const CHECK_SECRET    = 'sdfksdfh;afg'lasdgjl'askgjn;asufghpa9sd7fygsd87ftpq2398ryhq[wuhrfo;SDvjn;89FHSPEFH'; // replace with actual secret after wrangler secret put
   const token = new URLSearchParams(window.location.search).get('token');
   let submission = null;
   let rowDecisions = [];
@@ -603,6 +606,8 @@
     document.getElementById('contentWrap').style.display  = state === 'content' ? 'block' : 'none';
   }
 
+  let deploymentInfo = null;
+
   // ---- LOAD ----
   async function loadSubmission() {
     if (!token) { showState('error'); return; }
@@ -613,7 +618,49 @@
       renderSubmission();
       showState('content');
       resizeCanvas();
+      // Non-blocking deployment check
+      checkDeployment();
     } catch { showState('error'); }
+  }
+
+  async function checkDeployment() {
+    try {
+      const fd = submission.formData;
+      const params = new URLSearchParams({
+        email: fd.contractorEmail,
+        start: fd.periodStart,
+        end:   fd.periodEnd,
+      });
+      const res = await fetch(`${SCHEDULER_URL}/assignment-check?${params}`, {
+        headers: { 'X-Check-Secret': CHECK_SECRET }
+      });
+      if (!res.ok) return;
+      deploymentInfo = await res.json();
+      renderDeploymentBadge();
+    } catch { /* non-fatal */ }
+  }
+
+  function renderDeploymentBadge() {
+    const el = document.getElementById('deploymentBadge');
+    if (!el || !deploymentInfo) return;
+    if (!deploymentInfo.found) {
+      el.innerHTML = '<span style="background:#fff8e1;border:1px solid #f59e0b;color:#7a5200;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;">⚠ Contractor not found in scheduler</span>';
+      return;
+    }
+    const assignments = deploymentInfo.assignments || [];
+    if (assignments.length === 0) {
+      el.innerHTML = '<span style="background:#fef2f2;border:1px solid #fca5a5;color:#9f1239;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;">✗ No assignment on record for this period</span>';
+      return;
+    }
+    const parts = assignments.map(a => {
+      const conf = a.confirmed
+        ? '<span style="color:#00A651;font-weight:700;">✓ Confirmed</span>'
+        : '<span style="color:#d4a017;font-weight:700;">Draft</span>';
+      return `${a.location} — ${a.roleAssigned} (${a.startDate} to ${a.endDate}) ${conf}`;
+    });
+    el.innerHTML = '<span style="background:#e8f5ee;border:1px solid #c8e6d4;color:#1a3a5c;padding:6px 12px;border-radius:6px;font-size:12px;display:inline-block;line-height:1.7;">'
+      + '✓ Deployed: ' + parts.join('<br>✓ ')
+      + '</span>';
   }
 
   const BADGE_CLS = { hotel: 'badge-hotel', meal: 'badge-meal', mileage: 'badge-mileage', rental: 'badge-rental', misc: 'badge-misc' };
