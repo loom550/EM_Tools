@@ -735,8 +735,30 @@
       const tr2 = document.createElement('tr');
       tr2.className = 'detail-row';
       tr2.id = `drow-${i}`;
+
+      const evacueeBreakdown = r.type === 'evacuee' && r.evacueeItems && r.evacueeItems.length
+        ? `<div style="margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Evacuee Cost Breakdown</div>
+            <table style="border-collapse:collapse;font-size:12px;width:auto;">
+              ${r.evacueeItems.map(it => `<tr>
+                <td style="padding:3px 16px 3px 0;color:var(--text);">${it.category || '—'}</td>
+                <td style="padding:3px 0;font-family:'DM Mono',monospace;font-weight:600;color:var(--navy);">$${parseFloat(it.amount||0).toFixed(2)}</td>
+              </tr>`).join('')}
+              <tr style="border-top:1px solid var(--grey-border);">
+                <td style="padding:4px 16px 2px 0;font-weight:700;color:var(--navy);">Subtotal</td>
+                <td style="padding:4px 0 2px;font-family:'DM Mono',monospace;font-weight:700;color:var(--navy);">$${parseFloat(r.value||0).toFixed(2)}</td>
+              </tr>
+              ${r.hst > 0 ? `<tr>
+                <td style="padding:2px 16px 2px 0;color:var(--text-muted);">HST</td>
+                <td style="padding:2px 0;font-family:'DM Mono',monospace;color:var(--text-muted);">$${parseFloat(r.hst||0).toFixed(2)}</td>
+              </tr>` : ''}
+            </table>
+          </div>`
+        : '';
+
       tr2.innerHTML = `<td colspan="8">
         <div class="detail-inner" id="detail-inner-${i}">
+          ${evacueeBreakdown}
           <div class="receipts-inline" id="receipts-${i}">
             ${rowReceipts.length === 0 ? '<span class="no-receipts">No receipts</span>' : '<span class="no-receipts">Loading receipts...</span>'}
           </div>
