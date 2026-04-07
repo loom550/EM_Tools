@@ -201,7 +201,7 @@
   <div class="card">
 
     <div class="intro">
-      <p>This portal provides tools for the activation as well as tools for contractors deployed under Loomex activations. Contact <strong style="color:var(--green)">eocadmin@loomex.ca</strong> for support.</p>
+      <p>This portal provides tools for the activation as well as tools for contractors deployed under Loomex activations. Contact <span id="email-intro"></span> for support.</p>
     </div>
 
     <div class="tools-list">
@@ -225,11 +225,11 @@
         <span class="tool-arrow">&#8250;</span>
       </a>
 
-      <a class="tool-card" href="https://evacscheduling.loomex-it.workers.dev/203">
+      <a class="tool-card" href="https://tools.loomex.ca/203">
         <div class="tool-icon icon-green">&#127963;</div>
         <div class="tool-info">
-          <h3>IMS 203 <span class="tool-badge badge-live">Live</span></h3>
-          <p>Live organization assignment list showing EOC section staffing by day. Auto-refreshes every 5 minutes.</p>
+          <h3>IMS 207 <span class="tool-badge badge-live">Live</span></h3>
+          <p>Live EOC organizational chart showing section structure and staffing by day.</p>
         </div>
         <span class="tool-arrow">&#8250;</span>
       </a>
@@ -267,16 +267,16 @@
         <div class="tool-icon icon-green">&#129534;</div>
         <div class="tool-info">
           <h3>Expense Report <span class="tool-badge badge-live">Live</span></h3>
-          <p>Submit expenses for hotel, meals, mileage, rental car, and miscellaneous items for EOC review and reimbursement. Contact your site IC or eocadmin@loomex.ca if unsure which form to use.</p>
+          <p>Submit expenses for hotel, meals, mileage, rental car, and miscellaneous items for EOC review and reimbursement. Contact your site IC or <span class="email-eocadmin"></span> if unsure which form to use.</p>
         </div>
         <span class="tool-arrow">&#8250;</span>
       </a>
 
-      <a class="tool-card disabled" href="#">
-        <div class="tool-icon icon-navy">&#128196;</div>
+      <a class="tool-card" href="https://tools.loomex.ca/feedback.html">
+        <div class="tool-icon icon-green">&#128172;</div>
         <div class="tool-info">
-          <h3>Invoice Submission <span class="tool-badge badge-soon">Coming Soon</span></h3>
-          <p>Submit invoices for your hours for the current deployment period.</p>
+          <h3>Feedback Survey <span class="tool-badge badge-live">Live</span></h3>
+          <p>Share your feedback about your deployment experience.</p>
         </div>
         <span class="tool-arrow">&#8250;</span>
       </a>
@@ -325,12 +325,21 @@
         <span class="tool-arrow">&#8250;</span>
       </a>
 
+      <a class="tool-card navy-card" href="https://tools.loomex.ca/allotmentsdashboard.html">
+        <div class="tool-icon icon-navy">&#128183;</div>
+        <div class="tool-info">
+          <h3>Allotments Dashboard</h3>
+          <p>View and manage CM allotment assignments across active sites.</p>
+        </div>
+        <span class="tool-arrow">&#8250;</span>
+      </a>
+
     </div>
 
   </div>
 
   <div class="page-footer">
-    <p>The Loomex Group Ltd &mdash; Response and Readiness Division &mdash; For support contact eocadmin@loomex.ca</p>
+    <p>The Loomex Group Ltd &mdash; Response and Readiness Division &mdash; For support contact <span id="email-footer"></span></p>
   </div>
 
 </div>
@@ -373,6 +382,20 @@
 <script>
 var AUTH_KEY = 'eoc_authed';
 var WORKER_URL = 'https://loomi-data.loomex-it.workers.dev/eoc-auth';
+
+(function() {
+  var e = 'eocadmin' + '@' + 'loomex.ca';
+  var link = '<a href="mailto:' + e + '" style="color:var(--green);font-weight:600">' + e + '</a>';
+  var plain = '<a href="mailto:' + e + '" style="color:rgba(255,255,255,0.6)">' + e + '</a>';
+  document.addEventListener('DOMContentLoaded', function() {
+    var intro = document.getElementById('email-intro');
+    var footer = document.getElementById('email-footer');
+    var inlines = document.querySelectorAll('.email-eocadmin');
+    if (intro) intro.innerHTML = link;
+    if (footer) footer.innerHTML = plain;
+    inlines.forEach(function(el) { el.innerHTML = e; });
+  });
+})();
 
 window.addEventListener('DOMContentLoaded', function() {
   if (localStorage.getItem(AUTH_KEY) === '1') showEocSection();
