@@ -38,22 +38,6 @@
     /* ---- SCREENS ---- */
     .screen { display: none; }
     .screen.active { display: block; }
-    @media (max-width: 380px) {
-  .filter-tabs { flex-wrap: wrap; }
-  .filter-tab  { flex: none; width: calc(50% - 3px); }
-  .stats-bar   { grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
-  .stat .num   { font-size: 18px; }
-  .stat .lbl   { font-size: 9px; }
-}
-
-@media (max-width: 480px) {
-  .line-item        { flex-wrap: wrap; }
-  .line-name        { width: 100%; flex: none; margin-bottom: 4px; }
-  .line-remain      { font-size: 11px; flex: 1; }
-  .line-amount      { width: 90px; }
-  .ev-badge         { font-size: 10px; padding: 2px 5px; }
-}
-    .auth-input { -webkit-text-security: disc; letter-spacing: 2px; }
 
     /* ---- AUTH SCREEN ---- */
     .auth-wrap {
@@ -158,7 +142,6 @@
     .ev-name { font-size: 14px; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ev-id   { font-size: 11px; color: var(--grey); margin-top: 1px; }
 
-    /* progress bar per evacuee */
     .ev-meter { width: 56px; flex-shrink: 0; }
     .ev-bar { height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
     .ev-bar-fill { height: 100%; border-radius: 3px; }
@@ -215,13 +198,54 @@
     .progress-bar { height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.4s; }
 
-    /* ---- SUBMIT BTN ---- */
+    /* ---- BUTTONS ---- */
     .submit-btn {
       width: 100%; padding: 15px; background: var(--green); color: white;
       border: none; border-radius: 10px; font-size: 17px;
       font-weight: bold; cursor: pointer; margin-top: 4px;
     }
     .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-secondary {
+      width: 100%; padding: 13px; background: white; color: var(--navy);
+      border: 2px solid var(--navy); border-radius: 10px; font-size: 15px;
+      font-weight: bold; cursor: pointer; margin-top: 8px;
+    }
+
+    /* ---- SIGNATURE CARDS ---- */
+    .sig-card {
+      background: white; border-radius: 10px; padding: 16px;
+      margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border-left: 4px solid var(--green);
+    }
+    .sig-card.guardian { border-left-color: var(--warn); }
+    .sig-person { font-size: 15px; font-weight: bold; color: var(--navy); margin-bottom: 2px; }
+    .sig-amount { font-size: 12px; color: var(--grey); margin-bottom: 10px; }
+    .sig-declaration {
+      background: #f7f7f7; border-radius: 6px; padding: 10px 12px;
+      font-size: 12px; color: #444; line-height: 1.5; margin-bottom: 12px;
+    }
+    .sig-guardian-name { margin-bottom: 12px; }
+    .sig-guardian-name label { font-size: 12px; font-weight: bold; color: var(--grey); margin-bottom: 4px; display: block; }
+    .sig-guardian-name input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0;
+      border-radius: 7px; font-size: 14px; outline: none;
+    }
+    .sig-guardian-name input:focus { border-color: var(--warn); }
+    .canvas-wrap {
+      border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden;
+      background: white; position: relative; touch-action: none;
+    }
+    .canvas-wrap canvas { display: block; width: 100%; height: 160px; cursor: crosshair; }
+    .canvas-actions {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 6px;
+    }
+    .canvas-hint { font-size: 11px; color: #aaa; }
+    .btn-clear {
+      font-size: 12px; color: var(--grey); background: none; border: 1px solid #ddd;
+      border-radius: 5px; padding: 4px 10px; cursor: pointer;
+    }
+    .sig-required { border-color: #e74c3c !important; }
 
     /* ---- SUCCESS ---- */
     .success-wrap { text-align: center; padding: 32px 16px; }
@@ -246,6 +270,18 @@
       .form-wrap { padding: 10px; }
       .card { padding: 13px; }
       .ev-meter { display: none; }
+      .line-item { flex-wrap: wrap; }
+      .line-name  { width: 100%; flex: none; margin-bottom: 4px; }
+      .line-remain { font-size: 11px; flex: 1; }
+      .line-amount { width: 90px; }
+      .ev-badge { font-size: 10px; padding: 2px 5px; }
+    }
+    @media (max-width: 380px) {
+      .filter-tabs { flex-wrap: wrap; }
+      .filter-tab  { flex: none; width: calc(50% - 3px); }
+      .stats-bar   { gap: 4px; }
+      .stat .num   { font-size: 18px; }
+      .stat .lbl   { font-size: 9px; }
     }
   </style>
 </head>
@@ -281,40 +317,33 @@
 
   <div class="form-wrap">
 
-    <!-- Staff details -->
     <div class="card">
       <div class="card-title">Staff Details</div>
       <label for="staff-name">Your Name</label>
       <input type="text" id="staff-name" placeholder="Enter your full name">
     </div>
 
-    <!-- Member selector -->
     <div class="card">
       <div class="card-title">Select Community Members</div>
-
       <div class="stats-bar">
         <div class="stat"><div class="num" id="stat-eligible">-</div><div class="lbl">Eligible</div></div>
         <div class="stat"><div class="num" id="stat-warning">-</div><div class="lbl">Near Limit</div></div>
         <div class="stat"><div class="num" id="stat-maxed">-</div><div class="lbl">Maxed Out</div></div>
       </div>
-
       <div class="filter-tabs">
         <button class="filter-tab active" onclick="setFilter('all', this)">All</button>
         <button class="filter-tab" onclick="setFilter('eligible', this)">Eligible Only</button>
         <button class="filter-tab" onclick="setFilter('warning', this)">Near Limit</button>
       </div>
-
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input type="text" id="ev-search" placeholder="Search by name or ID..." oninput="renderEvacueeList()">
       </div>
-
       <div class="evacuee-list" id="evacuee-list">
         <div class="ev-empty">Loading members...</div>
       </div>
     </div>
 
-    <!-- Amounts -->
     <div class="card">
       <div class="card-title">Purchase Amounts</div>
       <div id="line-items">
@@ -322,7 +351,6 @@
       </div>
     </div>
 
-    <!-- Receipt upload -->
     <div class="card">
       <div class="card-title">Receipt</div>
       <div class="upload-zone" id="upload-zone" onclick="document.getElementById('receipt-file').click()">
@@ -333,13 +361,28 @@
       </div>
     </div>
 
-    <!-- Progress indicator -->
+    <button class="submit-btn" id="continue-btn" onclick="goToSignatures()">Continue to Signatures</button>
+    <div style="height: 32px;"></div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- SIGNATURE SCREEN                                                  -->
+<!-- ================================================================ -->
+<div id="screen-signatures" class="screen">
+  <div class="page-header">
+    <div class="logo">L</div>
+    <h1>Confirm Receipt</h1>
+    <div class="hub-badge" id="hub-badge-sig">-</div>
+  </div>
+  <div class="form-wrap">
+    <div id="sig-cards"></div>
     <div class="progress-wrap" id="progress-wrap">
       <div class="progress-label" id="progress-label">Uploading receipt...</div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
-
-    <button class="submit-btn" id="submit-btn" onclick="doSubmit()">Submit Allotment</button>
+    <button class="submit-btn" id="submit-btn" onclick="doFinalSubmit()">Submit Allotment</button>
+    <button class="btn-secondary" onclick="showScreen('screen-form')">Back</button>
     <div style="height: 32px;"></div>
   </div>
 </div>
@@ -371,16 +414,18 @@
 <!-- SCRIPT                                                            -->
 <!-- ================================================================ -->
 <script>
-const WORKER           = 'https://cmallotment.loomex-it.workers.dev'; // replace
-const ALLOTMENT_LIMIT  = 300;
-const WARN_THRESHOLD   = 250;
+const WORKER          = 'https://cmallotment.loomex-it.workers.dev';
+const ALLOTMENT_LIMIT = 300;
+const WARN_THRESHOLD  = 250;
 
-let currentHub     = null;
-let evacuees       = [];
-let allotmentTotals = {}; // evacueeId -> total spent
-let selectedIds    = new Set();
-let receiptFile    = null;
-let currentFilter  = 'all';
+let currentHub      = null;
+let evacuees        = [];
+let allotmentTotals = {};
+let selectedIds     = new Set();
+let receiptFile     = null;
+let currentFilter   = 'all';
+let pendingMembers  = [];   // members collected at validation step
+let signatures      = {};   // evacueeId -> base64 png, 'guardian' -> base64 png
 
 // ---- AUTH ----
 
@@ -392,35 +437,30 @@ async function doAuth() {
   const pass = document.getElementById('auth-pass').value.trim();
   if (!pass) return;
   const btn = document.getElementById('auth-btn');
-  btn.disabled = true;
-  btn.textContent = 'Checking...';
+  btn.disabled = true; btn.textContent = 'Checking...';
   document.getElementById('auth-error').style.display = 'none';
-
   try {
     const res  = await fetch(`${WORKER}/auth`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: pass })
     });
     const data = await res.json();
-
     if (data.hub) {
       currentHub = data.hub;
       const label = currentHub.charAt(0).toUpperCase() + currentHub.slice(1);
-      document.getElementById('hub-badge').textContent         = label;
-      document.getElementById('hub-badge-success').textContent = label;
+      ['hub-badge','hub-badge-sig','hub-badge-success'].forEach(id => {
+        document.getElementById(id).textContent = label;
+      });
       showScreen('screen-form');
       await loadData();
     } else {
       document.getElementById('auth-error').style.display = 'block';
-      btn.disabled    = false;
-      btn.textContent = 'Continue';
+      btn.disabled = false; btn.textContent = 'Continue';
     }
   } catch (e) {
-    document.getElementById('auth-error').textContent    = 'Connection error. Try again.';
+    document.getElementById('auth-error').textContent = 'Connection error. Try again.';
     document.getElementById('auth-error').style.display = 'block';
-    btn.disabled    = false;
-    btn.textContent = 'Continue';
+    btn.disabled = false; btn.textContent = 'Continue';
   }
 }
 
@@ -428,24 +468,29 @@ async function doAuth() {
 
 async function loadData() {
   document.getElementById('evacuee-list').innerHTML = '<div class="ev-empty">Loading members...</div>';
-
   const [evRes, allRes] = await Promise.all([
     fetch(`${WORKER}/evacuees?hub=${currentHub}`),
     fetch(`${WORKER}/allotments?hub=${currentHub}`)
   ]);
-
   evacuees = (await evRes.json()).sort((a, b) =>
-  `${a.LastName} ${a.FirstName}`.localeCompare(`${b.LastName} ${b.FirstName}`)
-);
-
+    `${a.LastName} ${a.FirstName}`.localeCompare(`${b.LastName} ${b.FirstName}`)
+  );
   const allotments = await allRes.json();
   allotmentTotals = {};
   for (const a of allotments) {
     allotmentTotals[a.EvacueeID] = (allotmentTotals[a.EvacueeID] || 0) + (a.AmountSpent || 0);
   }
-
   updateStats();
   renderEvacueeList();
+}
+
+function isMinor(ev) {
+  if (!ev.DateOfBirth) return false;
+  const dob  = new Date(ev.DateOfBirth);
+  const today = new Date();
+  const age  = today.getFullYear() - dob.getFullYear() -
+    (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate()) ? 1 : 0);
+  return age < 18;
 }
 
 function getStatus(evacueeId) {
@@ -463,9 +508,9 @@ function updateStats() {
   let eligible = 0, warning = 0, maxed = 0;
   for (const ev of evacuees) {
     const s = getStatus(ev.EvacueeID);
-    if (s === 'ok')      eligible++;
+    if (s === 'ok') eligible++;
     else if (s === 'warning') warning++;
-    else                 maxed++;
+    else maxed++;
   }
   document.getElementById('stat-eligible').textContent = eligible;
   document.getElementById('stat-warning').textContent  = warning;
@@ -484,31 +529,25 @@ function setFilter(f, el) {
 function renderEvacueeList() {
   const search = document.getElementById('ev-search').value.toLowerCase().trim();
   const list   = document.getElementById('evacuee-list');
-
   let filtered = evacuees.filter(ev => {
     const name = `${ev.FirstName} ${ev.LastName}`.toLowerCase();
     const id   = (ev.EvacueeID || '').toLowerCase();
     if (search && !name.includes(search) && !id.includes(search)) return false;
-
     const s = getStatus(ev.EvacueeID);
-    if (currentFilter === 'eligible' && s !== 'ok')      return false;
+    if (currentFilter === 'eligible' && s !== 'ok')     return false;
     if (currentFilter === 'warning'  && s !== 'warning') return false;
     return true;
   });
-
-  // Sort: selected first, then alphabetical
   filtered.sort((a, b) => {
     const asel = selectedIds.has(a.EvacueeID) ? 0 : 1;
     const bsel = selectedIds.has(b.EvacueeID) ? 0 : 1;
     if (asel !== bsel) return asel - bsel;
     return `${a.FirstName} ${a.LastName}`.localeCompare(`${b.FirstName} ${b.LastName}`);
   });
-
   if (filtered.length === 0) {
     list.innerHTML = '<div class="ev-empty">No members found</div>';
     return;
   }
-
   list.innerHTML = filtered.map(ev => {
     const status   = getStatus(ev.EvacueeID);
     const spent    = allotmentTotals[ev.EvacueeID] || 0;
@@ -516,15 +555,11 @@ function renderEvacueeList() {
     const isMaxed  = status === 'maxed';
     const isSel    = selectedIds.has(ev.EvacueeID);
     const fullName = `${ev.FirstName} ${ev.LastName}`;
-
     const badgeClass = { ok: 'badge-ok', warning: 'badge-warn', maxed: 'badge-max' }[status];
     const badgeText  = { ok: 'Eligible', warning: '⚠ Near Limit', maxed: '✗ Maxed' }[status];
     const fillClass  = { ok: 'fill-ok',  warning: 'fill-warn',  maxed: 'fill-max'  }[status];
-
-    // Escape for inline onclick
     const safeName = fullName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const safeId   = (ev.EvacueeID || '').replace(/'/g, "\\'");
-
     return `
       <div class="ev-item ${status} ${isSel ? 'selected' : ''}"
            onclick="${isMaxed ? '' : `toggleEvacuee('${safeId}', '${safeName}')`}">
@@ -543,11 +578,8 @@ function renderEvacueeList() {
 }
 
 function toggleEvacuee(evacueeId, name) {
-  if (selectedIds.has(evacueeId)) {
-    selectedIds.delete(evacueeId);
-  } else {
-    selectedIds.add(evacueeId);
-  }
+  if (selectedIds.has(evacueeId)) selectedIds.delete(evacueeId);
+  else selectedIds.add(evacueeId);
   renderEvacueeList();
   renderLineItems();
 }
@@ -556,21 +588,16 @@ function toggleEvacuee(evacueeId, name) {
 
 function renderLineItems() {
   const container = document.getElementById('line-items');
-
   if (selectedIds.size === 0) {
     container.innerHTML = '<div class="ev-empty">Select members above to enter amounts</div>';
     return;
   }
-
-  // Preserve existing amounts
   const existing = {};
   document.querySelectorAll('.line-item').forEach(li => {
     const input = li.querySelector('input[type="number"]');
     if (input && input.value) existing[li.dataset.id] = input.value;
   });
-
   const selected = evacuees.filter(ev => selectedIds.has(ev.EvacueeID));
-
   container.innerHTML = selected.map(ev => {
     const fullName  = `${ev.FirstName} ${ev.LastName}`;
     const remaining = getRemaining(ev.EvacueeID);
@@ -591,11 +618,7 @@ function renderLineItems() {
 function checkOver(input, evacueeId) {
   const remaining = getRemaining(evacueeId);
   const val = parseFloat(input.value);
-  if (!isNaN(val) && val > remaining) {
-    input.classList.add('over');
-  } else {
-    input.classList.remove('over');
-  }
+  input.classList.toggle('over', !isNaN(val) && val > remaining);
 }
 
 // ---- FILE UPLOAD ----
@@ -612,25 +635,19 @@ const uploadZone = document.getElementById('upload-zone');
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
 uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadZone.classList.remove('drag');
+  e.preventDefault(); uploadZone.classList.remove('drag');
   const f = e.dataTransfer.files[0];
-  if (f) {
-    receiptFile = f;
-    document.getElementById('upload-filename').textContent = f.name;
-    uploadZone.classList.add('has-file');
-  }
+  if (f) { receiptFile = f; document.getElementById('upload-filename').textContent = f.name; uploadZone.classList.add('has-file'); }
 });
 
-// ---- SUBMIT ----
+// ---- VALIDATE AND GO TO SIGNATURES ----
 
-async function doSubmit() {
+function goToSignatures() {
   const staffName = document.getElementById('staff-name').value.trim();
   if (!staffName)         { alert('Please enter your name.'); return; }
   if (selectedIds.size === 0) { alert('Please select at least one community member.'); return; }
   if (!receiptFile)       { alert('Please attach a receipt.'); return; }
 
-  // Collect and validate line items
   const members = [];
   const lineItems = document.querySelectorAll('.line-item');
   for (const li of lineItems) {
@@ -638,27 +655,198 @@ async function doSubmit() {
     const id    = li.dataset.id;
     const val   = parseFloat(input.value);
     if (!val || val <= 0) { alert('Enter a valid amount for all selected members.'); return; }
-    const remaining = getRemaining(id);
-    if (val > remaining)  { alert(`Amount exceeds remaining balance for one or more members.`); return; }
+    if (val > getRemaining(id)) { alert('Amount exceeds remaining balance for one or more members.'); return; }
     const ev = evacuees.find(e => e.EvacueeID === id);
     members.push({
-      evacueeId: id,
-      name: `${ev.FirstName} ${ev.LastName}`,
-      amount: val
+      evacueeId:  id,
+      name:       `${ev.FirstName} ${ev.LastName}`,
+      amount:     val,
+      isMinor:    isMinor(ev),
+      dateOfBirth: ev.DateOfBirth
     });
   }
 
-  const submitBtn = document.getElementById('submit-btn');
-  submitBtn.disabled = true;
+  pendingMembers = members;
+  signatures = {};
+  buildSignatureCards(members);
+  showScreen('screen-signatures');
+}
+
+// ---- SIGNATURE CARDS ----
+
+function buildSignatureCards(members) {
+  const container  = document.getElementById('sig-cards');
+  const adults     = members.filter(m => !m.isMinor);
+  const minors     = members.filter(m => m.isMinor);
+  const date       = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const hubLabel   = currentHub.charAt(0).toUpperCase() + currentHub.slice(1);
+
+  let html = '';
+
+  // One card per adult
+  adults.forEach(m => {
+    html += `
+      <div class="sig-card" data-sig-id="${m.evacueeId}">
+        <div class="sig-person">${m.name}</div>
+        <div class="sig-amount">Amount: $${m.amount.toFixed(2)}</div>
+        <div class="sig-declaration">
+          I, <strong>${m.name}</strong>, confirm that I have received clothing purchased on my behalf
+          on <strong>${date}</strong> at <strong>${hubLabel}</strong> in the amount of
+          <strong>$${m.amount.toFixed(2)}</strong>.
+        </div>
+        <div class="canvas-wrap" id="wrap-${m.evacueeId}">
+          <canvas id="canvas-${m.evacueeId}" height="160"></canvas>
+        </div>
+        <div class="canvas-actions">
+          <span class="canvas-hint">Sign above with your finger</span>
+          <button class="btn-clear" onclick="clearCanvas('${m.evacueeId}')">Clear</button>
+        </div>
+      </div>`;
+  });
+
+  // One combined guardian card for all minors
+  if (minors.length > 0) {
+    const minorNames = minors.map(m => `${m.name} ($${m.amount.toFixed(2)})`).join(', ');
+    const totalMinor = minors.reduce((s, m) => s + m.amount, 0).toFixed(2);
+    html += `
+      <div class="sig-card guardian" data-sig-id="guardian">
+        <div class="sig-person">Guardian Signature</div>
+        <div class="sig-amount">For: ${minorNames}</div>
+        <div class="sig-guardian-name">
+          <label>Guardian Full Name</label>
+          <input type="text" id="guardian-name" placeholder="Enter guardian's full name">
+        </div>
+        <div class="sig-declaration">
+          I confirm that I am the authorized guardian for the above-named minor(s) and that clothing
+          has been received on their behalf on <strong>${date}</strong> at <strong>${hubLabel}</strong>,
+          totalling <strong>$${totalMinor}</strong>.
+        </div>
+        <div class="canvas-wrap" id="wrap-guardian">
+          <canvas id="canvas-guardian" height="160"></canvas>
+        </div>
+        <div class="canvas-actions">
+          <span class="canvas-hint">Sign above with your finger</span>
+          <button class="btn-clear" onclick="clearCanvas('guardian')">Clear</button>
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+
+  // Init canvases after DOM is ready
+  setTimeout(() => {
+    adults.forEach(m => initCanvas(m.evacueeId));
+    if (minors.length > 0) initCanvas('guardian');
+  }, 50);
+}
+
+function initCanvas(id) {
+  const canvas = document.getElementById(`canvas-${id}`);
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.offsetWidth;
+  canvas.height = 160;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#1a3a5c';
+  ctx.lineWidth   = 2.5;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  let drawing = false;
+  let hasMark = false;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if (e.touches) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top)  * scaleY
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top)  * scaleY
+    };
+  }
+
+  function start(e) {
+    e.preventDefault();
+    drawing = true;
+    hasMark = true;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    wrap.classList.remove('sig-required');
+  }
+
+  function move(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+
+  function end(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    drawing = false;
+    if (hasMark) signatures[id] = canvas.toDataURL('image/png');
+  }
+
+  canvas.addEventListener('mousedown',  start);
+  canvas.addEventListener('mousemove',  move);
+  canvas.addEventListener('mouseup',    end);
+  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove',  move,  { passive: false });
+  canvas.addEventListener('touchend',   end,   { passive: false });
+}
+
+function clearCanvas(id) {
+  const canvas = document.getElementById(`canvas-${id}`);
+  if (!canvas) return;
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  delete signatures[id];
+}
+
+// ---- FINAL SUBMIT ----
+
+async function doFinalSubmit() {
+  // Validate all signatures
+  const adults = pendingMembers.filter(m => !m.isMinor);
+  const minors = pendingMembers.filter(m => m.isMinor);
+  let valid = true;
+
+  for (const m of adults) {
+    if (!signatures[m.evacueeId]) {
+      document.getElementById(`wrap-${m.evacueeId}`).classList.add('sig-required');
+      valid = false;
+    }
+  }
+  if (minors.length > 0) {
+    const guardianName = document.getElementById('guardian-name')?.value.trim();
+    if (!guardianName) { document.getElementById('guardian-name').style.borderColor = '#e74c3c'; valid = false; }
+    if (!signatures['guardian']) {
+      document.getElementById('wrap-guardian').classList.add('sig-required');
+      valid = false;
+    }
+  }
+  if (!valid) { alert('Please complete all signatures before submitting.'); return; }
+
+  const staffName      = document.getElementById('staff-name').value.trim();
+  const guardianName   = document.getElementById('guardian-name')?.value.trim() || null;
+  const submitBtn      = document.getElementById('submit-btn');
+  submitBtn.disabled   = true;
   showProgress(true);
 
   const submissionRef  = `ALLOT-${currentHub.toUpperCase().substring(0,3)}-${Date.now()}`;
-  const submissionDate = new Date().toLocaleDateString('en-CA', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  });
+  const submissionDate = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const submissionTime = new Date().toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const members        = pendingMembers;
 
   try {
-    // 1. Upload receipt
     setProgress('Uploading receipt...', 20);
     const fd = new FormData();
     fd.append('file', receiptFile);
@@ -669,43 +857,44 @@ async function doSubmit() {
     if (!uploadData.fullUrl) throw new Error('Receipt upload failed');
     const receiptUrl = uploadData.fullUrl;
 
-    // 2. Create records
-    setProgress('Creating allotment records...', 45);
+    setProgress('Creating allotment records...', 40);
     const records = members.map(m => ({
-      evacueeId:     m.evacueeId,
-      evacueeName:   m.name,
-      hubId:         currentHub,
-      amount:        m.amount,
+      evacueeId:   m.evacueeId,
+      evacueeName: m.name,
+      hubId:       currentHub,
+      amount:      m.amount,
       receiptUrl,
-      submittedBy:   staffName,
+      submittedBy: staffName,
       submissionRef
     }));
     const recRes  = await fetch(`${WORKER}/allotments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ records })
     });
-    const recData = await recRes.json();
+    const recData   = await recRes.json();
     const recordIds = recData.ids || [];
 
-    // 3. Show success immediately - fire PDF generation in background
-setProgress('Done!', 100);
-showSuccess({ submissionRef, members, staffName, pdfUrl: null, submissionDate });
+    setProgress('Done!', 100);
 
-// PDF generates in background - no await
-fetch(`${WORKER}/generate-pdf`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ submissionRef, hub: currentHub, submittedBy: staffName, submissionDate, members, receiptUrl, receiptGraphPath: uploadData.graphPath })
-}).then(r => r.json()).then(pdfData => {
-  if (pdfData.pdfUrl && recordIds.length) {
-    fetch(`${WORKER}/allotments/pdf`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: recordIds, pdfUrl: pdfData.pdfUrl })
-    });
-  }
-}).catch(() => {});
+    // Fire PDF in background
+    showSuccess({ submissionRef, members, staffName, pdfUrl: null, submissionDate });
+    fetch(`${WORKER}/generate-pdf`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        submissionRef, hub: currentHub, submittedBy: staffName,
+        submissionDate, submissionTime, members,
+        receiptUrl, receiptGraphPath: uploadData.graphPath,
+        signatures, guardianName,
+        minors: members.filter(m => m.isMinor).map(m => m.name)
+      })
+    }).then(r => r.json()).then(pdfData => {
+      if (pdfData.pdfUrl && recordIds.length) {
+        fetch(`${WORKER}/allotments/pdf`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: recordIds, pdfUrl: pdfData.pdfUrl })
+        });
+      }
+    }).catch(() => {});
 
   } catch (e) {
     showProgress(false);
@@ -715,10 +904,9 @@ fetch(`${WORKER}/generate-pdf`, {
 }
 
 function setProgress(msg, pct) {
-  document.getElementById('progress-label').textContent      = msg;
-  document.getElementById('progress-fill').style.width       = pct + '%';
+  document.getElementById('progress-label').textContent = msg;
+  document.getElementById('progress-fill').style.width  = pct + '%';
 }
-
 function showProgress(show) {
   document.getElementById('progress-wrap').classList.toggle('active', show);
 }
@@ -726,9 +914,8 @@ function showProgress(show) {
 // ---- SUCCESS ----
 
 function showSuccess({ submissionRef, members, staffName, pdfUrl, submissionDate }) {
-  const total  = members.reduce((s, m) => s + m.amount, 0).toFixed(2);
-  const mRows  = members.map(m => `<tr><td>${m.name}</td><td>$${m.amount.toFixed(2)}</td></tr>`).join('');
-
+  const total = members.reduce((s, m) => s + m.amount, 0).toFixed(2);
+  const mRows = members.map(m => `<tr><td>${m.name}${m.isMinor ? ' (minor)' : ''}</td><td>$${m.amount.toFixed(2)}</td></tr>`).join('');
   document.getElementById('success-table').innerHTML = `
     <table>
       <tr><td>Reference</td><td>${submissionRef}</td></tr>
@@ -738,34 +925,26 @@ function showSuccess({ submissionRef, members, staffName, pdfUrl, submissionDate
       ${mRows}
       <tr><td><strong>Total</strong></td><td><strong>$${total}</strong></td></tr>
     </table>`;
-
   const pdfLink = document.getElementById('pdf-link');
-  if (pdfUrl) {
-    pdfLink.href    = pdfUrl;
-    pdfLink.style.display = 'block';
-  } else {
-    pdfLink.style.display = 'none';
-  }
-
+  pdfLink.style.display = pdfUrl ? 'block' : 'none';
+  if (pdfUrl) pdfLink.href = pdfUrl;
   showScreen('screen-success');
 }
 
 // ---- RESET ----
 
 function resetForm() {
-  selectedIds.clear();
-  receiptFile = null;
-  currentFilter = 'all';
-  document.getElementById('staff-name').value       = '';
-  document.getElementById('ev-search').value        = '';
+  selectedIds.clear(); receiptFile = null; currentFilter = 'all';
+  pendingMembers = []; signatures = {};
+  document.getElementById('staff-name').value = '';
+  document.getElementById('ev-search').value  = '';
   document.getElementById('upload-filename').textContent = '';
   document.getElementById('upload-zone').classList.remove('has-file');
-  document.getElementById('receipt-file').value     = '';
-  document.getElementById('submit-btn').disabled    = false;
+  document.getElementById('receipt-file').value = '';
+  document.getElementById('submit-btn').disabled = false;
   document.querySelectorAll('.filter-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
-  showProgress(false);
-  setProgress('', 0);
-  loadData(); // refresh totals
+  showProgress(false); setProgress('', 0);
+  loadData();
   showScreen('screen-form');
 }
 
