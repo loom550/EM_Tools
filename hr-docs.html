@@ -949,7 +949,7 @@ function renderUploadRecord(u, c) {
         ? `<div class="reviewed-badge">✅ Reviewed</div>`
         : hasFiles
           ? `<button class="btn btn-approve" id="appbtn-${u.recordId}"
-               onclick="approveRecord('${u.recordId}', '${c.contractorId}')">
+               onclick="approveRecord('${u.recordId}', '${c.contractorId}', '${c.recordId}', '${escStr(c.name)}')">
                ✓ Mark as Reviewed
              </button>`
           : `<span style="font-size:12px;color:var(--muted);">No files attached</span>`
@@ -958,28 +958,30 @@ function renderUploadRecord(u, c) {
   </div>`;
 }
 
-async function approveRecord(recordId, contractorId) {
+async function approveRecord(recordId, contractorId, contractorRecordId, contractorName) {
   const btn = document.getElementById(`appbtn-${recordId}`);
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Processing…';
+  btn.innerHTML = '<span class="spinner"></span> Uploading to SharePoint…';
 
   try {
     const res  = await fetch(`${WORKER}/hr-approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: sessionToken, uploadRecordId: recordId }),
+      body: JSON.stringify({
+        token: sessionToken,
+        uploadRecordId:     recordId,
+        contractorRecordId: contractorRecordId,
+        contractorId:       contractorId,
+        contractorName:     contractorName,
+      }),
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
-    // Replace button with badge
-    const row = document.getElementById(`urec-${recordId}`).querySelector('.approve-row');
     btn.replaceWith(Object.assign(document.createElement('div'), {
       className: 'reviewed-badge', textContent: '✅ Reviewed',
     }));
-    showToast('Marked as reviewed. Zapier will sync files to SharePoint.', 'success');
-
-    // Refresh pending count
+    showToast('Files uploaded to SharePoint and checkboxes updated.', 'success');
     refreshPendingCount();
   } catch (e) {
     btn.disabled = false;
