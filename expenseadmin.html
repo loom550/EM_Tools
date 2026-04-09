@@ -293,7 +293,7 @@
         <td>${s.activation || '—'}</td>
         <td>${s.site || '—'}</td>
         <td>${period}</td>
-        <td>${submitted}</td>
+       <td style="white-space:nowrap">${submitted}<br><a href="expense-approve.html?token=${s.token}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Review →</a></td>
         <td class="mono">${claimed}</td>
         <td class="mono">${approved}</td>
         <td style="white-space:normal;min-width:150px">${status}${approvedBy}${financeBtn}</td>
