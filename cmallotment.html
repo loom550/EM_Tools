@@ -940,7 +940,7 @@ async function doFinalSubmit() {
       if (pdfData.pdfUrl && recordIds.length) {
         fetch(`${WORKER}/allotments/pdf`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids: recordIds, pdfUrl: pdfData.pdfUrl })
+          body: JSON.stringify({ ids: recordIds, pdfUrl: pdfData.pdfUrl, folderUrl: pdfData.folderUrl || '' })
         });
       }
     }).catch(() => {});
