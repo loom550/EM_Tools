@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>LOOMI — Passenger Intake</title>
+<style>
+/* ── RESET + BASE ─────────────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --navy:#1a4e7e;
+  --navy-dk:#0f2f50;
+  --teal:#2f9879;
+  --lime:#7dbe42;
+  --red:#d94040;
+  --yellow:#e8a000;
+  --bg:#f2f4f7;
+  --card:#ffffff;
+  --border:#dde2ea;
+  --text:#1a1f2e;
+  --text-dim:#5c6478;
+  --text-muted:#9099ae;
+  --input-bg:#f7f8fb;
+  --input-border:#d0d5e0;
+  --input-focus:#1a4e7e;
+  --btn-h:56px;
+  --radius:10px;
+  --shadow:0 2px 12px rgba(0,0,0,.08);
+}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--text);font-size:16px;-webkit-font-smoothing:antialiased;}
+
+/* ── HEADER ───────────────────────────────────────────────────────────────── */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:var(--navy);
+  padding:12px 16px 10px;
+  border-bottom:3px solid var(--lime);
+  display:flex;align-items:center;gap:10px;
+}
+.header-logo{font-size:11px;font-weight:700;color:var(--lime);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;}
+.header-div{width:1px;height:18px;background:rgba(255,255,255,.2);flex-shrink:0;}
+.header-title{font-size:13px;font-weight:600;color:#fff;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-hub{font-size:11px;color:rgba(255,255,255,.65);white-space:nowrap;}
+.online-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .3s;}
+.online-dot.online{background:var(--lime);}
+.online-dot.offline{background:var(--yellow);animation:pulse 1.8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── SYNC BANNER ──────────────────────────────────────────────────────────── */
+.sync-banner{
+  display:none;
+  background:#fffbf0;
+  border-bottom:2px solid var(--yellow);
+  padding:10px 16px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:#7a4e00;cursor:pointer;
+}
+.sync-banner.hidden{display:none!important;}
+.sync-icon{font-size:16px;flex-shrink:0;}
+.sync-text{flex:1;}
+.sync-retry{font-weight:700;text-decoration:underline;white-space:nowrap;}
+
+/* ── ERROR / AUTH GATE ────────────────────────────────────────────────────── */
+.gate{
+  position:fixed;inset:0;z-index:200;
+  background:var(--navy-dk);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.gate-card{background:#fff;border-radius:16px;padding:32px 24px;width:100%;max-width:360px;text-align:center;}
+.gate-logo{width:52px;height:52px;background:var(--navy);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--lime);letter-spacing:.08em;margin-bottom:16px;}
+.gate-title{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.gate-sub{font-size:13px;color:var(--text-muted);margin-bottom:0;}
+.gate-error-msg{font-size:13px;color:var(--red);margin-top:16px;padding:10px 14px;background:#fff5f5;border-radius:8px;border:1px solid #fcc;}
+
+/* ── MAIN CONTENT ─────────────────────────────────────────────────────────── */
+.main{padding:16px;max-width:560px;margin:0 auto;}
+
+/* ── CARD ─────────────────────────────────────────────────────────────────── */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.card-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.card-header-icon{font-size:18px;line-height:1;}
+.card-header-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);}
+.card-body{padding:16px;}
+
+/* ── FORM FIELDS ──────────────────────────────────────────────────────────── */
+.field-group{margin-bottom:14px;}
+.field-group:last-child{margin-bottom:0;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;}
+label .req{color:var(--red);margin-left:2px;}
+
+input[type=text],input[type=date],input[type=number],select,textarea{
+  display:block;width:100%;
+  height:var(--btn-h);
+  padding:0 14px;
+  background:var(--input-bg);
+  border:1.5px solid var(--input-border);
+  border-radius:8px;
+  font-size:17px;
+  font-family:inherit;
+  color:var(--text);
+  outline:none;
+  appearance:none;
+  -webkit-appearance:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--input-focus);
+  box-shadow:0 0 0 3px rgba(26,78,126,.12);
+  background:#fff;
+}
+input::placeholder{color:var(--text-muted);}
+input[type=date]{color:var(--text);}
+input[type=date]::-webkit-calendar-picker-indicator{opacity:.5;cursor:pointer;}
+
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235c6478' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  padding-right:36px;
+}
+
+textarea{height:auto;padding:12px 14px;resize:none;font-size:15px;line-height:1.5;}
+
+/* ── PASSENGER TYPE BUTTONS ───────────────────────────────────────────────── */
+.ptype-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;}
+.ptype-btn{
+  height:60px;
+  border:2px solid var(--input-border);
+  border-radius:10px;
+  background:var(--input-bg);
+  cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  transition:all .15s;
+  -webkit-tap-highlight-color:transparent;
+  padding:0;
+}
+.ptype-btn:active{transform:scale(.96);}
+.ptype-code{font-size:22px;font-weight:800;color:var(--text-dim);line-height:1;font-family:-apple-system,BlinkMacSystemFont,monospace;}
+.ptype-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
+
+.ptype-btn.selected-F{border-color:#2f9879;background:rgba(47,152,121,.1);}
+.ptype-btn.selected-F .ptype-code{color:#2f9879;}
+.ptype-btn.selected-F .ptype-label{color:#2f9879;}
+
+.ptype-btn.selected-M{border-color:#1a4e7e;background:rgba(26,78,126,.1);}
+.ptype-btn.selected-M .ptype-code{color:#1a4e7e;}
+.ptype-btn.selected-M .ptype-label{color:#1a4e7e;}
+
+.ptype-btn.selected-C{border-color:#e8a000;background:rgba(232,160,0,.1);}
+.ptype-btn.selected-C .ptype-code{color:#e8a000;}
+.ptype-btn.selected-C .ptype-label{color:#e8a000;}
+
+.ptype-btn.selected-I{border-color:#9e60d4;background:rgba(158,96,212,.1);}
+.ptype-btn.selected-I .ptype-code{color:#9e60d4;}
+.ptype-btn.selected-I .ptype-label{color:#9e60d4;}
+
+/* ── SPECIAL REQS TOGGLE ──────────────────────────────────────────────────── */
+.special-toggle{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 0 0;
+  cursor:pointer;
+  font-size:13px;color:var(--text-dim);font-weight:500;
+  border:none;background:none;width:100%;text-align:left;
+}
+.special-toggle-icon{font-size:16px;transition:transform .2s;}
+.special-toggle.open .special-toggle-icon{transform:rotate(45deg);}
+.special-field{margin-top:10px;display:none;}
+.special-field.open{display:block;}
+
+/* ── SUBMIT BUTTON ────────────────────────────────────────────────────────── */
+.btn-submit{
+  width:100%;
+  height:60px;
+  background:var(--navy);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:.02em;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .15s;
+  font-family:inherit;
+}
+.btn-submit:active{transform:scale(.98);background:var(--navy-dk);}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-submit.success{background:var(--teal);}
+
+/* ── VALIDATION HINT ──────────────────────────────────────────────────────── */
+.field-err{font-size:12px;color:var(--red);margin-top:5px;display:none;}
+.field-err.show{display:block;}
+input.invalid,select.invalid{border-color:var(--red)!important;}
+
+/* ── RECENT LIST ──────────────────────────────────────────────────────────── */
+.recent-empty{text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;}
+.pax-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+}
+.pax-item:last-child{border-bottom:none;}
+.pax-type-badge{
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;flex-shrink:0;
+  font-family:-apple-system,BlinkMacSystemFont,monospace;
+}
+.badge-F{background:rgba(47,152,121,.15);color:#2f9879;}
+.badge-M{background:rgba(26,78,126,.15);color:#1a4e7e;}
+.badge-C{background:rgba(232,160,0,.15);color:#b87600;}
+.badge-I{background:rgba(158,96,212,.15);color:#9e60d4;}
+
+.pax-info{flex:1;min-width:0;}
+.pax-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pax-meta{font-size:12px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pax-status{flex-shrink:0;}
+.status-dot{width:8px;height:8px;border-radius:50%;}
+.status-dot.synced{background:var(--lime);}
+.status-dot.pending{background:var(--yellow);animation:pulse 1.8s ease-in-out infinite;}
+.status-dot.failed{background:var(--red);}
+
+/* ── TOAST ────────────────────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#1a1f2e;color:#fff;padding:12px 20px;
+  border-radius:10px;font-size:14px;font-weight:500;
+  z-index:999;transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{background:var(--teal);}
+.toast.error{background:var(--red);}
+
+/* ── FLIGHT SELECT LOADING STATE ──────────────────────────────────────────── */
+.flight-loading{font-size:13px;color:var(--text-muted);padding:8px 0;}
+
+@media(min-width:400px){
+  .ptype-grid{gap:10px;}
+  .ptype-btn{height:66px;}
+  .ptype-code{font-size:24px;}
+}
+</style>
+</head>
+<body>
+
+<!-- Auth gate (shown on bad/missing token) -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">L</div>
+    <div class="gate-title">LOOMI Manifest</div>
+    <div class="gate-sub">Passenger Intake Portal</div>
+    <div class="gate-error-msg" id="gate-error">
+      This link is invalid or has expired.<br>Contact EOC for a new intake link.
+    </div>
+  </div>
+</div>
+
+<!-- Main UI (shown after auth) -->
+<div id="app" style="display:none">
+
+  <div class="header">
+    <span class="header-logo">LOOMI</span>
+    <div class="header-div"></div>
+    <span class="header-title">Passenger Intake</span>
+    <span class="header-hub" id="hub-name">Loading...</span>
+    <div class="online-dot offline" id="online-dot" title="Connection status"></div>
+  </div>
+
+  <!-- Offline sync banner -->
+  <div class="sync-banner hidden" id="sync-banner" data-action="retry">
+    <span class="sync-icon">&#9888;</span>
+    <span class="sync-text"><strong id="pending-count">0</strong> passenger(s) pending upload</span>
+    <span class="sync-retry">Retry now</span>
+  </div>
+
+  <div class="main">
+
+    <!-- Flight selection -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon">&#9992;</span>
+        <span class="card-header-title">Flight</span>
+      </div>
+      <div class="card-body">
+        <div class="field-group">
+          <label for="flight-select">Assign to Flight <span class="req">*</span></label>
+          <select id="flight-select">
+            <option value="">Loading flights...</option>
+          </select>
+          <div class="field-err" id="err-flight">Select a flight or choose Unassigned</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passenger form -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon">&#128100;</span>
+        <span class="card-header-title">Passenger Details</span>
+      </div>
+      <div class="card-body">
+
+        <!-- Name -->
+        <div class="field-group field-row">
+          <div>
+            <label for="first-name">First Name <span class="req">*</span></label>
+            <input type="text" id="first-name" placeholder="First" autocomplete="off" autocorrect="off" spellcheck="false">
+            <div class="field-err" id="err-first">Required</div>
+          </div>
+          <div>
+            <label for="last-name">Last Name <span class="req">*</span></label>
+            <input type="text" id="last-name" placeholder="Last" autocomplete="off" autocorrect="off" spellcheck="false">
+            <div class="field-err" id="err-last">Required</div>
+          </div>
+        </div>
+
+        <!-- DOB -->
+        <div class="field-group">
+          <label for="dob">Date of Birth</label>
+          <input type="date" id="dob">
+        </div>
+
+        <!-- Passenger type -->
+        <div class="field-group">
+          <label>Passenger Type <span class="req">*</span></label>
+          <div class="ptype-grid">
+            <button class="ptype-btn" data-type="F" type="button">
+              <span class="ptype-code">F</span>
+              <span class="ptype-label">Female</span>
+            </button>
+            <button class="ptype-btn" data-type="M" type="button">
+              <span class="ptype-code">M</span>
+              <span class="ptype-label">Male</span>
+            </button>
+            <button class="ptype-btn" data-type="C" type="button">
+              <span class="ptype-code">C</span>
+              <span class="ptype-label">Child</span>
+            </button>
+            <button class="ptype-btn" data-type="I" type="button">
+              <span class="ptype-code">I</span>
+              <span class="ptype-label">Infant</span>
+            </button>
+          </div>
+          <div class="field-err" id="err-ptype">Select a passenger type</div>
+        </div>
+
+        <!-- Weights -->
+        <div class="field-group field-row">
+          <div>
+            <label for="luggage-wt">Luggage (lbs)</label>
+            <input type="number" id="luggage-wt" placeholder="0" min="0" max="9999" step="1" inputmode="numeric">
+          </div>
+          <div>
+            <label for="carryon-wt">Carry-On (lbs)</label>
+            <input type="number" id="carryon-wt" placeholder="0" min="0" max="9999" step="1" inputmode="numeric">
+          </div>
+        </div>
+
+        <!-- Special requirements (optional) -->
+        <button class="special-toggle" id="special-toggle" type="button">
+          <span class="special-toggle-icon">+</span>
+          Special Requirements
+        </button>
+        <div class="special-field" id="special-field">
+          <textarea id="special-reqs" rows="3" placeholder="Wheelchair, oxygen, medical equipment, etc."></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button class="btn-submit" id="submit-btn" type="button">
+      <span id="submit-icon">&#43;</span>
+      <span id="submit-label">Add Passenger</span>
+    </button>
+
+    <!-- Recent this session -->
+    <div class="card" id="recent-card" style="margin-top:20px">
+      <div class="card-header">
+        <span class="card-header-icon">&#128203;</span>
+        <span class="card-header-title">Added This Session</span>
+        <span id="session-count" style="margin-left:auto;font-size:12px;color:var(--text-muted);font-weight:600"></span>
+      </div>
+      <div id="recent-list">
+        <div class="recent-empty" id="recent-empty">No passengers added yet</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+var WORKER = 'https://loomi-manifest.loomex-it.workers.dev';
+var QUEUE_KEY = 'loomi_manifest_queue';
+var FLIGHTS_KEY = 'loomi_manifest_flights';
+var SESSION_KEY = 'loomi_manifest_session';
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var hubToken = '';
+var hubContext = null;
+var selectedPtype = '';
+var queue = [];
+var session = [];
+var flights = [];
+var syncTimer = null;
+var syncing = false;
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(function init() {
+  var params = new URLSearchParams(window.location.search);
+  hubToken = params.get('token') || '';
+
+  if (!hubToken) {
+    showGate('This link is missing a hub token.');
+    return;
+  }
+
+  queue = loadJSON(QUEUE_KEY, []);
+  session = loadJSON(SESSION_KEY, []);
+
+  // Try auth
+  authHub();
+
+  // Online/offline
+  window.addEventListener('online', onOnline);
+  window.addEventListener('offline', onOffline);
+  updateOnlineIndicator();
+
+  // Sync banner retry
+  document.getElementById('sync-banner').addEventListener('click', flushQueue);
+})();
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function authHub() {
+  fetch(WORKER + '/api/auth?token=' + encodeURIComponent(hubToken))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { showGate(data.error); return; }
+      hubContext = data;
+      document.getElementById('hub-name').textContent = data.hub;
+      document.title = 'LOOMI Intake — ' + data.hub;
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      loadFlights();
+      renderSession();
+      updateSyncBanner();
+      startSyncTimer();
+      setupForm();
+    })
+    .catch(function() {
+      // No connection — check if we have cached context
+      var cached = loadJSON('loomi_hub_context', null);
+      if (cached) {
+        hubContext = cached;
+        document.getElementById('hub-name').textContent = cached.hub;
+        document.getElementById('gate').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        loadFlights();
+        renderSession();
+        updateSyncBanner();
+        startSyncTimer();
+        setupForm();
+      } else {
+        showGate('Could not connect and no cached session found. Connect to the internet to activate this device.');
+      }
+    });
+}
+
+// ── FLIGHTS ───────────────────────────────────────────────────────────────────
+function loadFlights() {
+  var cached = loadJSON(FLIGHTS_KEY, null);
+  if (cached) {
+    flights = cached;
+    renderFlightSelect();
+  }
+
+  if (!navigator.onLine) return;
+
+  fetch(WORKER + '/api/flights?token=' + encodeURIComponent(hubToken))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) return;
+      flights = data;
+      saveJSON(FLIGHTS_KEY, flights);
+      renderFlightSelect();
+      // Cache hub context now that we confirmed auth
+      saveJSON('loomi_hub_context', hubContext);
+    })
+    .catch(function() {});
+}
+
+function renderFlightSelect() {
+  var sel = document.getElementById('flight-select');
+  var prev = sel.value;
+  sel.innerHTML = '';
+
+  var unassigned = document.createElement('option');
+  unassigned.value = '';
+  unassigned.textContent = 'Unassigned';
+  sel.appendChild(unassigned);
+
+  var active = flights.filter(function(f) { return f.status !== 'Departed'; });
+  active.forEach(function(f) {
+    var opt = document.createElement('option');
+    opt.value = f.id;
+    opt.textContent = f.flightNumber
+      + (f.destination ? ' \u2192 ' + f.destination : '')
+      + (f.etd ? ' (' + f.etd + ')' : '')
+      + (f.mode ? ' [' + f.mode + ']' : '');
+    sel.appendChild(opt);
+  });
+
+  if (prev) sel.value = prev;
+}
+
+// ── FORM SETUP ────────────────────────────────────────────────────────────────
+function setupForm() {
+  // Ptype buttons
+  document.querySelectorAll('.ptype-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var t = this.getAttribute('data-type');
+      selectPtype(t);
+    });
+  });
+
+  // Special requirements toggle
+  document.getElementById('special-toggle').addEventListener('click', function() {
+    this.classList.toggle('open');
+    document.getElementById('special-field').classList.toggle('open');
+  });
+
+  // Submit
+  document.getElementById('submit-btn').addEventListener('click', submitPax);
+
+  // Clear validation on input
+  ['first-name','last-name'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', function() {
+      this.classList.remove('invalid');
+      document.getElementById('err-' + (id === 'first-name' ? 'first' : 'last')).classList.remove('show');
+    });
+  });
+}
+
+function selectPtype(type) {
+  selectedPtype = type;
+  document.querySelectorAll('.ptype-btn').forEach(function(btn) {
+    btn.className = 'ptype-btn';
+    var t = btn.getAttribute('data-type');
+    if (t === type) btn.classList.add('selected-' + type);
+  });
+  document.getElementById('err-ptype').classList.remove('show');
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+function submitPax() {
+  if (!validate()) return;
+
+  var pax = {
+    uuid: generateUUID(),
+    firstName: document.getElementById('first-name').value.trim(),
+    lastName: document.getElementById('last-name').value.trim(),
+    dob: document.getElementById('dob').value,
+    passengerType: selectedPtype,
+    luggageWeight: Number(document.getElementById('luggage-wt').value) || 0,
+    carryOnWeight: Number(document.getElementById('carryon-wt').value) || 0,
+    specialRequirements: document.getElementById('special-reqs').value.trim(),
+    flightId: document.getElementById('flight-select').value,
+    flightLabel: document.getElementById('flight-select').selectedOptions[0].text,
+    hubId: hubContext.hubId,
+    syncUUID: '',
+    status: 'pending',
+    addedAt: new Date().toISOString(),
+  };
+  pax.syncUUID = pax.uuid;
+
+  // Add to session display immediately
+  session.unshift(pax);
+  saveJSON(SESSION_KEY, session);
+  renderSession();
+
+  // Add to sync queue
+  queue.push(pax);
+  saveJSON(QUEUE_KEY, queue);
+  updateSyncBanner();
+
+  // Flash button
+  flashSubmit();
+  resetForm();
+
+  // Try to sync now
+  flushQueue();
+}
+
+function validate() {
+  var ok = true;
+
+  var fn = document.getElementById('first-name');
+  if (!fn.value.trim()) {
+    fn.classList.add('invalid');
+    document.getElementById('err-first').classList.add('show');
+    ok = false;
+  }
+
+  var ln = document.getElementById('last-name');
+  if (!ln.value.trim()) {
+    ln.classList.add('invalid');
+    document.getElementById('err-last').classList.add('show');
+    ok = false;
+  }
+
+  if (!selectedPtype) {
+    document.getElementById('err-ptype').classList.add('show');
+    ok = false;
+  }
+
+  return ok;
+}
+
+function flashSubmit() {
+  var btn = document.getElementById('submit-btn');
+  btn.classList.add('success');
+  document.getElementById('submit-icon').textContent = '\u2713';
+  document.getElementById('submit-label').textContent = 'Saved!';
+  setTimeout(function() {
+    btn.classList.remove('success');
+    document.getElementById('submit-icon').textContent = '+';
+    document.getElementById('submit-label').textContent = 'Add Passenger';
+  }, 1200);
+}
+
+function resetForm() {
+  document.getElementById('first-name').value = '';
+  document.getElementById('last-name').value = '';
+  document.getElementById('dob').value = '';
+  document.getElementById('luggage-wt').value = '';
+  document.getElementById('carryon-wt').value = '';
+  document.getElementById('special-reqs').value = '';
+
+  // Reset ptype
+  selectedPtype = '';
+  document.querySelectorAll('.ptype-btn').forEach(function(btn) {
+    btn.className = 'ptype-btn';
+  });
+
+  // Close special reqs
+  document.getElementById('special-toggle').classList.remove('open');
+  document.getElementById('special-field').classList.remove('open');
+
+  // Focus first name for next entry
+  setTimeout(function() {
+    document.getElementById('first-name').focus();
+  }, 100);
+}
+
+// ── SYNC ──────────────────────────────────────────────────────────────────────
+function flushQueue() {
+  if (syncing || !navigator.onLine || !queue.length) return;
+  syncing = true;
+
+  var pending = queue.filter(function(p) { return p.status !== 'synced'; });
+  if (!pending.length) { syncing = false; return; }
+
+  var promises = pending.map(function(pax) {
+    return fetch(WORKER + '/api/pax?token=' + encodeURIComponent(hubToken), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: pax.firstName,
+        lastName: pax.lastName,
+        dob: pax.dob,
+        passengerType: pax.passengerType,
+        luggageWeight: pax.luggageWeight,
+        carryOnWeight: pax.carryOnWeight,
+        specialRequirements: pax.specialRequirements,
+        flightId: pax.flightId,
+        notes: '',
+        syncUUID: pax.syncUUID,
+      }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error && !data.duplicate) throw new Error(data.error);
+      // Mark synced in queue + session
+      markSynced(pax.uuid);
+    })
+    .catch(function(e) {
+      console.warn('Sync failed for', pax.uuid, e.message);
+    });
+  });
+
+  Promise.all(promises).then(function() {
+    syncing = false;
+    saveJSON(QUEUE_KEY, queue);
+    saveJSON(SESSION_KEY, session);
+    updateSyncBanner();
+    renderSession();
+  });
+}
+
+function markSynced(uuid) {
+  queue.forEach(function(p) { if (p.uuid === uuid) p.status = 'synced'; });
+  session.forEach(function(p) { if (p.uuid === uuid) p.status = 'synced'; });
+}
+
+function startSyncTimer() {
+  if (syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(function() {
+    if (navigator.onLine) flushQueue();
+  }, 8000);
+}
+
+// ── ONLINE/OFFLINE ────────────────────────────────────────────────────────────
+function onOnline() {
+  updateOnlineIndicator();
+  loadFlights();
+  flushQueue();
+}
+function onOffline() { updateOnlineIndicator(); }
+function updateOnlineIndicator() {
+  var dot = document.getElementById('online-dot');
+  if (navigator.onLine) {
+    dot.classList.remove('offline');
+    dot.classList.add('online');
+    dot.title = 'Online';
+  } else {
+    dot.classList.remove('online');
+    dot.classList.add('offline');
+    dot.title = 'Offline — entries will sync when connection restores';
+  }
+}
+
+// ── RENDER SESSION LIST ───────────────────────────────────────────────────────
+function renderSession() {
+  var list = document.getElementById('recent-list');
+  var empty = document.getElementById('recent-empty');
+  var count = document.getElementById('session-count');
+
+  var activeSession = session.slice(0, 30); // cap display at 30
+
+  count.textContent = session.length ? session.length + ' added' : '';
+
+  if (!session.length) {
+    empty.style.display = 'block';
+    // Remove any existing items
+    var existing = list.querySelectorAll('.pax-item');
+    existing.forEach(function(el) { el.remove(); });
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  // Rebuild list
+  var existing = list.querySelectorAll('.pax-item');
+  existing.forEach(function(el) { el.remove(); });
+
+  activeSession.forEach(function(pax) {
+    var item = document.createElement('div');
+    item.className = 'pax-item';
+
+    var lugTotal = (pax.luggageWeight || 0) + (pax.carryOnWeight || 0);
+    var weightStr = lugTotal ? lugTotal + ' lbs total' : 'no weight recorded';
+    var flightStr = pax.flightId ? pax.flightLabel : 'Unassigned';
+
+    item.innerHTML =
+      '<div class="pax-type-badge badge-' + pax.passengerType + '">' + pax.passengerType + '</div>' +
+      '<div class="pax-info">' +
+        '<div class="pax-name">' + esc(pax.firstName) + ' ' + esc(pax.lastName) + '</div>' +
+        '<div class="pax-meta">' + esc(flightStr) + ' &bull; ' + weightStr + (pax.specialRequirements ? ' &bull; Special req.' : '') + '</div>' +
+      '</div>' +
+      '<div class="pax-status"><div class="status-dot ' + (pax.status === 'synced' ? 'synced' : 'pending') + '" title="' + (pax.status === 'synced' ? 'Uploaded' : 'Pending upload') + '"></div></div>';
+
+    list.appendChild(item);
+  });
+}
+
+// ── SYNC BANNER ───────────────────────────────────────────────────────────────
+function updateSyncBanner() {
+  var pending = queue.filter(function(p) { return p.status !== 'synced'; });
+  var banner = document.getElementById('sync-banner');
+  document.getElementById('pending-count').textContent = pending.length;
+  if (pending.length > 0) {
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+var toastTimer = null;
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() {
+    t.classList.remove('show');
+  }, 2500);
+}
+
+// ── GATE ──────────────────────────────────────────────────────────────────────
+function showGate(msg) {
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  if (msg) document.getElementById('gate-error').textContent = msg;
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function loadJSON(key, def) {
+  try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
+  catch(e) { return def; }
+}
+
+function saveJSON(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+</script>
+</body>
+</html>
