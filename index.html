@@ -185,6 +185,9 @@
       .modal { max-height: 95vh; border-radius: 8px; }
       .modal-body iframe { min-height: 460px; }
     }
+    @media (max-width: 768px) {
+  .mobile-hidden { display: none !important; }
+}
   </style>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a3a5c">
@@ -240,7 +243,7 @@
         <span class="tool-arrow">&#8250;</span>
       </a>
 
-      <a class="tool-card" href="https://apps.powerapps.com/play/e/default-f37e3a4c-5aaa-4bf9-93d2-cc21b157eb4c/a/7931aba6-deb3-46e1-adcf-8c6da94b685e?tenantId=f37e3a4c-5aaa-4bf9-93d2-cc21b157eb4c&hint=759f0376-6b17-47cd-b8da-7ce58489a79b&sourcetime=1774306351859&source=portal#" target="_blank">
+      <a class="tool-card mobile-hidden" href="https://apps.powerapps.com/play/e/default-f37e3a4c-5aaa-4bf9-93d2-cc21b157eb4c/a/7931aba6-deb3-46e1-adcf-8c6da94b685e?tenantId=f37e3a4c-5aaa-4bf9-93d2-cc21b157eb4c&hint=759f0376-6b17-47cd-b8da-7ce58489a79b&sourcetime=1774306351859&source=portal#" target="_blank">
         <div class="tool-icon icon-green">&#128421;</div>
         <div class="tool-info">
           <h3>LOOMI <span class="tool-badge badge-live">Live</span></h3>
@@ -249,11 +252,20 @@
         <span class="tool-arrow">&#8250;</span>
       </a>
 
-      <a class="tool-card" href="https://loomex.sharepoint.com/sites/21000-response" target="_blank">
+      <a class="tool-card mobile-hidden" href="https://loomex.sharepoint.com/sites/21000-response" target="_blank">
         <div class="tool-icon icon-green">&#128196;</div>
         <div class="tool-info">
           <h3>SharePoint</h3>
           <p>21000-Response site. Documents, lists, and activation records.</p>
+        </div>
+        <span class="tool-arrow">&#8250;</span>
+      </a>
+
+      <a class="tool-card" href="https://tools.loomex.ca/cmallotment.html">
+        <div class="tool-icon icon-green">&#128183;</div>
+        <div class="tool-info">
+          <h3>CM Allotments <span class="tool-badge badge-live">Live</span></h3>
+          <p>Submit and manage Community Member allotment requests for your hub site.</p>
         </div>
         <span class="tool-arrow">&#8250;</span>
       </a>
