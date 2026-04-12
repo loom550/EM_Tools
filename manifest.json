@@ -1,6 +1,6 @@
 {
-  "name": "Loomex Tools",
-  "short_name": "Loomex",
+  "name": "LOOMI",
+  "short_name": "LOOMI",
   "description": "Contractor and EOC portal for Loomex activations.",
   "start_url": "/",
   "display": "standalone",
