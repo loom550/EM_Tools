@@ -340,6 +340,94 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
 .spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ── UPLOAD BUTTON ON FLIGHT CARD ────────────────────────────────────────── */
+.fc-actions{display:flex;border-top:1px solid var(--border);gap:0;}
+.fc-action-btn{flex:1;height:34px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text-muted);border-right:1px solid var(--border);transition:all .12s;}
+.fc-action-btn:last-child{border-right:none;}
+.fc-action-btn:hover{background:var(--navy-lt);color:var(--navy);}
+.fc-action-btn.upload-btn:hover{background:rgba(47,152,121,.08);color:var(--teal);}
+
+/* ── UPLOAD MODAL ────────────────────────────────────────────────────────── */
+.upload-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:none;align-items:flex-end;justify-content:center;}
+.upload-modal-overlay.open{display:flex;}
+@media(min-width:600px){
+  .upload-modal-overlay{align-items:center;}
+  .upload-modal{border-radius:14px!important;max-height:85vh;}
+}
+.upload-modal{background:var(--card);width:100%;max-width:600px;border-radius:16px 16px 0 0;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;}
+.upload-modal-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--card);}
+.upload-modal-title{font-size:15px;font-weight:700;color:var(--navy);flex:1;}
+.upload-modal-flight{font-size:12px;color:var(--text-muted);}
+.upload-modal-close{background:transparent;border:none;font-size:22px;color:var(--text-muted);cursor:pointer;line-height:1;padding:2px 6px;}
+.upload-modal-body{flex:1;overflow-y:auto;padding:20px;}
+
+/* picker state */
+.upload-drop-zone{border:2.5px dashed var(--teal);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;background:rgba(47,152,121,.03);}
+.upload-drop-zone:hover,.upload-drop-zone.drag-over{background:rgba(47,152,121,.07);border-color:#1a7e62;}
+.upload-drop-icon{font-size:36px;margin-bottom:10px;}
+.upload-drop-label{font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px;}
+.upload-drop-sub{font-size:12px;color:var(--text-muted);}
+.upload-file-input{display:none;}
+.upload-selected-file{margin-top:12px;padding:10px 14px;background:#f0faf5;border:1px solid rgba(47,152,121,.3);border-radius:8px;font-size:13px;font-weight:600;color:var(--teal);display:none;align-items:center;gap:8px;}
+.upload-selected-file.show{display:flex;}
+.upload-selected-file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.upload-file-clear{background:transparent;border:none;font-size:16px;color:var(--text-muted);cursor:pointer;flex-shrink:0;}
+.btn-upload{width:100%;height:50px;margin-top:14px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+.btn-upload:disabled{opacity:.5;cursor:not-allowed;}
+.btn-upload:hover:not(:disabled){background:#267e65;}
+
+/* processing state */
+.upload-processing{text-align:center;padding:32px 0;}
+.upload-processing-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+.upload-processing-label{font-size:14px;font-weight:600;color:var(--navy);}
+.upload-processing-sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
+
+/* review state */
+.review-summary{display:flex;align-items:center;gap:12px;padding:10px 0 14px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+.review-count{font-size:13px;color:var(--text-dim);}
+.review-flags{font-size:12px;display:flex;gap:8px;margin-left:auto;}
+.flag-high{color:var(--teal);font-weight:600;}
+.flag-low{color:var(--yellow);font-weight:600;}
+.flag-missing{color:var(--red);font-weight:600;}
+.review-instruction{font-size:12px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:#fffbf0;border-radius:6px;border-left:3px solid var(--yellow);}
+
+.review-table-wrap{overflow-x:auto;margin-bottom:14px;}
+.review-table{width:100%;border-collapse:collapse;font-size:13px;}
+.review-table th{background:#f0f4f9;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);padding:7px 8px;border-bottom:2px solid var(--border);white-space:nowrap;text-align:left;}
+.review-table td{padding:4px 4px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.review-table tr:last-child td{border-bottom:none;}
+
+.rt-input{width:100%;min-width:80px;height:34px;padding:0 7px;border:1.5px solid var(--input-border);border-radius:5px;font-size:13px;font-family:inherit;color:var(--text);background:var(--input-bg);outline:none;}
+.rt-input:focus{border-color:var(--navy);background:#fff;}
+.rt-input.conf-low{border-color:var(--yellow);background:#fffbf0;}
+.rt-input.conf-missing{border-color:var(--red);background:#fff5f5;}
+.rt-input.conf-missing:focus{border-color:var(--red);}
+
+.rt-select{height:34px;padding:0 6px;border:1.5px solid var(--input-border);border-radius:5px;font-size:13px;font-family:inherit;color:var(--text);background:var(--input-bg);outline:none;appearance:none;-webkit-appearance:none;min-width:56px;}
+.rt-select.conf-low{border-color:var(--yellow);background:#fffbf0;}
+.rt-select.conf-missing{border-color:var(--red);background:#fff5f5;}
+
+.rt-del{background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px;border-radius:4px;line-height:1;}
+.rt-del:hover{color:var(--red);}
+
+.conf-dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.conf-dot.high{background:var(--lime);}
+.conf-dot.low{background:var(--yellow);}
+.conf-dot.missing{background:var(--red);}
+
+.btn-commit{width:100%;height:52px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+.btn-commit:disabled{opacity:.4;cursor:not-allowed;}
+.btn-commit:hover:not(:disabled){background:var(--navy-dk);}
+.commit-warning{font-size:12px;color:var(--red);margin-bottom:8px;text-align:center;display:none;}
+.commit-warning.show{display:block;}
+
+/* success state */
+.upload-success{text-align:center;padding:32px 0;}
+.upload-success-icon{font-size:48px;margin-bottom:12px;}
+.upload-success-label{font-size:16px;font-weight:700;color:var(--teal);margin-bottom:6px;}
+.upload-success-sub{font-size:13px;color:var(--text-muted);}
+.btn-upload-done{margin-top:20px;height:44px;padding:0 28px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+
 /* ── REFRESH BTN ─────────────────────────────────────────────────────────── */
 .btn-refresh{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.75);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;}
 .btn-refresh:hover{background:rgba(255,255,255,.1);}
@@ -464,6 +552,69 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
   </div>
 </div>
 
+<!-- Upload manifest modal -->
+<div class="upload-modal-overlay" id="upload-modal-overlay">
+  <div class="upload-modal">
+    <div class="upload-modal-hdr">
+      <div>
+        <div class="upload-modal-title">Upload Inbound Manifest</div>
+        <div class="upload-modal-flight" id="upload-modal-flight"></div>
+      </div>
+      <button class="upload-modal-close" id="upload-modal-close">&times;</button>
+    </div>
+    <div class="upload-modal-body" id="upload-modal-body">
+      <div id="upload-state-picker">
+        <div class="upload-drop-zone" id="upload-drop-zone">
+          <div class="upload-drop-icon">&#128196;</div>
+          <div class="upload-drop-label">Drop manifest here or tap to browse</div>
+          <div class="upload-drop-sub">PDF, JPG, or PNG &bull; Max 15 MB</div>
+          <input type="file" class="upload-file-input" id="upload-file-input" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+        <div class="upload-selected-file" id="upload-selected-file">
+          <span>&#128196;</span>
+          <span class="upload-selected-file-name" id="upload-file-name"></span>
+          <button class="upload-file-clear" id="upload-file-clear">&times;</button>
+        </div>
+        <button class="btn-upload" id="btn-upload" disabled>&#9650; Extract Passengers</button>
+      </div>
+      <div id="upload-state-processing" style="display:none">
+        <div class="upload-processing">
+          <div class="upload-processing-spinner"></div>
+          <div class="upload-processing-label">Extracting passengers...</div>
+          <div class="upload-processing-sub">This may take 10-20 seconds</div>
+        </div>
+      </div>
+      <div id="upload-state-review" style="display:none">
+        <div class="review-summary">
+          <span class="review-count" id="review-count"></span>
+          <div class="review-flags">
+            <span class="flag-high" id="flag-high"></span>
+            <span class="flag-low" id="flag-low"></span>
+            <span class="flag-missing" id="flag-missing"></span>
+          </div>
+        </div>
+        <div class="review-instruction">&#9888; Yellow fields are uncertain. Red fields are missing — must be filled before committing.</div>
+        <div class="review-table-wrap">
+          <table class="review-table">
+            <thead><tr><th>#</th><th>First Name</th><th>Last Name</th><th>DOB</th><th>Type</th><th></th></tr></thead>
+            <tbody id="review-tbody"></tbody>
+          </table>
+        </div>
+        <div class="commit-warning" id="commit-warning">Fill in all red fields before committing.</div>
+        <button class="btn-commit" id="btn-commit">&#10003; Commit to Pool</button>
+      </div>
+      <div id="upload-state-success" style="display:none">
+        <div class="upload-success">
+          <div class="upload-success-icon">&#9989;</div>
+          <div class="upload-success-label" id="upload-success-label"></div>
+          <div class="upload-success-sub">Passengers added to pool. Original manifest saved to SharePoint.</div>
+          <button class="btn-upload-done" id="btn-upload-done">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Edit pax modal -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
@@ -528,7 +679,7 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-var WORKER = 'https://manifests.loomex-it.workers.dev';
+var WORKER = 'https://loomi-manifest.loomex-it.workers.dev';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 var hubToken = '';
@@ -628,16 +779,28 @@ function renderFlights() {
         '<div class="fc-stat"><span class="fc-stat-val">' + totalCarry + '</span>Carry lbs</div>' +
         '<div class="fc-stat"><span class="fc-stat-val">' + (totalLug + totalCarry) + '</span>Total lbs</div>' +
       '</div>' +
+      (f.status !== 'Departed'
+        ? '<div class="fc-actions"><button class="fc-action-btn upload-btn" data-id="' + f.id + '" data-num="' + esc(f.flightNumber) + '">&#9650; Upload Manifest</button></div>'
+        : '') +
     '</div>';
   }).join('');
 
   // Click handlers
   container.querySelectorAll('.flight-card').forEach(function(card) {
-    card.addEventListener('click', function() {
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.fc-action-btn')) return; // don't select card when clicking upload
       var id = this.getAttribute('data-id');
       selectedFlightId = id;
-      renderFlights(); // re-render to update active state
+      renderFlights();
       renderPaxPanel(id);
+    });
+  });
+
+  // Upload button handlers
+  container.querySelectorAll('.upload-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openUploadModal(this.getAttribute('data-id'), this.getAttribute('data-num'));
     });
   });
 }
@@ -990,7 +1153,218 @@ function deletePax() {
     .catch(function(e) { showToast('Delete failed: ' + e.message, 'err'); });
 }
 
-// ── API ───────────────────────────────────────────────────────────────────────
+// ── MANIFEST UPLOAD ───────────────────────────────────────────────────────────
+var uploadFlightId = '';
+var uploadFlightNum = '';
+var uploadSelectedFile = null;
+var uploadRows = [];
+var uploadId = '';
+
+function openUploadModal(flightId, flightNum) {
+  uploadFlightId = flightId;
+  uploadFlightNum = flightNum;
+  uploadSelectedFile = null;
+  uploadRows = [];
+  uploadId = '';
+
+  document.getElementById('upload-modal-flight').textContent = 'Flight ' + flightNum;
+  setUploadState('picker');
+  resetFilePicker();
+
+  document.getElementById('upload-modal-overlay').classList.add('open');
+  setupUploadModal();
+}
+
+function closeUploadModal() {
+  document.getElementById('upload-modal-overlay').classList.remove('open');
+  if (uploadId) { loadData(); } // refresh pax count if we committed
+}
+
+function setupUploadModal() {
+  // Only wire once
+  if (document.getElementById('upload-modal-overlay').dataset.wired) return;
+  document.getElementById('upload-modal-overlay').dataset.wired = '1';
+
+  document.getElementById('upload-modal-close').addEventListener('click', closeUploadModal);
+  document.getElementById('upload-modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeUploadModal();
+  });
+  document.getElementById('btn-upload-done').addEventListener('click', closeUploadModal);
+
+  // Drop zone
+  var dz = document.getElementById('upload-drop-zone');
+  dz.addEventListener('click', function() { document.getElementById('upload-file-input').click(); });
+  dz.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+  dz.addEventListener('drop', function(e) {
+    e.preventDefault(); this.classList.remove('drag-over');
+    var f = e.dataTransfer.files[0];
+    if (f) selectFile(f);
+  });
+
+  document.getElementById('upload-file-input').addEventListener('change', function() {
+    if (this.files[0]) selectFile(this.files[0]);
+  });
+
+  document.getElementById('upload-file-clear').addEventListener('click', function(e) {
+    e.stopPropagation();
+    resetFilePicker();
+  });
+
+  document.getElementById('btn-upload').addEventListener('click', function() {
+    if (uploadSelectedFile) doUpload();
+  });
+}
+
+function selectFile(file) {
+  var allowed = ['application/pdf','image/jpeg','image/jpg','image/png'];
+  var ext = (file.name || '').toLowerCase();
+  if (!allowed.includes(file.type) && !ext.endsWith('.pdf') && !ext.endsWith('.jpg') && !ext.endsWith('.jpeg') && !ext.endsWith('.png')) {
+    showToast('PDF, JPG, or PNG only', 'err'); return;
+  }
+  if (file.size > 15 * 1024 * 1024) { showToast('File too large (max 15 MB)', 'err'); return; }
+  uploadSelectedFile = file;
+  document.getElementById('upload-file-name').textContent = file.name;
+  document.getElementById('upload-selected-file').classList.add('show');
+  document.getElementById('btn-upload').disabled = false;
+}
+
+function resetFilePicker() {
+  uploadSelectedFile = null;
+  document.getElementById('upload-file-input').value = '';
+  document.getElementById('upload-file-name').textContent = '';
+  document.getElementById('upload-selected-file').classList.remove('show');
+  document.getElementById('btn-upload').disabled = true;
+}
+
+function setUploadState(state) {
+  ['picker','processing','review','success'].forEach(function(s) {
+    document.getElementById('upload-state-' + s).style.display = s === state ? 'block' : 'none';
+  });
+}
+
+function doUpload() {
+  if (!uploadSelectedFile) return;
+  setUploadState('processing');
+
+  var formData = new FormData();
+  formData.append('file', uploadSelectedFile);
+
+  var url = WORKER + '/api/manifest-upload/' + uploadFlightId + '?token=' + encodeURIComponent(hubToken);
+  fetch(url, { method: 'POST', body: formData })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { setUploadState('picker'); showToast('Extraction error: ' + data.error, 'err'); return; }
+      uploadId = data.uploadId;
+      uploadRows = data.rows || [];
+      renderReviewTable();
+      setUploadState('review');
+    })
+    .catch(function(e) {
+      setUploadState('picker');
+      showToast('Upload failed: ' + e.message, 'err');
+    });
+}
+
+function renderReviewTable() {
+  var tbody = document.getElementById('review-tbody');
+  var high = 0, low = 0, missing = 0;
+
+  tbody.innerHTML = uploadRows.map(function(row, i) {
+    var c = row.confidence || {};
+    var firstClass = !row.firstName ? 'conf-missing' : c.firstName === 'low' ? 'conf-low' : '';
+    var lastClass = !row.lastName ? 'conf-missing' : c.lastName === 'low' ? 'conf-low' : '';
+    var dobClass = !row.dob ? 'conf-missing' : c.dob === 'low' ? 'conf-low' : '';
+    var ptClass = !row.passengerType ? 'conf-missing' : c.passengerType === 'low' ? 'conf-low' : '';
+
+    // Count flags
+    [firstClass, lastClass, dobClass, ptClass].forEach(function(cl) {
+      if (cl === 'conf-missing') missing++;
+      else if (cl === 'conf-low') low++;
+      else high++;
+    });
+
+    return '<tr data-idx="' + i + '">' +
+      '<td style="color:var(--text-muted);font-size:12px;padding-left:6px">' + (i+1) + '</td>' +
+      '<td><input class="rt-input ' + firstClass + '" data-field="firstName" value="' + esc(row.firstName||'') + '" placeholder="First name"></td>' +
+      '<td><input class="rt-input ' + lastClass + '" data-field="lastName" value="' + esc(row.lastName||'') + '" placeholder="Last name"></td>' +
+      '<td><input class="rt-input ' + dobClass + '" data-field="dob" type="date" value="' + esc(row.dob||'') + '"></td>' +
+      '<td><select class="rt-select ' + ptClass + '" data-field="passengerType">' +
+        '<option value="">--</option>' +
+        ['F','M','C','I'].map(function(t) { return '<option value="' + t + '"' + (row.passengerType===t?' selected':'') + '>' + t + '</option>'; }).join('') +
+      '</select></td>' +
+      '<td><button class="rt-del" data-idx="' + i + '">&times;</button></td>' +
+    '</tr>';
+  }).join('');
+
+  // Update flag counts
+  document.getElementById('review-count').textContent = uploadRows.length + ' passenger' + (uploadRows.length === 1 ? '' : 's') + ' extracted';
+  document.getElementById('flag-high').textContent = high ? '&#10003; ' + high + ' confident' : '';
+  document.getElementById('flag-low').textContent = low ? '&#9888; ' + low + ' uncertain' : '';
+  document.getElementById('flag-missing').textContent = missing ? '&#9888; ' + missing + ' missing' : '';
+
+  // Wire input changes back to uploadRows
+  tbody.querySelectorAll('.rt-input,.rt-select').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var idx = parseInt(this.closest('tr').getAttribute('data-idx'));
+      var field = this.getAttribute('data-field');
+      uploadRows[idx][field] = this.value;
+      // Remove missing class when filled
+      if (this.value) {
+        this.classList.remove('conf-missing');
+        if (!uploadRows[idx].confidence) uploadRows[idx].confidence = {};
+        uploadRows[idx].confidence[field] = 'high';
+      }
+      updateCommitButton();
+    });
+  });
+
+  // Delete row
+  tbody.querySelectorAll('.rt-del').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var idx = parseInt(this.getAttribute('data-idx'));
+      uploadRows.splice(idx, 1);
+      renderReviewTable();
+      updateCommitButton();
+    });
+  });
+
+  // Commit button
+  document.getElementById('btn-commit').onclick = function() { doCommit(); };
+  updateCommitButton();
+}
+
+function updateCommitButton() {
+  var hasMissing = uploadRows.some(function(row) {
+    return !row.firstName || !row.lastName || !row.passengerType;
+  });
+  document.getElementById('btn-commit').disabled = hasMissing || uploadRows.length === 0;
+  document.getElementById('commit-warning').classList.toggle('show', hasMissing);
+}
+
+function doCommit() {
+  var btn = document.getElementById('btn-commit');
+  btn.disabled = true;
+  btn.textContent = 'Committing...';
+
+  var url = WORKER + '/api/manifest-commit/' + uploadId + '?token=' + encodeURIComponent(hubToken);
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rows: uploadRows, flightId: uploadFlightId }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { btn.disabled = false; btn.textContent = '\u2713 Commit to Pool'; showToast('Commit error: ' + data.error, 'err'); return; }
+    document.getElementById('upload-success-label').textContent = data.committed + ' passenger' + (data.committed === 1 ? '' : 's') + ' added to pool';
+    setUploadState('success');
+  })
+  .catch(function(e) {
+    btn.disabled = false; btn.textContent = '\u2713 Commit to Pool';
+    showToast('Commit failed: ' + e.message, 'err');
+  });
+}
+
 function api(method, path, body) {
   var opts = {
     method: method,
