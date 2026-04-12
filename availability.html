@@ -975,7 +975,8 @@ function showPushPrompt(reg) {
   if (document.getElementById('push-prompt-banner')) return;
   var banner = document.createElement('div');
   banner.id = 'push-prompt-banner';
-  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a3a5c;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;z-index:999;font-family:IBM Plex Sans,sans-serif;font-size:14px;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,.3);';
+  var navOffset = (('standalone' in navigator && navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches) ? '52px' : '0px';
+  banner.style.cssText = 'position:fixed;bottom:' + navOffset + ';left:0;right:0;background:#1a3a5c;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;z-index:999;font-family:IBM Plex Sans,sans-serif;font-size:14px;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,.3);';
   banner.innerHTML = '<span>&#128276; Get notified when your deployment is ending so you can update your availability.</span>'
     + '<div style="display:flex;gap:8px;flex-shrink:0">'
     + '<button id="push-dismiss-btn" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:7px 12px;border-radius:6px;font-family:IBM Plex Sans,sans-serif;font-size:13px;cursor:pointer;">Not now</button>'
