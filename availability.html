@@ -499,6 +499,8 @@ body {
 
 <script>
 var WORKER = 'https://evacscheduling.loomex-it.workers.dev';
+var NOTIFY_WORKER = 'https://loomex-notify.loomex-it.workers.dev';
+var VAPID_PUBLIC_KEY = 'BE5bELNh8231dwJ1v2bCCok1jxaUQYxID0xiLVkvHiT3CKf7qDfawejoPhNIeWBssbPWb09XWZEwK_1v8-huzR0';
 var MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -803,6 +805,7 @@ async function initApp(){
   await loadDocs();     // sets docStatus
   renderDocs();
   renderCalendar();
+  setupPushNotifications();
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
@@ -943,6 +946,84 @@ function showDeploymentPopup(dep){
 }
 function closePopup(){ document.getElementById('popup-overlay').classList.remove('open'); }
 function shiftMonth(d){ calMonth+=d; if(calMonth<0){calMonth=11;calYear--;} if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+
+  
+// ── Push Notifications ────────────────────────────────────────────────────────
+
+function urlB64ToUint8Array(b64) {
+  var pad = '='.repeat((4 - b64.length % 4) % 4);
+  var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  var arr = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function setupPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !auth) return;
+  if (localStorage.getItem('loomi_push_dismissed') === '1') return;
+  try {
+    var reg = await navigator.serviceWorker.ready;
+    var existing = await reg.pushManager.getSubscription();
+    if (existing) { await registerPushSub(existing); return; }
+    // Slight delay so the page settles before prompting
+    setTimeout(function() { showPushPrompt(reg); }, 2000);
+  } catch (e) { console.warn('Push setup:', e); }
+}
+
+function showPushPrompt(reg) {
+  if (document.getElementById('push-prompt-banner')) return;
+  var banner = document.createElement('div');
+  banner.id = 'push-prompt-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a3a5c;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;z-index:999;font-family:IBM Plex Sans,sans-serif;font-size:14px;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,.3);';
+  banner.innerHTML = '<span>&#128276; Get notified when your deployment is ending so you can update your availability.</span>'
+    + '<div style="display:flex;gap:8px;flex-shrink:0">'
+    + '<button id="push-dismiss-btn" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:7px 12px;border-radius:6px;font-family:IBM Plex Sans,sans-serif;font-size:13px;cursor:pointer;">Not now</button>'
+    + '<button id="push-enable-btn" style="background:#00A651;border:none;color:#fff;padding:7px 14px;border-radius:6px;font-family:IBM Plex Sans,sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Enable</button>'
+    + '</div>';
+  document.body.appendChild(banner);
+  document.getElementById('push-dismiss-btn').onclick = function() {
+    banner.remove();
+    localStorage.setItem('loomi_push_dismissed', '1');
+  };
+  document.getElementById('push-enable-btn').onclick = async function() {
+    banner.remove();
+    try {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+      var sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+      await registerPushSub(sub);
+      showToast('Notifications enabled!', 'success');
+    } catch (e) { console.warn('Push subscribe failed:', e); }
+  };
+}
+
+async function registerPushSub(sub) {
+  var hub = '';
+  if (deployments && deployments.length) {
+    var now = new Date().toISOString().slice(0, 10);
+    var active = deployments.find(function(d) { return d.startDate <= now && d.endDate >= now; });
+    if (active) hub = active.location || '';
+    else {
+      var upcoming = deployments.filter(function(d) { return d.startDate > now; });
+      if (upcoming.length) hub = upcoming[0].location || '';
+    }
+  }
+  try {
+    await fetch(NOTIFY_WORKER + '/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contractorId: auth.contractorId,
+        email: auth.email,
+        hub: hub,
+        subscription: sub.toJSON()
+      })
+    });
+  } catch (e) { console.warn('Sub registration failed:', e); }
+}
 
 // ── Wire-up ───────────────────────────────────────────────────────────────────
 
