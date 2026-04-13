@@ -373,6 +373,11 @@
         </label>
       </div>
       <div id="reimbursement-check" style="display:none;margin-top:14px;background:#fff8e1;border-left:4px solid #E8A317;padding:12px 14px;border-radius:4px;">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:bold;color:#555;display:block;margin-bottom:4px;">Full Name for Cheque Reimbursement</label>
+          <input type="text" id="cm-cheque-name" placeholder="Enter full legal name" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+          <div style="margin-top:6px;font-size:11px;color:#c0392b;font-weight:bold;">⚠ Spelling must be exact — this name will appear on the reimbursement cheque.</div>
+        </div>
         <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer;">
           <input type="checkbox" id="cpp-confirm" style="width:20px;height:20px;margin-top:1px;accent-color:var(--navy);flex-shrink:0;">
           <span>I confirm that the purchases meet the requirements of the clothing purchase program and that the community member is eligible for reimbursement.</span>
@@ -705,10 +710,17 @@ function goToSignatures() {
   if (receiptFiles.length === 0) { btn.disabled = false; alert('Please attach at least one receipt.'); return; }
   const paidBy = document.querySelector('input[name="paid-by"]:checked').value;
   const reimbursementRequired = paidBy === 'Community Member';
+  const chequeName = document.getElementById('cm-cheque-name').value.trim();
+  if (reimbursementRequired && !chequeName) {
+    btn.disabled = false;
+    alert('Please enter the full name for cheque reimbursement.');
+    return;
+  }
   if (reimbursementRequired && !document.getElementById('cpp-confirm').checked) {
     btn.disabled = false;
     alert('Please confirm the purchases meet the clothing purchase program requirements.');
     return;
+  }
   }
 
   const members = [];
@@ -917,6 +929,7 @@ async function doFinalSubmit() {
   const submissionRef          = `ALLOT-${currentHub.toUpperCase().substring(0,3)}-${Date.now()}`;
   const paidBy                 = document.querySelector('input[name="paid-by"]:checked').value;
   const reimbursementRequired  = paidBy === 'Community Member';
+  const chequeName             = reimbursementRequired ? document.getElementById('cm-cheque-name').value.trim() : null;
   const submissionDate = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
   const submissionTime = new Date().toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const members        = pendingMembers;
@@ -948,7 +961,8 @@ async function doFinalSubmit() {
           submittedBy:            staffName,
           submissionRef,
           paidBy,
-          reimbursementRequired
+          reimbursementRequired,
+          chequeName
         }));
     const recRes  = await fetch(`${WORKER}/allotments`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -971,7 +985,7 @@ async function doFinalSubmit() {
         receiptGraphPaths: uploadedReceipts.map(r => r.graphPath),
         signatures, guardianName,
         minors: members.filter(m => m.isMinor).map(m => m.name),
-        paperSig, paidBy, reimbursementRequired
+        paperSig, paidBy, reimbursementRequired, chequeName
       })
     }).then(r => r.json()).then(pdfData => {
       if (pdfData.pdfUrl && recordIds.length) {
@@ -1045,6 +1059,7 @@ function resetForm() {
   document.querySelector('input[name="paid-by"][value="Loomex"]').checked = true;
   document.getElementById('reimbursement-check').style.display = 'none';
   document.getElementById('cpp-confirm').checked = false;
+  document.getElementById('cm-cheque-name').value = '';
   pendingMembers = []; signatures = {};
   document.getElementById('ev-search').value  = '';
   document.getElementById('upload-filename').textContent = '';
