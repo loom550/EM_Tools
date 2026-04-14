@@ -378,9 +378,33 @@
           <input type="text" id="cm-cheque-name" placeholder="Enter full legal name" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
           <div style="margin-top:6px;font-size:11px;color:#c0392b;font-weight:bold;">⚠ Spelling must be exact — this name will appear on the reimbursement cheque.</div>
         </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px;font-weight:bold;color:#555;display:block;margin-bottom:8px;">Payment Routing</label>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;">
+              <input type="radio" name="payment-routing" value="Cheque" checked style="accent-color:var(--navy);width:18px;height:18px;" onchange="handlePaymentRoutingChange()"> Cheque
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;">
+              <input type="radio" name="payment-routing" value="DirectDeposit" style="accent-color:var(--navy);width:18px;height:18px;" onchange="handlePaymentRoutingChange()"> Direct Deposit
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;">
+              <input type="radio" name="payment-routing" value="LoomexVendor" style="accent-color:var(--navy);width:18px;height:18px;" onchange="handlePaymentRoutingChange()"> Existing Loomex Vendor
+            </label>
+          </div>
+          <div id="dd-upload-wrap" style="display:none;margin-top:12px;">
+            <label style="font-size:12px;font-weight:bold;color:#555;display:block;margin-bottom:4px;">Banking Information / Void Cheque</label>
+            <div class="upload-zone" id="dd-upload-zone" onclick="document.getElementById('dd-file').click()" style="padding:18px 16px;">
+              <div class="upload-icon">🏦</div>
+              <div class="upload-text">Tap to attach void cheque or banking doc</div>
+              <div class="upload-filename" id="dd-upload-filename"></div>
+              <input type="file" id="dd-file" accept="image/*,application/pdf" onchange="handleDDFileSelect(this)">
+            </div>
+          </div>
+        </div>
         <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer;">
           <input type="checkbox" id="cpp-confirm" style="width:20px;height:20px;margin-top:1px;accent-color:var(--navy);flex-shrink:0;">
           <span>I confirm that the purchases meet the requirements of the clothing purchase program and that the community member is eligible for reimbursement.</span>
+        </label>
         </label>
       </div>
     </div>
@@ -469,6 +493,7 @@ let evacuees        = [];
 let allotmentTotals = {};
 let selectedIds     = new Set();
 let receiptFiles    = [];
+let ddFile          = null;
 let currentFilter   = 'all';
 let pendingMembers  = [];   // members collected at validation step
 let signatures      = {};   // evacueeId -> base64 png, 'guardian' -> base64 png
@@ -513,8 +538,26 @@ async function doAuth() {
 function handlePaidByChange() {
   const isCM = document.querySelector('input[name="paid-by"]:checked').value === 'Community Member';
   document.getElementById('reimbursement-check').style.display = isCM ? 'block' : 'none';
-  if (!isCM) document.getElementById('cpp-confirm').checked = false;
-}  
+  if (!isCM) {
+    document.getElementById('cpp-confirm').checked = false;
+    document.querySelector('input[name="payment-routing"][value="Cheque"]').checked = true;
+    handlePaymentRoutingChange();
+  }
+}
+
+function handlePaymentRoutingChange() {
+  const routing = document.querySelector('input[name="payment-routing"]:checked').value;
+  document.getElementById('dd-upload-wrap').style.display = routing === 'DirectDeposit' ? 'block' : 'none';
+  if (routing !== 'DirectDeposit') { ddFile = null; document.getElementById('dd-upload-filename').textContent = ''; document.getElementById('dd-upload-zone').classList.remove('has-file'); }
+}
+
+function handleDDFileSelect(input) {
+  if (input.files[0]) {
+    ddFile = input.files[0];
+    document.getElementById('dd-upload-filename').textContent = ddFile.name;
+    document.getElementById('dd-upload-zone').classList.add('has-file');
+  }
+}
 
 // ---- DATA LOAD ----
 
@@ -708,12 +751,20 @@ function goToSignatures() {
   if (!staffName)         { btn.disabled = false; alert('Please enter your name.'); return; }
   if (selectedIds.size === 0) { btn.disabled = false; alert('Please select at least one community member.'); return; }
   if (receiptFiles.length === 0) { btn.disabled = false; alert('Please attach at least one receipt.'); return; }
-  const paidBy = document.querySelector('input[name="paid-by"]:checked').value;
-  const reimbursementRequired = paidBy === 'Community Member';
-  const chequeName = document.getElementById('cm-cheque-name').value.trim();
+  const paidBy                 = document.querySelector('input[name="paid-by"]:checked').value;
+  const reimbursementRequired  = paidBy === 'Community Member';
+  const chequeName             = reimbursementRequired ? document.getElementById('cm-cheque-name').value.trim() : null;
+  const paymentRouting         = reimbursementRequired ? document.querySelector('input[name="payment-routing"]:checked').value : null;
+  const isLoomexVendor         = paymentRouting === 'LoomexVendor';
   if (reimbursementRequired && !chequeName) {
     btn.disabled = false;
     alert('Please enter the full name for cheque reimbursement.');
+    return;
+  }
+const paymentRouting = reimbursementRequired ? document.querySelector('input[name="payment-routing"]:checked').value : 'Cheque';
+  if (reimbursementRequired && paymentRouting === 'DirectDeposit' && !ddFile) {
+    btn.disabled = false;
+    alert('Please attach banking information or a void cheque for direct deposit.');
     return;
   }
   if (reimbursementRequired && !document.getElementById('cpp-confirm').checked) {
@@ -935,6 +986,19 @@ async function doFinalSubmit() {
   const members        = pendingMembers;
 
   try {
+    // Upload DD file if present
+    let ddFileUrl = null;
+    if (ddFile) {
+      setProgress('Uploading banking information...', 15);
+      const ddFd = new FormData();
+      ddFd.append('file', ddFile);
+      ddFd.append('submissionRef', submissionRef);
+      const ddRes  = await fetch(`${WORKER}/upload-dd`, { method: 'POST', body: ddFd });
+      const ddData = await ddRes.json();
+      if (!ddData.fullUrl) throw new Error('Banking document upload failed');
+      ddFileUrl = ddData.fullUrl;
+    }
+
     setProgress(`Uploading ${receiptFiles.length} receipt(s)...`, 20);
     const uploadedReceipts = await Promise.all(receiptFiles.map((file, i) => {
       const fd = new FormData();
@@ -962,7 +1026,10 @@ async function doFinalSubmit() {
           submissionRef,
           paidBy,
           reimbursementRequired,
-          chequeName
+          chequeName,
+          paymentRouting,
+          isLoomexVendor,
+          ddFileUrl
         }));
     const recRes  = await fetch(`${WORKER}/allotments`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -985,7 +1052,7 @@ async function doFinalSubmit() {
         receiptGraphPaths: uploadedReceipts.map(r => r.graphPath),
         signatures, guardianName,
         minors: members.filter(m => m.isMinor).map(m => m.name),
-        paperSig, paidBy, reimbursementRequired, chequeName
+        paperSig, paidBy, reimbursementRequired, chequeName, paymentRouting, isLoomexVendor
       })
     }).then(r => r.json()).then(pdfData => {
       if (pdfData.pdfUrl && recordIds.length) {
@@ -1060,6 +1127,11 @@ function resetForm() {
   document.getElementById('reimbursement-check').style.display = 'none';
   document.getElementById('cpp-confirm').checked = false;
   document.getElementById('cm-cheque-name').value = '';
+  document.querySelector('input[name="payment-routing"][value="Cheque"]').checked = true;
+  document.getElementById('dd-upload-wrap').style.display = 'none';
+  document.getElementById('dd-upload-filename').textContent = '';
+  document.getElementById('dd-upload-zone').classList.remove('has-file');
+  ddFile = null;
   pendingMembers = []; signatures = {};
   document.getElementById('ev-search').value  = '';
   document.getElementById('upload-filename').textContent = '';
