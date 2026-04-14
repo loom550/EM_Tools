@@ -1345,6 +1345,8 @@ async function doFinalSubmit() {
   const paidBy                 = document.querySelector('input[name="paid-by"]:checked').value;
   const reimbursementRequired  = paidBy === 'Community Member';
   const chequeName             = reimbursementRequired ? document.getElementById('cm-cheque-name').value.trim() : null;
+  const paymentRouting         = reimbursementRequired ? document.querySelector('input[name="payment-routing"]:checked').value : 'Cheque';
+  const isLoomexVendor         = paymentRouting === 'LoomexVendor';
   const submissionDate = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
   const submissionTime = new Date().toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const members        = pendingMembers;
