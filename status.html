@@ -875,7 +875,8 @@ async function init(){
     document.title=`${cfg.name||activationId} | Loomex Emergency Operations`;
     document.getElementById('active-badge').style.display='';
     document.getElementById('export-btn').style.display='';
-    document.getElementById('activation-view').style.display='';
+    document.getElementById('activation-view').style.display = window.innerWidth <= 960 ? 'flex' : '';
+document.getElementById('activation-view').style.flexDirection = window.innerWidth <= 960 ? 'column' : '';
     renderAll();
 
     // Poll data every 30 s — worker handles override expiry server-side
