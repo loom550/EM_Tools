@@ -820,12 +820,47 @@ async function doModalUpload() {
       if (!data.success) throw new Error(data.error);
       setModalStatus('✅ CRJM file uploaded. Contractor marked complete.', 'success');
       showToast('CRJM uploaded', 'success');
+    try {
+    const b64 = await fileToBase64(modalFile);
+    const ext  = modalFile.name.split('.').pop().toLowerCase();
+    if (modalCtx.isCrjm) {
+      const res  = await fetch(`${WORKER}/hr-crjm-upload`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: sessionToken, contractorId: modalCtx.contractorId, contractorName: modalCtx.contractorName, contractorRecordId: modalCtx.contractorRecordId, fileBase64: b64, fileExt: ext }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      setModalStatus('✅ CRJM file uploaded. Contractor marked complete.', 'success');
+      showToast('CRJM uploaded', 'success');
     } else {
-      const labelMap = { resume: `${modalCtx.contractorName} - Resume`, aoda: `${modalCtx.contractorName} - AODA Certificate`, molhs: `${modalCtx.contractorName} - MOL H&S Certificate`, whmis: `${modalCtx.contractorName} - WHMIS Certificate`, drivers: `${modalCtx.contractorName} - Drivers License`, other: `${modalCtx.contractorName} - ${modalFile.name}` };
-      const fileName = `${labelMap[modalCtx.docType] || `${modalCtx.contractorName} - ${modalCtx.docLabel}`}.${ext}`;
+      const labelMap = {
+        resume:  `${modalCtx.contractorName} - Resume`,
+        aoda:    `${modalCtx.contractorName} - AODA Certificate`,
+        molhs:   `${modalCtx.contractorName} - MOL H&S Certificate`,
+        whmis:   `${modalCtx.contractorName} - WHMIS Certificate`,
+        drivers: `${modalCtx.contractorName} - Drivers License`,
+        other:   `${modalCtx.contractorName} - ${modalFile.name}`,
+      };
+      const checkboxMap = {
+        resume:  'Resume',
+        aoda:    'AODA Certificate',
+        molhs:   'Health & Safety Certificate',
+        whmis:   'WHMIS Certificate',
+        drivers: "Driver's License",
+      };
+      const base     = labelMap[modalCtx.docType] || `${modalCtx.contractorName} - ${modalCtx.docLabel}`;
+      const fileName = `${base}.${ext}`;
       const res  = await fetch(`${WORKER}/hr-file-upload`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: sessionToken, contractorId: modalCtx.contractorId, contractorName: modalCtx.contractorName, fileBase64: b64, fileName }),
+        body: JSON.stringify({
+          token:              sessionToken,
+          contractorId:       modalCtx.contractorId,
+          contractorName:     modalCtx.contractorName,
+          contractorRecordId: modalCtx.contractorRecordId,
+          fileBase64:         b64,
+          fileName,
+          checkboxField:      checkboxMap[modalCtx.docType] || null,
+        }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
