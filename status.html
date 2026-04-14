@@ -132,20 +132,33 @@
   .legend-text{font-size:.65rem;color:rgba(255,255,255,0.45);letter-spacing:.04em}
 
   /* ── MASTER VIEW ── */
-  #master-view{flex:1;padding:2rem;position:relative;z-index:1}
-  .master-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;max-width:1100px;margin:0 auto}
-  .master-card{background:linear-gradient(135deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.02) 100%);border:1px solid rgba(47,152,121,0.2);border-radius:8px;padding:1.25rem;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .15s}
-  .master-card:hover{border-color:rgba(47,152,121,0.5);box-shadow:0 8px 24px rgba(0,0,0,0.4);transform:translateY(-2px)}
-  .master-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:1rem}
-  .master-card-name{font-family:'Epilogue',sans-serif;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;color:#fff}
-  .master-live-badge{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:3px;background:rgba(47,152,121,0.15);border:1px solid rgba(47,152,121,0.35);color:var(--teal-500);white-space:nowrap;flex-shrink:0}
-  .master-pulse{width:6px;height:6px;border-radius:50%;background:var(--teal-500);box-shadow:0 0 6px var(--teal-500);animation:pulse 2s ease-in-out infinite}
-  .master-manual-badge{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:3px;background:rgba(217,134,15,0.15);border:1px solid rgba(217,134,15,0.35);color:var(--amber-500);white-space:nowrap;flex-shrink:0}
-  .master-card-stat{margin-bottom:.75rem}
-  .master-stat-num{font-family:'JetBrains Mono',monospace;font-size:2.4rem;font-weight:700;color:#fff;line-height:1}
-  .master-stat-label{font-size:.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
-  .master-card-footer{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:rgba(255,255,255,0.35);padding-top:.75rem;border-top:1px solid rgba(255,255,255,0.06)}
-  .master-loading,.master-empty{grid-column:1/-1;text-align:center;padding:4rem;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:rgba(255,255,255,0.3);letter-spacing:.1em}
+  #master-view{flex:1;position:relative;z-index:1;display:flex;flex-direction:column}
+  .master-map-wrap{position:relative;flex:1;min-height:500px;overflow:hidden}
+  .master-map-img{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;height:92%;object-fit:contain;filter:brightness(.45) sepia(1) hue-rotate(175deg) saturate(.8) brightness(1.6);opacity:.9}
+  .master-overlay{position:absolute;inset:0}
+  .master-pin{position:absolute;transform:translate(-50%,-50%);cursor:default;z-index:5}
+  .master-pin-dot{width:14px;height:14px;border-radius:50%;background:var(--host-green);border:2px solid rgba(255,255,255,0.6);box-shadow:0 0 10px var(--host-green),0 0 20px rgba(47,152,121,0.4);transition:transform .2s}
+  .master-pin:hover .master-pin-dot{transform:scale(1.3)}
+  .master-pin-card{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:rgba(10,25,41,0.97);border:1px solid rgba(47,152,121,0.4);border-left:3px solid var(--host-green);border-radius:6px;padding:.6rem .85rem;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;min-width:140px}
+  .master-pin:hover .master-pin-card{opacity:1}
+  .master-pin-name{font-family:'Epilogue',sans-serif;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:#fff;margin-bottom:3px}
+  .master-pin-count{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--teal-500);line-height:1}
+  .master-pin-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;margin-top:1px}
+  .master-pin-card::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:rgba(47,152,121,0.4)}
+  .master-totals{display:flex;align-items:center;gap:2rem;padding:.75rem 2rem;background:rgba(10,25,41,0.85);border-top:1px solid rgba(47,152,121,0.15);backdrop-filter:blur(8px);flex-shrink:0}
+  .master-total-item{display:flex;flex-direction:column}
+  .master-total-num{font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:700;color:#fff;line-height:1}
+  .master-total-label{font-size:.6rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+  .master-divider{width:1px;height:2rem;background:rgba(255,255,255,.1)}
+  .master-activation-list{display:flex;gap:.5rem;flex-wrap:wrap;margin-left:auto}
+  .master-act-pill{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:4px 10px;border-radius:3px;background:rgba(47,152,121,0.1);border:1px solid rgba(47,152,121,0.25);color:var(--teal-500);letter-spacing:.04em}
+  .master-loading-msg{flex:1;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:rgba(255,255,255,0.3);letter-spacing:.1em}
+  @media(max-width:960px){
+    .master-map-wrap{min-height:55vw}
+    .master-totals{padding:.6rem 1rem;gap:1rem}
+    .master-total-num{font-size:1.2rem}
+    .master-activation-list{display:none}
+  }
 
   /* ── MODALS ── */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;backdrop-filter:blur(6px);align-items:center;justify-content:center}
@@ -270,7 +283,22 @@
 
 <!-- MASTER VIEW -->
 <div id="master-view" style="display:none">
-  <div class="master-grid" id="master-grid"></div>
+  <div class="master-map-wrap">
+    <img class="master-map-img" id="master-map-img" src="" alt="Ontario Map">
+    <div class="master-overlay" id="master-overlay"></div>
+  </div>
+  <div class="master-totals" id="master-totals" style="display:none">
+    <div class="master-total-item">
+      <div class="master-total-num" id="master-total-evacuees">—</div>
+      <div class="master-total-label">Total Evacuees</div>
+    </div>
+    <div class="master-divider"></div>
+    <div class="master-total-item">
+      <div class="master-total-num" id="master-total-sites">—</div>
+      <div class="master-total-label">Host Sites</div>
+    </div>
+    <div class="master-activation-list" id="master-act-list"></div>
+  </div>
 </div>
 
 <!-- ACTIVATION VIEW -->
@@ -595,13 +623,13 @@ function renderTimestamp(){
   const box=document.getElementById('ts-box');
   if (!el) return;
   if (box) box.style.display='';
-  if (dataSource === 'loomi') {
-    el.innerHTML = `<span class="ts-live">● LIVE</span>`;
+  if (dataSource==='loomi'){
+    el.innerHTML=`<span class="ts-live">● LIVE</span>`;
   } else if (lastUpdated){
     const d=new Date(lastUpdated);
     const ds=d.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
     const ts=d.toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
-    el.innerHTML=`<span class="ts-override">${ds} · ${ts}</span>`;
+    el.innerHTML=`As of <span class="ts-override">${ds} · ${ts}</span>`;
   } else {
     el.textContent='Not yet updated';
   }
@@ -742,37 +770,91 @@ function renderAll(){
 // MASTER VIEW
 // ─────────────────────────────────────────────────────────────────────────────
 async function renderMasterView(){
-  document.getElementById('master-view').style.display='';
+  document.getElementById('master-view').style.display='flex';
   document.getElementById('activation-view').style.display='none';
   document.getElementById('error-view').style.display='none';
   document.getElementById('active-badge').style.display='none';
   document.getElementById('ts-box').style.display='none';
   document.getElementById('export-btn').style.display='none';
   document.getElementById('header-title').textContent='Loomex Emergency Operations';
-  document.getElementById('header-sub').textContent='Active Activations';
-  document.title='Loomex EOC — Activations';
+  document.getElementById('header-sub').textContent='System Status — All Activations';
+  document.title='Loomex EOC — Overview';
   renderAuthControls();
-  const grid=document.getElementById('master-grid');
-  grid.innerHTML='<div class="master-loading">Loading activations…</div>';
+
+  // set map image
+  const mapImg=document.getElementById('master-map-img');
+  if (MAP_SRC) mapImg.src=MAP_SRC;
+
+  const overlay=document.getElementById('master-overlay');
+  overlay.innerHTML='';
+  document.getElementById('master-totals').style.display='none';
+
   try {
     const list=await api('/activations');
-    if (!list.length){ grid.innerHTML='<div class="master-empty">No active activations.</div>'; return; }
-    grid.innerHTML='';
-    list.forEach(a=>{
-      const card=document.createElement('div'); card.className='master-card';
-      card.onclick=()=>location.href='?id='+a.id;
-      const isLive=a.dataSource==='loomi';
-      const badge=isLive
-        ?`<span class="master-live-badge"><span class="master-pulse"></span>LIVE</span>`
-        :`<span class="master-manual-badge">MANUAL</span>`;
-      const last=a.lastUpdated?new Date(a.lastUpdated).toLocaleString('en-CA',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'}):'—';
-      card.innerHTML=`
-        <div class="master-card-header"><div class="master-card-name">${a.name}</div>${badge}</div>
-        <div class="master-card-stat"><div class="master-stat-num">${(a.totalEvacuees||0).toLocaleString()}</div><div class="master-stat-label">Total Evacuees</div></div>
-        <div class="master-card-footer"><span>${a.hostSiteCount} host site${a.hostSiteCount!==1?'s':''}</span><span>Updated ${last}</span></div>`;
-      grid.appendChild(card);
+    if (!list.length){
+      overlay.innerHTML='<div class="master-loading-msg">No active activations.</div>';
+      return;
+    }
+
+    // fetch data for all activations in parallel
+    const results=await Promise.all(list.map(async a=>{
+      try {
+        const [cfg,data]=await Promise.all([
+          api(`/activation/${a.id}/config`),
+          api(`/activation/${a.id}/data`)
+        ]);
+        return {id:a.id,name:a.name,cfg,data};
+      } catch(e){ return null; }
+    }));
+
+    // build site totals map: siteId -> {name, x, y, count}
+    const siteMap={};
+    let grandTotal=0;
+    const activationNames=[];
+
+    results.filter(Boolean).forEach(act=>{
+      activationNames.push(act.name);
+      const sites=act.cfg?.sites||[];
+      const liveData=act.data?.sites||[];
+      sites.forEach(s=>{
+        if (s.type==='home'||s.skipPin) return;
+        const live=liveData.find(x=>x.id===s.id);
+        const count=live?.count||0;
+        grandTotal+=count;
+        if (!siteMap[s.id]){
+          siteMap[s.id]={name:s.name,x:s.x,y:s.y,count:0,type:s.type};
+        }
+        siteMap[s.id].count+=count;
+      });
     });
-  } catch(e){ grid.innerHTML=`<div class="master-empty">Failed to load: ${e.message}</div>`; }
+
+    // render pins
+    Object.values(siteMap).forEach(site=>{
+      const pin=document.createElement('div');
+      pin.className='master-pin';
+      pin.style.left=site.x+'%';
+      pin.style.top=site.y+'%';
+      pin.innerHTML=`
+        <div class="master-pin-dot"></div>
+        <div class="master-pin-card">
+          <div class="master-pin-name">${site.name}</div>
+          <div class="master-pin-count">${site.count.toLocaleString()}</div>
+          <div class="master-pin-label">evacuees</div>
+        </div>`;
+      overlay.appendChild(pin);
+    });
+
+    // totals bar
+    const hostCount=Object.keys(siteMap).length;
+    document.getElementById('master-total-evacuees').textContent=grandTotal.toLocaleString();
+    document.getElementById('master-total-sites').textContent=hostCount;
+    const actList=document.getElementById('master-act-list');
+    actList.innerHTML=activationNames.map(n=>`<span class="master-act-pill">${n}</span>`).join('');
+    document.getElementById('master-totals').style.display='flex';
+
+  } catch(e){
+    overlay.innerHTML=`<div class="master-loading-msg">Failed to load: ${e.message}</div>`;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -805,7 +887,7 @@ function exportImage(){
   const frame=document.createElement('div');
   frame.id='export-frame';
   frame.style.cssText=`position:fixed;top:-9999px;left:0;width:${EXPORT_W}px;height:${EXPORT_H}px;background:linear-gradient(135deg,#0A1929 0%,#1A2B35 100%);font-family:'DM Sans',sans-serif;color:white;overflow:hidden;z-index:-1`;
-  frame.innerHTML=`<div style="position:absolute;inset:0;background-image:linear-gradient(rgba(47,152,121,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(47,152,121,.03) 1px,transparent 1px);background-size:40px 40px"></div><div style="position:absolute;top:0;left:0;right:0;height:${HEADER_H}px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;border-bottom:2px solid rgba(47,152,121,.2);z-index:2;background:rgba(10,25,41,.95)"><div><div style="font-family:Epilogue,sans-serif;font-size:1.4rem;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;color:#fff">Loomex Emergency Operations</div><div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.4);letter-spacing:.15em;text-transform:uppercase">Evacuation Status – ${cfg?.name||activationId||''}</div></div><div style="display:flex;align-items:center;gap:.75rem"><div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 1.2rem;background:rgba(47,152,121,.1);border:1px solid rgba(47,152,121,.3);border-left:4px solid #2F9879"><div style="width:8px;height:8px;background:#2F9879;border-radius:50%;box-shadow:0 0 8px #2F9879"></div><span style="font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;color:#2F9879;letter-spacing:.05em">ACTIVE EVACUATION</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:rgba(255,255,255,.5);padding:.6rem 1rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px">${tsStr}</div></div></div><div style="position:absolute;top:${HEADER_H}px;left:0;width:${MAP_W}px;height:${MAP_H}px;overflow:hidden"><img src="${MAP_SRC}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;height:92%;object-fit:contain;filter:brightness(.45) sepia(1) hue-rotate(175deg) saturate(.8) brightness(1.6);opacity:.9"><div id="ef-pins" style="position:absolute;inset:0"></div></div><div style="position:absolute;top:${HEADER_H}px;right:0;width:${SIDEBAR_W}px;height:${MAP_H}px;background:rgba(10,25,41,.7);border-left:1px solid rgba(47,152,121,.15);overflow:hidden"><div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem .4rem"><span style="font-family:Epilogue,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)">System-Wide Total</span><div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.15),transparent)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.25rem 1rem .6rem"><div style="background:linear-gradient(135deg,rgba(26,78,126,.3),rgba(47,152,121,.2));border:1px solid rgba(47,152,121,.25);border-left:4px solid #2F9879;padding:.7rem .9rem"><div style="font-size:.6rem;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Evacuees</div><div style="font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;color:#fff;line-height:1">${total.toLocaleString()}</div></div><div style="background:linear-gradient(135deg,rgba(26,78,126,.3),rgba(26,78,126,.2));border:1px solid rgba(45,106,159,.25);border-left:4px solid #2D6A9F;padding:.7rem .9rem"><div style="font-size:.6rem;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Capacity</div><div style="font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;color:#fff;line-height:1">${totalCap.toLocaleString()}</div></div></div><div style="display:flex;align-items:center;gap:.75rem;padding:.2rem 1.25rem .4rem"><span style="font-family:Epilogue,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)">Host Sites</span><div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.15),transparent)"></div></div><div style="padding:0 1rem .5rem">${cardsHTML}</div>${partnerHTML?`<div style="display:flex;align-items:center;gap:.75rem;padding:.2rem 1.25rem .4rem"><span style="font-family:Epilogue,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(217,134,15,.7)">Partner Sites</span><div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.15),transparent)"></div></div><div style="padding:0 1rem">${partnerHTML}</div>`:''}<div style="position:absolute;bottom:0;left:0;right:0;padding:.6rem 1.25rem;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:1rem;background:rgba(10,25,41,.7)"><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#2F9879;border:2px solid rgba(255,255,255,.5)"></div><span style="font-size:.6rem;color:rgba(255,255,255,.45)">Loomex Host</span></div><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#D9860F;border:2px solid rgba(255,255,255,.5)"></div><span style="font-size:.6rem;color:rgba(255,255,255,.45)">Partner</span></div><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#2D6A9F;border:2px solid rgba(255,255,255,.5)"></div><span style="font-size:.6rem;color:rgba(255,255,255,.45)">Home Community</span></div></div></div>`;
+  frame.innerHTML=`<div style="position:absolute;inset:0;background-image:linear-gradient(rgba(47,152,121,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(47,152,121,.03) 1px,transparent 1px);background-size:40px 40px"></div><div style="position:absolute;top:0;left:0;right:0;height:${HEADER_H}px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;border-bottom:2px solid rgba(47,152,121,.2);z-index:2;background:rgba(10,25,41,.95)"><div><div style="font-family:Epilogue,sans-serif;font-size:1.4rem;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;color:#fff">Loomex Emergency Operations</div><div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.4);letter-spacing:.15em;text-transform:uppercase">Evacuation Status – ${cfg?.name||activationId||''}</div></div><div style="display:flex;align-items:center;gap:.75rem"><div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 1.2rem;background:rgba(47,152,121,.1);border:1px solid rgba(47,152,121,.3);border-left:4px solid #2F9879"><div style="width:8px;height:8px;background:#2F9879;border-radius:50%;box-shadow:0 0 8px #2F9879"></div><span style="font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;color:#2F9879;letter-spacing:.05em">ACTIVE EVACUATION</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:rgba(255,255,255,.5);padding:.6rem 1rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px">As of ${tsStr}</div></div></div><div style="position:absolute;top:${HEADER_H}px;left:0;width:${MAP_W}px;height:${MAP_H}px;overflow:hidden"><img src="${MAP_SRC}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;height:92%;object-fit:contain;filter:brightness(.45) sepia(1) hue-rotate(175deg) saturate(.8) brightness(1.6);opacity:.9"><div id="ef-pins" style="position:absolute;inset:0"></div></div><div style="position:absolute;top:${HEADER_H}px;right:0;width:${SIDEBAR_W}px;height:${MAP_H}px;background:rgba(10,25,41,.7);border-left:1px solid rgba(47,152,121,.15);overflow:hidden"><div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem .4rem"><span style="font-family:Epilogue,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)">System-Wide Total</span><div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.15),transparent)"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.25rem 1rem .6rem"><div style="background:linear-gradient(135deg,rgba(26,78,126,.3),rgba(47,152,121,.2));border:1px solid rgba(47,152,121,.25);border-left:4px solid #2F9879;padding:.7rem .9rem"><div style="font-size:.6rem;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Evacuees</div><div style="font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;color:#fff;line-height:1">${total.toLocaleString()}</div></div><div style="background:linear-gradient(135deg,rgba(26,78,126,.3),rgba(26,78,126,.2));border:1px solid rgba(45,106,159,.25);border-left:4px solid #2D6A9F;padding:.7rem .9rem"><div style="font-size:.6rem;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">Capacity</div><div style="font-family:'JetBrains Mono',monospace;font-size:1.8rem;font-weight:700;color:#fff;line-height:1">${totalCap.toLocaleString()}</div></div></div><div style="display:flex;align-items:center;gap:.75rem;padding:.2rem 1.25rem .4rem"><span style="font-family:Epilogue,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)">Host Sites</span><div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.15),transparent)"></div></div><div style="padding:0 1rem .5rem">${cardsHTML}</div>${partnerHTML?`<div style="display:flex;align-items:center;gap:.75rem;padding:.2rem 1.25rem .4rem"><span style="font-family:Epilogue,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(217,134,15,.7)">Partner Sites</span><div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.15),transparent)"></div></div><div style="padding:0 1rem">${partnerHTML}</div>`:''}<div style="position:absolute;bottom:0;left:0;right:0;padding:.6rem 1.25rem;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:1rem;background:rgba(10,25,41,.7)"><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#2F9879;border:2px solid rgba(255,255,255,.5)"></div><span style="font-size:.6rem;color:rgba(255,255,255,.45)">Loomex Host</span></div><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#D9860F;border:2px solid rgba(255,255,255,.5)"></div><span style="font-size:.6rem;color:rgba(255,255,255,.45)">Partner</span></div><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#2D6A9F;border:2px solid rgba(255,255,255,.5)"></div><span style="font-size:.6rem;color:rgba(255,255,255,.45)">Home Community</span></div></div></div>`;
 
   document.body.appendChild(frame);
 
@@ -876,7 +958,7 @@ async function init(){
     document.getElementById('active-badge').style.display='';
     document.getElementById('export-btn').style.display='';
     document.getElementById('activation-view').style.display = window.innerWidth <= 960 ? 'flex' : '';
-document.getElementById('activation-view').style.flexDirection = window.innerWidth <= 960 ? 'column' : '';
+    if (window.innerWidth <= 960) document.getElementById('activation-view').style.flexDirection = 'column';
     renderAll();
 
     // Poll data every 30 s — worker handles override expiry server-side
