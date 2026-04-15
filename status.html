@@ -781,6 +781,77 @@ async function renderMasterView(){
   document.title='Loomex EOC — Overview';
   renderAuthControls();
 
+  const mapImg=document.getElementById('master-map-img');
+  if (MAP_SRC) mapImg.src=MAP_SRC;
+
+  const overlay=document.getElementById('master-overlay');
+  overlay.innerHTML='';
+  document.getElementById('master-totals').style.display='none';
+
+  try {
+    const list=await api('/activations');
+    if (!list.length){
+      overlay.innerHTML='<div class="master-loading-msg">No active activations.</div>';
+      return;
+    }
+
+    const results=await Promise.all(list.map(async a=>{
+      try {
+        const [cfg,data]=await Promise.all([
+          api(`/activation/${a.id}/config`),
+          api(`/activation/${a.id}/data`)
+        ]);
+        return {id:a.id,name:a.name,cfg,data};
+      } catch(e){ return null; }
+    }));
+
+    const siteMap={};
+    let grandTotal=0;
+
+    results.filter(Boolean).forEach(act=>{
+      const sites=act.cfg?.sites||[];
+      const liveData=act.data?.sites||[];
+      sites.forEach(s=>{
+        if (s.type==='home'||s.type==='partner'||s.skipPin) return;
+        const live=liveData.find(x=>x.id===s.id);
+        const count=live?.count||0;
+        grandTotal+=count;
+        if (!siteMap[s.id]){
+          siteMap[s.id]={name:s.name,x:s.x,y:s.y,count:0};
+        }
+        siteMap[s.id].count+=count;
+      });
+    });
+
+    Object.values(siteMap).forEach(site=>{
+      const pin=document.createElement('div');
+      pin.className='master-pin';
+      pin.style.left=site.x+'%';
+      pin.style.top=site.y+'%';
+      pin.innerHTML=`
+        <div class="master-pin-dot"></div>
+        <div class="master-pin-card">
+          <div class="master-pin-name">${site.name}</div>
+          <div class="master-pin-count">${site.count.toLocaleString()}</div>
+          <div class="master-pin-label">evacuees</div>
+        </div>`;
+      overlay.appendChild(pin);
+    });
+
+    const hostCount=Object.keys(siteMap).length;
+    document.getElementById('master-total-evacuees').textContent=grandTotal.toLocaleString();
+    document.getElementById('master-total-sites').textContent=hostCount;
+    const actList=document.getElementById('master-act-list');
+    actList.innerHTML=results.filter(Boolean).map(a=>
+      `<span class="master-act-pill" style="cursor:pointer" onclick="location.href='?id=${a.id}'">${a.name}</span>`
+    ).join('');
+    document.getElementById('master-totals').style.display='flex';
+
+  } catch(e){
+    overlay.innerHTML=`<div class="master-loading-msg">Failed to load: ${e.message}</div>`;
+  }
+}
+
   // set map image
   const mapImg=document.getElementById('master-map-img');
   if (MAP_SRC) mapImg.src=MAP_SRC;
