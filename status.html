@@ -585,12 +585,22 @@ async function saveAdmin(){
     const cfgSite=(cfg.sites||[]).find(s2=>s2.id===site.id);
     const a=document.getElementById('fa-'+site.id);
     if(cfgSite&&a) cfgSite.address=a.value.trim();
-    return {id:site.id,count:parseInt(document.getElementById('fc-'+site.id)?.value)||0,capacity:parseInt(document.getElementById('fk-'+site.id)?.value)||0};
+    const countEl=document.getElementById('fc-'+site.id);
+    const capEl=document.getElementById('fk-'+site.id);
+    const count=countEl&&countEl.value!==''?parseInt(countEl.value):site.count;
+    const capacity=capEl&&capEl.value!==''?parseInt(capEl.value):site.capacity;
+    return {id:site.id,count:count||0,capacity:capacity||0};
   });
 
   const updHotels={};
   Object.keys(hotels).forEach(sid=>{
-    updHotels[sid]=hotels[sid].map(h=>({id:h.id,count:parseInt(document.getElementById('hc-'+h.id)?.value)||0,capacity:parseInt(document.getElementById('hk-'+h.id)?.value)||0}));
+    updHotels[sid]=hotels[sid].map(h=>{
+      const hcEl=document.getElementById('hc-'+h.id);
+      const hkEl=document.getElementById('hk-'+h.id);
+      const count=hcEl&&hcEl.value!==''?parseInt(hcEl.value):h.count;
+      const capacity=hkEl&&hkEl.value!==''?parseInt(hkEl.value):h.capacity;
+      return {id:h.id,count:count||0,capacity:capacity||0};
+    });
   });
 
   const btn=document.querySelector('#admin-modal .btn-save');
