@@ -652,6 +652,13 @@
           <input type="checkbox" id="imKitchenette"><label for="imKitchenette">🍳 Has Kitchenette</label>
         </div>
         <div class="form-row" style="margin-top:10px">
+          <label for="imAdjoining">Adjoining Room</label>
+          <select id="imAdjoining">
+            <option value="">— None —</option>
+          </select>
+          <div class="hint">Pairs both rooms automatically. Only shows available rooms in this hotel.</div>
+        </div>
+        <div class="form-row" style="margin-top:10px">
           <label for="imNotes">Notes</label>
           <textarea id="imNotes" placeholder="Damage, missing items, anything worth flagging"></textarea>
         </div>
@@ -956,6 +963,43 @@ function populateChoiceSelect(elId, choiceKey) {
   const list = state.choices[choiceKey] || [];
   const blank = '<option value="">—</option>';
   el.innerHTML = blank + list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+}
+
+async function populateAdjoiningSelect(currentRoom) {
+  const sel = $('#imAdjoining');
+  sel.innerHTML = '<option value="">— Loading… —</option>';
+  sel.disabled = true;
+  try {
+    const res = await api('/api/rooms/list-by-building', {
+      method: 'POST',
+      body: JSON.stringify({
+        siteName: state.session.siteName,
+        building: state.session.hotelName
+      })
+    });
+    const available = (res.rooms || [])
+      .filter(r => String(r.spId) !== String(currentRoom.spId))
+      // A room is available as an adjoin option if it's unlinked, OR already linked to current room
+      .filter(r => !r.adjoiningSpId || String(r.adjoiningSpId) === String(currentRoom.spId))
+      .sort((a, b) => {
+        const an = parseInt(a.roomNumber, 10);
+        const bn = parseInt(b.roomNumber, 10);
+        if (!isNaN(an) && !isNaN(bn)) return an - bn;
+        return String(a.roomNumber).localeCompare(String(b.roomNumber));
+      });
+
+    // Find the current adjoining spId from the full room list (includes current room itself)
+    const mine = (res.rooms || []).find(r => String(r.spId) === String(currentRoom.spId));
+    const currentAdjoin = mine?.adjoiningSpId || '';
+
+    sel.innerHTML = '<option value="">— None —</option>' +
+      available.map(r => `<option value="${r.spId}">${escapeHtml(r.roomNumber)}</option>`).join('');
+    sel.value = currentAdjoin;
+    sel.disabled = false;
+  } catch (e) {
+    sel.innerHTML = '<option value="">Error loading rooms</option>';
+    console.error('Load adjoining options failed:', e);
+  }
 }
 
 // =============================================================================
@@ -1410,6 +1454,7 @@ function openInspectModal(roomId) {
   $('#imAccessible').checked = !!r.accessible;
   $('#imKitchenette').checked = !!r.kitchenette;
   $('#imNotes').value = r.notes || '';
+  populateAdjoiningSelect(r);
 
   // Media: load already-uploaded items (cannot re-upload, they're on SP)
   state.imPhotos = (r.photoUrls || []).map(url => ({
@@ -1669,6 +1714,20 @@ $('#imSave').addEventListener('click', async () => {
       })
     });
 
+    // Two-way adjoining link
+    const newAdjoining = $('#imAdjoining').value || null;
+    const priorAdjoining = room.adjoiningSpId || null;
+    if (String(newAdjoining || '') !== String(priorAdjoining || '')) {
+      $('#imSaveLabel').innerHTML = '<span class="spinner"></span> Pairing adjoining rooms…';
+      await api('/api/rooms/set-adjoining', {
+        method: 'POST',
+        body: JSON.stringify({
+          spId: room.spId,
+          adjoiningSpId: newAdjoining
+        })
+      });
+      room.adjoiningSpId = newAdjoining;
+    }
     // Update local state
     room.floor = patch.Floor;
     room.roomType = patch.RoomType;
