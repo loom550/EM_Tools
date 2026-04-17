@@ -512,46 +512,78 @@
   setInterval(updateTimestamp, 1000);
 
   async function fetchData() {
-    const WORKER_BASE = 'https://loomi-status.loomex-it.workers.dev';
-    const ACTIVATION_ID = '2026-KASH-HUBHOST';
-    const [cfg, liveData] = await Promise.all([
-      fetch(`${WORKER_BASE}/activation/${ACTIVATION_ID}/config`).then(r => r.json()),
-      fetch(`${WORKER_BASE}/activation/${ACTIVATION_ID}/data`).then(r => r.json()),
-    ]);
-    const configSites = (cfg.sites || []).filter(s => s.type === 'host' || s.type === 'host-kingston');
-    const liveSites = liveData.sites || [];
-    const hubs = configSites.map(s => {
+  const WORKER_BASE = 'https://loomi-status.loomex-it.workers.dev';
+
+  // Get all activation IDs
+  const activationList = await fetch(`${WORKER_BASE}/activations`).then(r => r.json());
+
+  // Fetch config + data for all activations in parallel
+  const results = await Promise.all(activationList.map(async a => {
+    try {
+      const [cfg, liveData] = await Promise.all([
+        fetch(`${WORKER_BASE}/activation/${a.id}/config`).then(r => r.json()),
+        fetch(`${WORKER_BASE}/activation/${a.id}/data`).then(r => r.json()),
+      ]);
+      return { id: a.id, name: a.name, cfg, liveData };
+    } catch(e) {
+      console.warn(`Failed to load activation ${a.id}:`, e.message);
+      return null;
+    }
+  }));
+
+  // Build hub list across all activations
+  const hubs = [];
+  let totalEvacuees = 0;
+  let totalOpen213s = 0;
+  let totalPending = 0;
+  let totalActive = 0;
+  let totalCompleted = 0;
+
+  results.filter(Boolean).forEach(act => {
+    const configSites = (act.cfg.sites || []).filter(s => s.type === 'host' || s.type === 'host-kingston');
+    const liveSites = act.liveData.sites || [];
+    const summary = act.liveData.summary || {};
+
+    totalOpen213s += summary.open213s || 0;
+    totalPending += summary.pendingTransfers || 0;
+    totalActive += summary.activeTransfers || 0;
+    totalCompleted += summary.completedToday || 0;
+
+    configSites.forEach(s => {
       const live = liveSites.find(x => x.id === s.id) || {};
       const totalRooms = live.totalRooms || 0;
       const maxCapacity = Math.round(totalRooms * 2.5);
-      return {
+      const count = live.count || 0;
+      totalEvacuees += count;
+      hubs.push({
+        activation: act.name || act.id,
         name: s.name,
         status: 'Active',
         rooms: totalRooms,
         occupied: live.occupiedRooms || 0,
         vacant: live.vacantRooms || 0,
-        evacuees: live.count || 0,
+        evacuees: count,
         capacity: live.capacity || 0,
-        utilization: maxCapacity > 0 ? Math.round((live.count || 0) / maxCapacity * 100) : 0,
-      };
+        utilization: maxCapacity > 0 ? Math.round(count / maxCapacity * 100) : 0,
+      });
     });
-    const totalEvacuees = hubs.reduce((sum, h) => sum + h.evacuees, 0);
-    const summary = liveData.summary || {};
-    return {
-      summary: {
-        totalHubs: hubs.length,
-        totalRooms: hubs.reduce((s, h) => s + h.rooms, 0),
-        occupied: hubs.reduce((s, h) => s + h.occupied, 0),
-        vacant: hubs.reduce((s, h) => s + h.vacant, 0),
-        totalEvacuees: summary.totalEvacuees || totalEvacuees,
-        open213s: summary.open213s || 0,
-        pendingTransfers: summary.pendingTransfers || 0,
-        activeTransfers: summary.activeTransfers || 0,
-        completedToday: summary.completedToday || 0,
-      },
-      hubs,
-    };
-  }
+  });
+
+  return {
+    summary: {
+      totalHubs: hubs.length,
+      totalRooms: hubs.reduce((s, h) => s + h.rooms, 0),
+      occupied: hubs.reduce((s, h) => s + h.occupied, 0),
+      vacant: hubs.reduce((s, h) => s + h.vacant, 0),
+      totalEvacuees,
+      open213s: totalOpen213s,
+      pendingTransfers: totalPending,
+      activeTransfers: totalActive,
+      completedToday: totalCompleted,
+    },
+    hubs,
+  };
+}
 
   function renderSummary(data, hubs) {
     const availableCapacity = hubs.reduce((sum, hub) => sum + hub.capacity, 0);
@@ -601,6 +633,7 @@
         <div class="hub-card">
           <div class="hub-header">
             <div class="hub-name">${hub.name}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(255,255,255,0.4);margin-top:2px">${hub.activation}</div>
             <div class="hub-status">${hub.status}</div>
           </div>
           <div class="hub-metrics">
