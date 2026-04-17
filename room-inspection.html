@@ -828,6 +828,30 @@ function deriveFloor(roomNumber) {
   return m ? m[1] : '';
 }
 
+// Make a 200x200 JPEG thumbnail as data URL. Used for local caching of uploaded photos.
+async function makeThumbnail(file, maxDim = 200) {
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+  const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
 // =============================================================================
 // API
 // =============================================================================
@@ -970,11 +994,15 @@ async function populateAdjoiningSelect(currentRoom) {
   sel.innerHTML = '<option value="">— Loading… —</option>';
   sel.disabled = true;
   try {
+    const sessionSpIds = state.rooms
+      .map(r => r.spId)
+      .filter(Boolean);
     const res = await api('/api/rooms/list-by-building', {
       method: 'POST',
       body: JSON.stringify({
         siteName: state.session.siteName,
-        building: state.session.hotelName
+        building: state.session.hotelName,
+        spIds: sessionSpIds
       })
     });
     const available = (res.rooms || [])
@@ -1457,12 +1485,21 @@ function openInspectModal(roomId) {
   populateAdjoiningSelect(r);
 
   // Media: load already-uploaded items (cannot re-upload, they're on SP)
+  // Use cached thumbnails where available so previews actually render
+  const thumbCache = loadLS('roomInspector:thumbs') || {};
   state.imPhotos = (r.photoUrls || []).map(url => ({
-    id: uid(), file: null, previewUrl: url, uploadedUrl: url, progress: 1
+    id: uid(),
+    file: null,
+    previewUrl: thumbCache[url] || url,  // cached thumb if we have it, else SP URL (may show broken image)
+    uploadedUrl: url,
+    progress: 1
   }));
   state.imVideo = r.videoUrl
     ? { file: null, previewUrl: r.videoUrl, uploadedUrl: r.videoUrl, progress: 1 }
     : null;
+  // Snapshot existing uploaded URLs so we can detect what gets removed during this session
+  state.imInitialPhotoUrls = (r.photoUrls || []).slice();
+  state.imInitialVideoUrl = r.videoUrl || '';
   renderMediaPhotos();
   renderMediaVideo();
 
@@ -1632,6 +1669,18 @@ async function uploadOneFile(file, kind, index) {
     }
   });
 
+  // Cache a small thumbnail locally so future opens of this room show previews
+  if (kind === 'photo') {
+    try {
+      const thumb = await makeThumbnail(file, 200);
+      const cache = loadLS('roomInspector:thumbs') || {};
+      cache[item.webUrl] = thumb;
+      saveLS('roomInspector:thumbs', cache);
+    } catch (e) {
+      console.warn('Thumbnail cache failed:', e);
+    }
+  }
+
   return { webUrl: item.webUrl, folderWebUrl: sess.folderWebUrl };
 }
 
@@ -1699,6 +1748,32 @@ $('#imSave').addEventListener('click', async () => {
         body: JSON.stringify({ spId: room.spId, patch: { RoomNumber: patch.RoomNumber } })
       });
       room.roomNumber = patch.RoomNumber;
+    }
+
+    // Delete any photos/video that were in the initial state but are no longer present
+    const stillPresentPhotos = new Set(uploadedPhotoUrls);
+    const toDelete = [];
+    for (const origUrl of (state.imInitialPhotoUrls || [])) {
+      if (!stillPresentPhotos.has(origUrl)) toDelete.push(origUrl);
+    }
+    if (state.imInitialVideoUrl && state.imInitialVideoUrl !== videoUrl) {
+      toDelete.push(state.imInitialVideoUrl);
+    }
+    for (const url of toDelete) {
+      try {
+        $('#imSaveLabel').innerHTML = '<span class="spinner"></span> Cleaning up removed files…';
+        await api('/api/media/delete', {
+          method: 'POST',
+          body: JSON.stringify({ webUrl: url })
+        });
+        // Also remove from thumb cache
+        const tc = loadLS('roomInspector:thumbs') || {};
+        delete tc[url];
+        saveLS('roomInspector:thumbs', tc);
+      } catch (e) {
+        console.warn('Failed to delete removed file:', url, e);
+        // Non-fatal - the file stays in SP as orphan, but save proceeds
+      }
     }
 
     // Finalize (sets RoomPhotoURL + patches everything else)
