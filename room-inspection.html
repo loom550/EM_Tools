@@ -536,6 +536,10 @@
             <input type="checkbox" id="classAccessible">
             <label for="classAccessible">♿ Accessible</label>
           </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="classPetFriendly">
+            <label for="classPetFriendly">🐾 Pet Friendly</label>
+          </div>
         </div>
 
       <div class="form-row">
@@ -664,6 +668,9 @@
         <div class="checkbox-row">
           <input type="checkbox" id="imKitchenette"><label for="imKitchenette">🍳 Has Kitchenette</label>
         </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="imPetFriendly"><label for="imPetFriendly">🐾 Pet Friendly</label>
+        </div>
         <div class="form-row" style="margin-top:10px">
           <label for="imAdjoining">Adjoining Room</label>
           <select id="imAdjoining">
@@ -750,6 +757,9 @@
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="smKitchenette"><label for="smKitchenette">Has Kitchenette</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="smPetFriendly"><label for="smPetFriendly">Pet Friendly</label>
       </div>
     </div>
     <div class="modal-footer">
@@ -1167,6 +1177,7 @@ async function loadHotelFromSP() {
       maxOcc: spRoom.maxOcc,
       kitchenette: spRoom.kitchenette,
       accessible: spRoom.accessible,
+      petFriendly: spRoom.petFriendly,
       notes: spRoom.notes,
       photoUrls: existing?.photoUrls || [],
       videoUrl: existing?.videoUrl || '',
@@ -1191,6 +1202,7 @@ $('#btnAddClass').addEventListener('click', () => {
   const maxOcc = $('#classMaxOcc').value;
   const kitchenette = $('#classKitchenette').checked;
   const accessible = $('#classAccessible').checked;
+  const petFriendly = $('#classPetFriendly').checked;
   const numsRaw = $('#classRoomNumbers').value.trim();
 
   if (!numsRaw) return toast('Enter at least one room number', 'error');
@@ -1199,7 +1211,7 @@ $('#btnAddClass').addEventListener('click', () => {
 
   const cls = {
     id: uid(),
-    roomType, beds, bedConfig, bathroom, maxOcc, kitchenette, accessible,
+    roomType, beds, bedConfig, bathroom, maxOcc, kitchenette, accessible, petFriendly,
     roomNumbers: nums,
     committed: false,
     createdAt: new Date().toISOString()
@@ -1220,6 +1232,7 @@ function clearClassForm() {
   $('#classMaxOcc').value = '4';
   $('#classKitchenette').checked = false;
   $('#classAccessible').checked = false;
+  $('#classPetFriendly').checked = false;
   $('#classRoomNumbers').value = '';
 }
 
@@ -1244,6 +1257,7 @@ function renderClasses() {
             <span>Max: ${c.maxOcc}</span>
            ${c.kitchenette ? '<span>🍳</span>' : ''}
             ${c.accessible ? '<span>♿</span>' : ''}
+            ${c.petFriendly ? '<span>🐾</span>' : ''}
             <span style="color:${c.committed ? 'var(--teal)' : 'var(--amber)'}; font-weight:600">${statusTxt}</span>
           </div>
           <div class="room-list">
@@ -1313,6 +1327,7 @@ function openSingleModal() {
   $('#smMaxOcc').value = '4';
   $('#smAccessible').checked = false;
   $('#smKitchenette').checked = false;
+  $('#smPetFriendly').checked = false;
   $('#singleModal').classList.add('active');
 }
 $('#smClose').addEventListener('click', () => $('#singleModal').classList.remove('active'));
@@ -1331,6 +1346,7 @@ $('#smSave').addEventListener('click', () => {
     maxOcc: $('#smMaxOcc').value,
     kitchenette: $('#smKitchenette').checked,
     accessible: $('#smAccessible').checked,
+    petFriendly: $('#smPetFriendly').checked,
     floor: $('#smFloor').value.trim() || deriveFloor(rn),
     roomNumbers: [rn],
     committed: false,
@@ -1433,6 +1449,7 @@ async function doCommit(uncommitted, skipRoomNumbers) {
             bathroomType: c.bathroom,
             isAccessible: !!c.accessible,
             hasKitchenette: !!c.kitchenette,
+            petFriendly: !!c.petFriendly,
             maxOccupancy: c.maxOcc ? Number(c.maxOcc) : null
           }
         })
@@ -1456,6 +1473,7 @@ async function doCommit(uncommitted, skipRoomNumbers) {
           maxOcc: c.maxOcc,
           kitchenette: !!c.kitchenette,
           accessible: !!c.accessible,
+          petFriendly: !!c.petFriendly,
           notes: '',
           photoUrls: [],
           videoUrl: '',
@@ -1598,6 +1616,7 @@ function openInspectModal(roomId) {
   $('#imMaxOcc').value = r.maxOcc || '';
   $('#imAccessible').checked = !!r.accessible;
   $('#imKitchenette').checked = !!r.kitchenette;
+  $('#imPetFriendly').checked = !!r.petFriendly;
   $('#imNotes').value = r.notes || '';
   populateAdjoiningSelect(r);
 
@@ -1856,6 +1875,7 @@ $('#imSave').addEventListener('click', async () => {
       MaxOccupancy: $('#imMaxOcc').value ? Number($('#imMaxOcc').value) : null,
       IsAccessible: $('#imAccessible').checked,
       HasKitchenette: $('#imKitchenette').checked,
+      PetFriendly: $('#imPetFriendly').checked,
       Notes: $('#imNotes').value,
       InspectionStatus: willBeComplete ? "Complete" : "Partial"
     };
@@ -1931,6 +1951,7 @@ $('#imSave').addEventListener('click', async () => {
     room.maxOcc = patch.MaxOccupancy;
     room.accessible = patch.IsAccessible;
     room.kitchenette = patch.HasKitchenette;
+    room.petFriendly = patch.PetFriendly;
     room.notes = patch.Notes;
     room.photoUrls = uploadedPhotoUrls;
     room.videoUrl = videoUrl;
