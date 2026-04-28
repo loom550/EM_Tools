@@ -810,23 +810,29 @@
   // Set today as default for completed date
   document.querySelector('[name=CompletedDate]').valueAsDate = new Date();
 
-  // ---- Dynamic site loading ----
-  async function loadSites() {
-    const select = document.getElementById('hubSelect');
+  // ---- Dynamic activation + site loading (linked) ----
+
+  async function loadSitesForActivation(activationId) {
+    const hubSelect = document.getElementById('hubSelect');
+    document.getElementById('folderName').value = '';
+    if (!activationId) {
+      hubSelect.innerHTML = '<option value="">-- Select Activation first --</option>';
+      return;
+    }
+    hubSelect.innerHTML = '<option value="">-- Loading sites... --</option>';
     try {
-      const res = await fetch('https://loomi-data.loomex-it.workers.dev/sites');
+      const res = await fetch(`https://loomi-data.loomex-it.workers.dev/sites?activation=${encodeURIComponent(activationId)}`);
       const sites = await res.json();
-      select.innerHTML = '<option value="">-- Select Hub --</option>';
+      hubSelect.innerHTML = '<option value="">-- Select Hub --</option>';
       sites.forEach(site => {
         const opt = document.createElement('option');
         opt.value = site.name;
         opt.dataset.folder = site.folderName;
         opt.textContent = site.name;
-        select.appendChild(opt);
+        hubSelect.appendChild(opt);
       });
     } catch (e) {
-      // Fallback if KV not yet populated
-      select.innerHTML = '<option value="">-- Select Hub --</option>';
+      hubSelect.innerHTML = '<option value="">-- Could not load sites --</option>';
       console.error('Could not load sites:', e);
     }
   }
@@ -837,8 +843,12 @@
     document.getElementById('folderName').value = selected.dataset.folder || '';
   });
 
-  // ---- Dynamic activation loading ----
-  async function loadActivation() {
+  // When activation changes, reload the site list
+  document.getElementById('activationID').addEventListener('change', function() {
+    loadSitesForActivation(this.value);
+  });
+
+  async function loadActivations() {
     const select = document.getElementById('activationID');
     try {
       const res = await fetch('https://loomi-data.loomex-it.workers.dev/activations');
@@ -850,16 +860,20 @@
         opt.textContent = act.title;
         select.appendChild(opt);
       });
-      // Auto-select if only one active activation
-      if (activations.length === 1) select.value = activations[0].id;
+      // Auto-select and load sites if only one activation
+      if (activations.length === 1) {
+        select.value = activations[0].id;
+        loadSitesForActivation(activations[0].id);
+      } else {
+        document.getElementById('hubSelect').innerHTML = '<option value="">-- Select Activation first --</option>';
+      }
     } catch (e) {
       select.innerHTML = '<option value="">-- Could not load --</option>';
       console.error('Could not load activations:', e);
     }
   }
 
-  loadSites();
-  loadActivation();
+  loadActivations();
 </script>
 </body>
 </html>
