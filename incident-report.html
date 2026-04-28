@@ -791,7 +791,11 @@
     selectedFiles.forEach((f, i) => payload.append(`attachment_${i}`, f, f.name));
 
     try {
-      const res = await fetch('https://super-violet-90e9.loomex-it.workers.dev/incident-submit', { method: 'POST', body: payload });
+      const res = await fetch('https://super-violet-90e9.loomex-it.workers.dev/incident-submit', {
+  method: 'POST',
+  headers: { 'X-Submit-Secret': 'YOUR_INCIDENT_SECRET_VALUE' },
+  body: payload
+});
       if (res.ok) {
         document.getElementById('form-area').style.display = 'none';
         document.getElementById('confirmation').style.display = 'block';
