@@ -4,158 +4,188 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Incident Report – LOOMI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
     --green: #00A651;
+    --green-dark: #007a3d;
+    --green-light: #e8f5ee;
+    --green-mid: #c8e6d4;
     --navy: #1a3a5c;
-    --row-bg: #e8f5ee;
-    --grey: #6D6E71;
-    --light: #f5f7f9;
-    --border: #cdd5dc;
-    --red: #c0392b;
+    --navy-light: #2a4a6c;
+    --grey-footer: #6D6E71;
+    --grey-border: #d8dde3;
+    --grey-bg: #f5f7fa;
     --white: #ffffff;
+    --text: #2c3e50;
+    --text-muted: #6b7c93;
+    --error: #cc2936;
+    --error-bg: #fdf0f0;
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.04);
   }
 
   body {
-    font-family: Arial, sans-serif;
-    background: var(--light);
-    color: #222;
-    font-size: 14px;
-    padding-bottom: 60px;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--grey-bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px 64px;
   }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(0,166,81,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(26,58,92,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
 
   /* HEADER */
   .header {
     background: var(--navy);
-    color: white;
-    padding: 0;
-  }
-  .header-top {
-    background: var(--green);
-    padding: 10px 24px;
+    border-radius: 12px 12px 0 0;
+    padding: 28px 36px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: space-between;
+    gap: 16px;
   }
-  .header-top .logo-text {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 2px;
+  .header-left h1 { color: var(--white); font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-left p { color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 4px; }
+  .header-badge {
+    background: var(--green);
     color: white;
-  }
-  .header-top .logo-sub {
     font-size: 11px;
-    color: rgba(255,255,255,0.85);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .header-title {
-    padding: 14px 24px;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-
-  /* FORM WRAPPER */
-  .form-wrapper {
-    max-width: 860px;
-    margin: 28px auto;
-    padding: 0 16px;
-  }
-
-  /* SECTION HEADER */
-  .section-header {
-    background: var(--row-bg);
-    color: var(--navy);
     font-weight: 700;
-    font-size: 13px;
-    padding: 10px 14px;
-    border-left: 4px solid var(--green);
-    margin-top: 24px;
-    margin-bottom: 12px;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    font-family: 'DM Mono', monospace;
+    flex-shrink: 0;
   }
 
-  /* FIELD */
-  .field { margin-bottom: 14px; }
-  .field label {
-    display: block;
-    font-weight: 600;
-    color: var(--navy);
-    margin-bottom: 5px;
-    font-size: 13px;
-  }
-  .field label .req { color: var(--red); margin-left: 2px; }
+  /* CARD */
+  .card { background: var(--white); box-shadow: var(--shadow-card); }
+  .card-section { padding: 32px 36px; border-bottom: 1px solid #eef0f3; }
+  .card-section:last-of-type { border-bottom: none; }
 
-  .field input[type="text"],
-  .field input[type="date"],
-  .field input[type="time"],
-  .field input[type="email"],
-  .field input[type="tel"],
-  .field select,
-  .field textarea {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--green-mid); }
+  .section-label .req-mark { color: var(--error); font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+
+  /* FIELDS */
+  .field-grid { display: grid; gap: 16px; }
+  .field-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .field-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+
+  label { font-size: 12px; font-weight: 600; color: var(--navy); letter-spacing: 0.2px; }
+  label .req { color: var(--green); margin-left: 2px; }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="time"],
+  input[type="email"],
+  input[type="tel"],
+  select,
+  textarea {
+    border: 1.5px solid var(--grey-border);
+    border-radius: 8px;
+    padding: 10px 14px;
     font-size: 14px;
-    font-family: Arial, sans-serif;
-    background: white;
-    color: #222;
-    transition: border-color 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
   }
-  .field input:focus,
-  .field select:focus,
-  .field textarea:focus {
+  textarea { resize: vertical; min-height: 80px; }
+  input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--green);
-    box-shadow: 0 0 0 2px rgba(0,166,81,0.15);
+    box-shadow: 0 0 0 3px rgba(0,166,81,0.12);
   }
-  .field textarea { resize: vertical; min-height: 80px; }
+  input::placeholder, textarea::placeholder { color: #bcc5ce; }
 
-  /* TWO COL */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .field-group.invalid input,
+  .field-group.invalid select,
+  .field-group.invalid textarea {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(204,41,54,0.08);
+  }
+  .error-msg {
+    font-size: 11px;
+    color: var(--error);
+    margin-top: 2px;
+    display: none;
+  }
+  .field-group.invalid .error-msg { display: block; }
 
-  /* BUTTON GROUP (Prognosis/Severity/Status) */
+  /* RADIO BUTTON GROUP */
   .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
   .btn-group input[type="radio"] { display: none; }
   .btn-group label {
-    background: var(--navy);
-    color: white;
+    background: var(--white);
+    color: var(--navy);
+    border: 1.5px solid var(--grey-border);
     padding: 9px 16px;
-    border-radius: 3px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 600;
-    transition: background 0.15s, transform 0.1s;
+    transition: all 0.15s;
     user-select: none;
     margin-bottom: 0;
+    letter-spacing: 0;
   }
+  .btn-group label:hover { border-color: var(--green); color: var(--green); background: var(--green-light); }
   .btn-group input[type="radio"]:checked + label {
     background: var(--green);
+    border-color: var(--green);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,166,81,0.25);
   }
-  .btn-group label:hover { background: #2a5a8c; }
-  .btn-group input[type="radio"]:checked + label:hover { background: #009440; }
+  .field-group.invalid .btn-group label { border-color: var(--error); }
+  .field-group.invalid .btn-group input[type="radio"]:checked + label { border-color: var(--green); }
 
-  /* TOGGLE ROW */
+  /* TOGGLE ROWS */
   .toggle-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
+    padding: 14px 0;
+    border-bottom: 1px solid #eef0f3;
   }
-  .toggle-row:last-child { border-bottom: none; }
-  .toggle-row .toggle-label { font-weight: 600; color: var(--navy); }
+  .toggle-row:last-of-type { border-bottom: none; }
+  .toggle-label { font-size: 14px; font-weight: 600; color: var(--navy); }
   .toggle-switch { display: flex; align-items: center; gap: 10px; }
   .toggle-switch input[type="checkbox"] { display: none; }
   .toggle-switch .slider {
     width: 44px; height: 24px;
-    background: #ccc;
+    background: #cdd5dc;
     border-radius: 12px;
     position: relative;
     cursor: pointer;
@@ -169,29 +199,39 @@
     background: white;
     border-radius: 50%;
     transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   .toggle-switch input:checked + .slider { background: var(--green); }
   .toggle-switch input:checked + .slider::after { left: 23px; }
-  .toggle-switch .yes-label { font-size: 13px; color: var(--grey); }
+  .toggle-switch .yes-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
 
   .conditional-field {
     display: none;
-    margin-top: 10px;
+    margin-top: 14px;
+    padding: 16px;
+    background: var(--green-light);
+    border-radius: 8px;
+    border: 1px solid var(--green-mid);
   }
   .conditional-field.visible { display: block; }
+  .conditional-field textarea { background: white; }
 
   /* CHECKBOXES */
   .checkbox-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 24px;
+    gap: 4px 16px;
   }
   .checkbox-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 6px;
+    transition: background 0.12s;
   }
+  .checkbox-item:hover { background: var(--green-light); }
   .checkbox-item input[type="checkbox"] {
     width: 16px;
     height: 16px;
@@ -199,448 +239,454 @@
     cursor: pointer;
     flex-shrink: 0;
   }
-  .checkbox-item span { font-size: 13px; margin-left: 6px; }
+  .checkbox-item span { font-size: 13px; font-weight: 500; color: var(--text); }
 
   /* FILE UPLOAD */
   .file-upload-area {
-    border: 2px dashed var(--border);
-    border-radius: 6px;
-    padding: 20px;
+    border: 1.5px dashed var(--grey-border);
+    border-radius: 10px;
+    padding: 28px;
     text-align: center;
     background: white;
     cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .file-upload-area:hover {
-    border-color: var(--green);
-    background: var(--row-bg);
-  }
-  .file-upload-area input[type="file"] {
-    display: none;
-  }
+  .file-upload-area:hover { border-color: var(--green); background: var(--green-light); }
+  .file-upload-area input[type="file"] { display: none; }
   .file-upload-area .upload-icon { font-size: 28px; margin-bottom: 8px; }
   .file-upload-area .upload-text { color: var(--navy); font-weight: 600; font-size: 13px; }
-  .file-upload-area .upload-sub { color: var(--grey); font-size: 12px; margin-top: 4px; }
-  .file-list { margin-top: 10px; }
+  .file-upload-area .upload-sub { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+
+  .file-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
   .file-item {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 6px 10px;
-    background: var(--row-bg);
-    border-radius: 3px;
-    margin-bottom: 4px;
-    font-size: 13px;
+    gap: 6px;
+    background: var(--green-light);
+    border: 1px solid var(--green-mid);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--green-dark);
+    font-weight: 500;
   }
-  .file-item .remove-file {
-    color: var(--red);
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 1;
+  .remove-file {
     background: none;
     border: none;
-    padding: 0 4px;
+    cursor: pointer;
+    color: var(--green-dark);
+    padding: 0;
+    font-size: 15px;
+    line-height: 1;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
   }
+  .remove-file:hover { opacity: 1; color: var(--error); }
 
-  /* SUBMIT */
-  .submit-area {
-    margin-top: 32px;
-    text-align: center;
+  /* FOOTER */
+  .form-footer {
+    padding: 24px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
   }
   .submit-btn {
     background: var(--green);
     color: white;
     border: none;
-    padding: 14px 48px;
-    font-size: 16px;
+    border-radius: 10px;
+    padding: 13px 32px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
     font-weight: 700;
-    border-radius: 4px;
     cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: background 0.2s, transform 0.1s;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+    letter-spacing: -0.2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .submit-btn:hover { background: #009440; transform: translateY(-1px); }
+  .submit-btn:hover { background: var(--green-dark); transform: translateY(-1px); }
   .submit-btn:active { transform: translateY(0); }
-  .submit-btn:disabled { background: var(--grey); cursor: not-allowed; transform: none; }
+  .submit-btn:disabled { background: #a0adb8; cursor: not-allowed; transform: none; }
 
-  /* ERROR */
-  .error-msg {
-    color: var(--red);
-    font-size: 12px;
-    margin-top: 4px;
+  .page-footer { background: var(--grey-footer); border-radius: 0 0 12px 12px; padding: 14px 36px; text-align: center; }
+  .page-footer p { color: rgba(255,255,255,0.7); font-size: 12px; }
+
+  /* SPINNER */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
     display: none;
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
   }
-  .field.invalid input,
-  .field.invalid select,
-  .field.invalid textarea {
-    border-color: var(--red);
-  }
-  .field.invalid .error-msg { display: block; }
 
   /* CONFIRMATION */
   #confirmation {
     display: none;
-    max-width: 600px;
-    margin: 60px auto;
-    padding: 40px 32px;
+    padding: 60px 40px;
     background: white;
-    border-radius: 6px;
+    border-radius: 12px;
     text-align: center;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    box-shadow: var(--shadow-card);
   }
   .confirm-icon { font-size: 52px; margin-bottom: 16px; }
   .confirm-title { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
-  .confirm-sub { color: var(--grey); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
-  .return-btn {
-    display: inline-block;
-    background: var(--navy);
-    color: white;
-    padding: 12px 32px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 14px;
-    transition: background 0.2s;
-  }
-  .return-btn:hover { background: #2a5a8c; }
+  .confirm-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+  .return-note { color: var(--text-muted); font-size: 13px; }
 
-  /* SPINNER */
-  .spinner {
-    display: none;
-    width: 20px; height: 20px;
-    border: 3px solid rgba(255,255,255,0.4);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    margin: 0 auto;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  @media (max-width: 600px) {
-    .two-col, .three-col { grid-template-columns: 1fr; }
+  @media (max-width: 640px) {
+    body { padding: 0 0 48px; }
+    .header { padding: 20px; border-radius: 0; flex-wrap: wrap; }
+    .card { border-radius: 0; }
+    .card-section { padding: 24px 20px; }
+    .page-footer { border-radius: 0; padding: 14px 20px; }
+    .form-footer { padding: 20px; }
+    .submit-btn { width: 100%; justify-content: center; }
+    .field-grid.cols-2, .field-grid.cols-3 { grid-template-columns: 1fr; }
     .checkbox-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
+<div class="container">
 
-<div class="header">
-  <div class="header-top">
-    <div>
-      <div class="logo-text">LOOMI</div>
-      <div class="logo-sub">Loomex Operational Oversight &amp; Management Interface</div>
+  <div class="header">
+    <div class="header-left">
+      <h1>Incident Report Submission</h1>
+      <p>LOOMI – Loomex Operational Oversight &amp; Management Interface</p>
     </div>
+    <div class="header-badge">IR Form</div>
   </div>
-  <div class="header-title">Incident Report Submission</div>
-</div>
 
-<div id="form-area" class="form-wrapper">
-  <form id="irForm" novalidate>
+  <div id="form-area" class="card">
+    <form id="irForm" novalidate>
 
-    <!-- HUB / ACTIVATION -->
-    <div class="section-header">Activation Information</div>
-    <div class="two-col">
-      <div class="field" id="f-HubName">
-        <label>Hub Name <span class="req">*</span></label>
-        <select name="HubName" id="hubSelect">
-          <option value="">-- Loading sites... --</option>
-        </select>
-        <div class="error-msg">Required</div>
+      <!-- ACTIVATION INFORMATION -->
+      <div class="card-section">
+        <div class="section-label">Activation Information</div>
+        <div class="field-grid cols-2">
+          <div class="field-group" id="f-HubName">
+            <label>Hub / Site <span class="req">*</span></label>
+            <select name="HubName" id="hubSelect">
+              <option value="">-- Loading sites... --</option>
+            </select>
+            <input type="hidden" name="FolderName" id="folderName">
+            <div class="error-msg">Required</div>
+          </div>
+          <div class="field-group">
+            <label>Activation</label>
+            <select name="ActivationID" id="activationID">
+              <option value="">-- Loading... --</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <input type="hidden" name="FolderName" id="folderName">
-      <div class="field">
-        <label>Activation ID</label>
-        <select name="ActivationID" id="activationID">
-          <option value="">-- Loading... --</option>
-        </select>
+
+      <!-- INCIDENT DETAILS -->
+      <div class="card-section">
+        <div class="section-label">Incident Details</div>
+        <div class="field-group" id="f-IncidentTitle" style="margin-bottom:16px;">
+          <label>Incident Title <span class="req">*</span></label>
+          <input type="text" name="IncidentTitle" placeholder="Brief title describing the incident">
+          <div class="error-msg">Required</div>
+        </div>
+        <div class="field-grid cols-2" style="margin-bottom:16px;">
+          <div class="field-group" id="f-IncidentDate">
+            <label>Incident Date <span class="req">*</span></label>
+            <input type="date" name="IncidentDate">
+            <div class="error-msg">Required</div>
+          </div>
+          <div class="field-group" id="f-IncidentTime">
+            <label>Incident Time <span class="req">*</span></label>
+            <input type="time" name="IncidentTime">
+            <div class="error-msg">Required</div>
+          </div>
+        </div>
+        <div class="field-group" id="f-IncidentType">
+          <label>Incident Type <span class="req">*</span></label>
+          <select name="IncidentType">
+            <option value="">-- Select --</option>
+            <option>Domestic Dispute</option>
+            <option>Verbal Conflict</option>
+            <option>Physical Conflict</option>
+            <option>Intoxicated Individual</option>
+            <option>Medical Emergency</option>
+            <option>Medical Non-Emergency</option>
+            <option>General Mischief</option>
+            <option>Theft/Property Damage</option>
+            <option>Missing Person</option>
+            <option>Fire / Smoke</option>
+            <option>Hazardous Material</option>
+            <option>Unauthorized Entry / Trespass</option>
+            <option>Noise Complaint</option>
+            <option>Animal Complaint</option>
+            <option>Other</option>
+          </select>
+          <div class="error-msg">Required</div>
+        </div>
       </div>
-    </div>
 
-    <!-- SECTION 1: Incident Details -->
-    <div class="section-header">Section 1 – Incident Details</div>
-
-    <div class="field" id="f-IncidentTitle">
-      <label>Incident Title <span class="req">*</span></label>
-      <input type="text" name="IncidentTitle" placeholder="Brief title describing the incident">
-      <div class="error-msg">Required</div>
-    </div>
-
-    <div class="two-col">
-      <div class="field" id="f-IncidentDate">
-        <label>Incident Date <span class="req">*</span></label>
-        <input type="date" name="IncidentDate">
-        <div class="error-msg">Required</div>
+      <!-- LOCATION -->
+      <div class="card-section">
+        <div class="section-label">Location</div>
+        <div class="field-group" style="margin-bottom:16px;">
+          <label>Street Address</label>
+          <input type="text" name="StreetAddress" placeholder="Street address of incident">
+        </div>
+        <div class="field-grid cols-2">
+          <div class="field-group">
+            <label>Cross Street 1</label>
+            <input type="text" name="Intersection1">
+          </div>
+          <div class="field-group">
+            <label>Cross Street 2</label>
+            <input type="text" name="Intersection2">
+          </div>
+        </div>
       </div>
-      <div class="field" id="f-IncidentTime">
-        <label>Incident Time <span class="req">*</span></label>
-        <input type="time" name="IncidentTime">
-        <div class="error-msg">Required</div>
+
+      <!-- PROGNOSIS -->
+      <div class="card-section">
+        <div class="section-label">Prognosis <span class="req-mark">*</span></div>
+        <div class="field-group" id="f-Prognosis">
+          <div class="btn-group">
+            <input type="radio" name="Prognosis" id="p-worsening" value="Worsening">
+            <label for="p-worsening">Worsening</label>
+            <input type="radio" name="Prognosis" id="p-improving" value="Improving">
+            <label for="p-improving">Improving</label>
+            <input type="radio" name="Prognosis" id="p-stable" value="Stable">
+            <label for="p-stable">Stable</label>
+            <input type="radio" name="Prognosis" id="p-unknown" value="Unknown">
+            <label for="p-unknown">Unknown</label>
+          </div>
+          <div class="error-msg">Required</div>
+        </div>
       </div>
-    </div>
 
-    <div class="field" id="f-IncidentType">
-      <label>Incident Type <span class="req">*</span></label>
-      <select name="IncidentType">
-        <option value="">-- Select --</option>
-        <option>Domestic Dispute</option>
-        <option>Verbal Conflict</option>
-        <option>Physical Conflict</option>
-        <option>Intoxicated Individual</option>
-        <option>Medical Emergency</option>
-        <option>Medical Non-Emergency</option>
-        <option>General Mischief</option>
-        <option>Theft/Property Damage</option>
-        <option>Missing Person</option>
-        <option>Fire / Smoke</option>
-        <option>Hazardous Material</option>
-        <option>Unauthorized Entry / Trespass</option>
-        <option>Noise Complaint</option>
-        <option>Animal Complaint</option>
-        <option>Other</option>
-      </select>
-      <div class="error-msg">Required</div>
-    </div>
-
-    <!-- SECTION 2: Location -->
-    <div class="section-header">Section 2 – Location</div>
-
-    <div class="field">
-      <label>Street Address</label>
-      <input type="text" name="StreetAddress" placeholder="Street address of incident">
-    </div>
-    <div class="two-col">
-      <div class="field">
-        <label>Cross Street 1</label>
-        <input type="text" name="Intersection1">
+      <!-- SEVERITY -->
+      <div class="card-section">
+        <div class="section-label">Severity <span class="req-mark">*</span></div>
+        <div class="field-group" id="f-Severity">
+          <div class="btn-group">
+            <input type="radio" name="Severity" id="s-major" value="Major">
+            <label for="s-major">Major</label>
+            <input type="radio" name="Severity" id="s-moderate" value="Moderate">
+            <label for="s-moderate">Moderate</label>
+            <input type="radio" name="Severity" id="s-minor" value="Minor">
+            <label for="s-minor">Minor</label>
+            <input type="radio" name="Severity" id="s-unknown" value="Unknown">
+            <label for="s-unknown">Unknown</label>
+          </div>
+          <div class="error-msg">Required</div>
+        </div>
       </div>
-      <div class="field">
-        <label>Cross Street 2</label>
-        <input type="text" name="Intersection2">
+
+      <!-- INCIDENT STATUS -->
+      <div class="card-section">
+        <div class="section-label">Incident Status <span class="req-mark">*</span></div>
+        <div class="field-group" id="f-IncidentStatus">
+          <div class="btn-group">
+            <input type="radio" name="IncidentStatus" id="is-mar" value="Major Assistance Required">
+            <label for="is-mar">Major Assistance Required</label>
+            <input type="radio" name="IncidentStatus" id="is-ar" value="Assistance Required">
+            <label for="is-ar">Assistance Required</label>
+            <input type="radio" name="IncidentStatus" id="is-uc" value="Under Control">
+            <label for="is-uc">Under Control</label>
+            <input type="radio" name="IncidentStatus" id="is-res" value="Resolved">
+            <label for="is-res">Resolved</label>
+            <input type="radio" name="IncidentStatus" id="is-closed" value="Closed">
+            <label for="is-closed">Closed</label>
+            <input type="radio" name="IncidentStatus" id="is-unk" value="Unknown">
+            <label for="is-unk">Unknown</label>
+          </div>
+          <div class="error-msg">Required</div>
+        </div>
       </div>
-    </div>
 
-    <!-- SECTION 3: Prognosis -->
-    <div class="section-header">Section 3 – Prognosis <span style="color:var(--red)">*</span></div>
-    <div class="field" id="f-Prognosis">
-      <div class="btn-group">
-        <input type="radio" name="Prognosis" id="p-worsening" value="Worsening">
-        <label for="p-worsening">Worsening</label>
-        <input type="radio" name="Prognosis" id="p-improving" value="Improving">
-        <label for="p-improving">Improving</label>
-        <input type="radio" name="Prognosis" id="p-stable" value="Stable">
-        <label for="p-stable">Stable</label>
-        <input type="radio" name="Prognosis" id="p-unknown" value="Unknown">
-        <label for="p-unknown">Unknown</label>
+      <!-- CASUALTIES -->
+      <div class="card-section">
+        <div class="section-label">Casualties</div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Fatalities?</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="togFatalities" name="FatalitiesYN">
+            <label class="slider" for="togFatalities"></label>
+            <span class="yes-label">Yes</span>
+          </div>
+        </div>
+        <div class="conditional-field" id="cf-fatalities">
+          <div class="field-group">
+            <label>Fatality Details</label>
+            <textarea name="FatalitiesDetails" rows="3" placeholder="Describe..."></textarea>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Injuries?</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="togInjuries" name="InjuriesYN">
+            <label class="slider" for="togInjuries"></label>
+            <span class="yes-label">Yes</span>
+          </div>
+        </div>
+        <div class="conditional-field" id="cf-injuries">
+          <div class="field-group">
+            <label>Injury Details</label>
+            <textarea name="InjuriesDetails" rows="3" placeholder="Describe..."></textarea>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Community Members Involved?</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="togEvacuees" name="EvacueesYN">
+            <label class="slider" for="togEvacuees"></label>
+            <span class="yes-label">Yes</span>
+          </div>
+        </div>
+        <div class="conditional-field" id="cf-evacuees">
+          <div class="field-group">
+            <label>Details</label>
+            <textarea name="EvacueesDetails" rows="3" placeholder="Describe..."></textarea>
+          </div>
+        </div>
       </div>
-      <div class="error-msg">Required</div>
-    </div>
 
-    <!-- SECTION 4: Severity -->
-    <div class="section-header">Section 4 – Severity <span style="color:var(--red)">*</span></div>
-    <div class="field" id="f-Severity">
-      <div class="btn-group">
-        <input type="radio" name="Severity" id="s-major" value="Major">
-        <label for="s-major">Major</label>
-        <input type="radio" name="Severity" id="s-moderate" value="Moderate">
-        <label for="s-moderate">Moderate</label>
-        <input type="radio" name="Severity" id="s-minor" value="Minor">
-        <label for="s-minor">Minor</label>
-        <input type="radio" name="Severity" id="s-unknown" value="Unknown">
-        <label for="s-unknown">Unknown</label>
+      <!-- SUPPORTING AGENCIES -->
+      <div class="card-section">
+        <div class="section-label">Supporting Agencies</div>
+        <div class="checkbox-grid" style="margin-bottom:20px;">
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Police"><span>Police</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Natural Resources"><span>Ministry of Natural Resources</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Fire"><span>Fire</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Labour"><span>Ministry of Labour</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="EMS"><span>EMS</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Environment"><span>Ministry of Environment</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Animal Control"><span>Animal Control</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Provincial HUSAR Team"><span>Provincial HUSAR Team</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Bylaw"><span>Bylaw</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Provincial Hazmat Teams"><span>Provincial Hazmat Teams</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Emergency Preparedness and Response"><span>Ministry of Emergency Preparedness and Response</span></label>
+          <label class="checkbox-item"><input type="checkbox" name="agencies" value="Other"><span>Other</span></label>
+        </div>
+        <div class="field-group">
+          <label>Lead Agency</label>
+          <input type="text" name="LeadAgency" placeholder="e.g. Police">
+        </div>
       </div>
-      <div class="error-msg">Required</div>
-    </div>
 
-    <!-- SECTION 5: Incident Status -->
-    <div class="section-header">Section 5 – Incident Status <span style="color:var(--red)">*</span></div>
-    <div class="field" id="f-IncidentStatus">
-      <div class="btn-group">
-        <input type="radio" name="IncidentStatus" id="is-mar" value="Major Assistance Required">
-        <label for="is-mar">Major Assistance Required</label>
-        <input type="radio" name="IncidentStatus" id="is-ar" value="Assistance Required">
-        <label for="is-ar">Assistance Required</label>
-        <input type="radio" name="IncidentStatus" id="is-uc" value="Under Control">
-        <label for="is-uc">Under Control</label>
-        <input type="radio" name="IncidentStatus" id="is-res" value="Resolved">
-        <label for="is-res">Resolved</label>
-        <input type="radio" name="IncidentStatus" id="is-closed" value="Closed">
-        <label for="is-closed">Closed</label>
-        <input type="radio" name="IncidentStatus" id="is-unk" value="Unknown">
-        <label for="is-unk">Unknown</label>
+      <!-- NARRATIVE -->
+      <div class="card-section">
+        <div class="section-label">Narrative</div>
+        <div class="field-group" style="margin-bottom:16px;">
+          <label>Related Events</label>
+          <textarea name="RelatedEvents" rows="3" placeholder="Any related prior incidents or context..."></textarea>
+        </div>
+        <div class="field-group" id="f-SituationSummary" style="margin-bottom:16px;">
+          <label>Situation Summary <span class="req">*</span></label>
+          <textarea name="SituationSummary" rows="5" placeholder="Describe what happened..."></textarea>
+          <div class="error-msg">Required</div>
+        </div>
+        <div class="field-group">
+          <label>Anticipated Actions</label>
+          <textarea name="AnticipatedActions" rows="4" placeholder="Actions planned or underway..."></textarea>
+        </div>
       </div>
-      <div class="error-msg">Required</div>
-    </div>
 
-    <!-- SECTION 6: Casualties -->
-    <div class="section-header">Section 6 – Casualties</div>
-
-    <div class="toggle-row">
-      <span class="toggle-label">Fatalities?</span>
-      <div class="toggle-switch">
-        <input type="checkbox" id="togFatalities" name="FatalitiesYN">
-        <label class="slider" for="togFatalities"></label>
-        <span class="yes-label">Yes</span>
+      <!-- SUPPORTING DOCUMENTS -->
+      <div class="card-section">
+        <div class="section-label">Supporting Documents</div>
+        <div class="file-upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+          <div class="upload-icon">📎</div>
+          <div class="upload-text">Click to attach files</div>
+          <div class="upload-sub">Images, PDFs, Word, Excel – up to 5 files</div>
+        </div>
+        <div class="file-list" id="fileList"></div>
       </div>
-    </div>
-    <div class="conditional-field" id="cf-fatalities">
-      <div class="field">
-        <label>Fatality Details</label>
-        <textarea name="FatalitiesDetails" rows="3" placeholder="Describe..."></textarea>
+
+      <!-- INCIDENT COMMANDER -->
+      <div class="card-section">
+        <div class="section-label">Incident Commander Information</div>
+        <div class="field-grid cols-3">
+          <div class="field-group" id="f-ICName">
+            <label>Site Commander Name <span class="req">*</span></label>
+            <input type="text" name="ICName">
+            <div class="error-msg">Required</div>
+          </div>
+          <div class="field-group">
+            <label>Department</label>
+            <input type="text" name="ICDept">
+          </div>
+          <div class="field-group">
+            <label>Contact Phone Number</label>
+            <input type="text" name="ICContact">
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="toggle-row">
-      <span class="toggle-label">Injuries?</span>
-      <div class="toggle-switch">
-        <input type="checkbox" id="togInjuries" name="InjuriesYN">
-        <label class="slider" for="togInjuries"></label>
-        <span class="yes-label">Yes</span>
+      <!-- COMPLETED BY -->
+      <div class="card-section">
+        <div class="section-label">Completed By</div>
+        <div class="field-grid cols-3" style="margin-bottom:16px;">
+          <div class="field-group" id="f-CompletedByName">
+            <label>Name <span class="req">*</span></label>
+            <input type="text" name="CompletedByName">
+            <div class="error-msg">Required</div>
+          </div>
+          <div class="field-group">
+            <label>Position</label>
+            <input type="text" name="CompletedByPosition">
+          </div>
+          <div class="field-group">
+            <label>Contact Phone Number</label>
+            <input type="text" name="CompletedByContact">
+          </div>
+        </div>
+        <div class="field-group" id="f-CompletedDate" style="max-width:220px;">
+          <label>Date Completed <span class="req">*</span></label>
+          <input type="date" name="CompletedDate">
+          <div class="error-msg">Required</div>
+        </div>
       </div>
-    </div>
-    <div class="conditional-field" id="cf-injuries">
-      <div class="field">
-        <label>Injury Details</label>
-        <textarea name="InjuriesDetails" rows="3" placeholder="Describe..."></textarea>
+
+      <!-- SUBMIT -->
+      <div class="form-footer">
+        <button type="submit" class="submit-btn" id="submitBtn">
+          <div class="spinner" id="spinner"></div>
+          <span id="btnText">Submit Incident Report</span>
+        </button>
       </div>
-    </div>
 
-    <div class="toggle-row">
-      <span class="toggle-label">Community Members Involved?</span>
-      <div class="toggle-switch">
-        <input type="checkbox" id="togEvacuees" name="EvacueesYN">
-        <label class="slider" for="togEvacuees"></label>
-        <span class="yes-label">Yes</span>
-      </div>
-    </div>
-    <div class="conditional-field" id="cf-evacuees">
-      <div class="field">
-        <label>Details</label>
-        <textarea name="EvacueesDetails" rows="3" placeholder="Describe..."></textarea>
-      </div>
-    </div>
+    </form>
+  </div>
 
-    <!-- SECTION 7: Supporting Agencies -->
-    <div class="section-header">Section 7 – Supporting Agencies</div>
+  <div class="page-footer" id="pageFooter">
+    <p>Submitted reports are forwarded to EOC Operations and filed in LOOMI. Questions? Contact eocstaffing@loomex.ca</p>
+  </div>
 
-    <div class="field">
-      <div class="checkbox-grid">
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Police"><span>Police</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Natural Resources"><span>Ministry of Natural Resources</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Fire"><span>Fire</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Labour"><span>Ministry of Labour</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="EMS"><span>EMS</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Environment"><span>Ministry of Environment</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Animal Control"><span>Animal Control</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Provincial HUSAR Team"><span>Provincial HUSAR Team</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Bylaw"><span>Bylaw</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Provincial Hazmat Teams"><span>Provincial Hazmat Teams</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Ministry of Emergency Preparedness and Response"><span>Ministry of Emergency Preparedness and Response</span></label>
-        <label class="checkbox-item"><input type="checkbox" name="agencies" value="Other"><span>Other</span></label>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Lead Agency</label>
-      <input type="text" name="LeadAgency" placeholder="e.g. Police">
-    </div>
-
-    <!-- SECTION 8: Narrative -->
-    <div class="section-header">Section 8 – Narrative</div>
-
-    <div class="field">
-      <label>Related Events</label>
-      <textarea name="RelatedEvents" rows="3" placeholder="Any related prior incidents or context..."></textarea>
-    </div>
-    <div class="field" id="f-SituationSummary">
-      <label>Situation Summary <span class="req">*</span></label>
-      <textarea name="SituationSummary" rows="5" placeholder="Describe what happened..."></textarea>
-      <div class="error-msg">Required</div>
-    </div>
-    <div class="field">
-      <label>Anticipated Actions</label>
-      <textarea name="AnticipatedActions" rows="4" placeholder="Actions planned or underway..."></textarea>
-    </div>
-
-    <!-- SECTION 9: Attachments -->
-    <div class="section-header">Section 9 – Supporting Documents</div>
-
-    <div class="field">
-      <div class="file-upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
-        <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
-        <div class="upload-icon">📎</div>
-        <div class="upload-text">Click to attach files</div>
-        <div class="upload-sub">Images, PDFs, Word, Excel – up to 5 files</div>
-      </div>
-      <div class="file-list" id="fileList"></div>
-    </div>
-
-    <!-- SECTION 10: IC Information -->
-    <div class="section-header">Section 10 – Incident Commander Information</div>
-
-    <div class="three-col">
-      <div class="field" id="f-ICName">
-        <label>Site Commander Name <span class="req">*</span></label>
-        <input type="text" name="ICName">
-        <div class="error-msg">Required</div>
-      </div>
-      <div class="field">
-        <label>Department</label>
-        <input type="text" name="ICDept">
-      </div>
-      <div class="field">
-        <label>Contact Phone Number</label>
-        <input type="text" name="ICContact">
-      </div>
-    </div>
-
-    <!-- SECTION 11: Completed By -->
-    <div class="section-header">Section 11 – Completed By</div>
-
-    <div class="three-col">
-      <div class="field" id="f-CompletedByName">
-        <label>Name <span class="req">*</span></label>
-        <input type="text" name="CompletedByName">
-        <div class="error-msg">Required</div>
-      </div>
-      <div class="field">
-        <label>Position</label>
-        <input type="text" name="CompletedByPosition">
-      </div>
-      <div class="field">
-        <label>Contact Phone Number</label>
-        <input type="text" name="CompletedByContact">
-      </div>
-    </div>
-
-    <div class="field" id="f-CompletedDate">
-      <label>Date Completed <span class="req">*</span></label>
-      <input type="date" name="CompletedDate">
-      <div class="error-msg">Required</div>
-    </div>
-
-    <div class="submit-area">
-      <button type="submit" class="submit-btn" id="submitBtn">
-        <span id="btnText">Submit Incident Report</span>
-        <div class="spinner" id="spinner"></div>
-      </button>
-    </div>
-
-  </form>
 </div>
 
 <!-- CONFIRMATION -->
-<div id="confirmation">
+<div id="confirmation" style="max-width:860px;margin:32px auto;">
   <div class="confirm-icon">✅</div>
   <div class="confirm-title">Incident Report Submitted</div>
   <div class="confirm-sub">Your report has been received and forwarded to EOC Operations.<br>A copy has been filed in LOOMI.</div>
-  <p>Return to LOOMI, or close this window.</p>
+  <p class="return-note">Return to LOOMI, or close this window.</p>
 </div>
 
 <script>
   // ---- File handling ----
   const fileInput = document.getElementById('fileInput');
-  const fileList = document.getElementById('fileList');
+  const fileList  = document.getElementById('fileList');
   let selectedFiles = [];
 
   fileInput.addEventListener('change', () => {
@@ -659,7 +705,7 @@
     selectedFiles.forEach((f, i) => {
       const item = document.createElement('div');
       item.className = 'file-item';
-      item.innerHTML = `<span>📄 ${f.name} <span style="color:var(--grey)">(${(f.size/1024).toFixed(1)} KB)</span></span>
+      item.innerHTML = `<span>📄 ${f.name} <span style="color:var(--text-muted)">(${(f.size/1024).toFixed(1)} KB)</span></span>
         <button class="remove-file" onclick="removeFile(${i})" type="button">&times;</button>`;
       fileList.appendChild(item);
     });
@@ -672,15 +718,12 @@
 
   // Drag and drop
   const dropZone = document.getElementById('dropZone');
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--green)'; });
-  dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--border)'; });
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.style.borderColor = 'var(--green)'; });
+  dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'var(--grey-border)'; });
   dropZone.addEventListener('drop', e => {
     e.preventDefault();
-    dropZone.style.borderColor = 'var(--border)';
-    const files = Array.from(e.dataTransfer.files);
-    files.forEach(f => {
-      if (selectedFiles.length < 5) selectedFiles.push(f);
-    });
+    dropZone.style.borderColor = 'var(--grey-border)';
+    Array.from(e.dataTransfer.files).forEach(f => { if (selectedFiles.length < 5) selectedFiles.push(f); });
     renderFileList();
   });
 
@@ -691,23 +734,23 @@
     });
   }
   wireToggle('togFatalities', 'cf-fatalities');
-  wireToggle('togInjuries', 'cf-injuries');
-  wireToggle('togEvacuees', 'cf-evacuees');
+  wireToggle('togInjuries',   'cf-injuries');
+  wireToggle('togEvacuees',   'cf-evacuees');
 
   // ---- Validation ----
   const requiredFields = [
-    { id: 'f-HubName', name: 'HubName', type: 'select' },
-    { id: 'f-IncidentTitle', name: 'IncidentTitle', type: 'input' },
-    { id: 'f-IncidentDate', name: 'IncidentDate', type: 'input' },
-    { id: 'f-IncidentTime', name: 'IncidentTime', type: 'input' },
-    { id: 'f-IncidentType', name: 'IncidentType', type: 'select' },
-    { id: 'f-Prognosis', name: 'Prognosis', type: 'radio' },
-    { id: 'f-Severity', name: 'Severity', type: 'radio' },
-    { id: 'f-IncidentStatus', name: 'IncidentStatus', type: 'radio' },
-    { id: 'f-SituationSummary', name: 'SituationSummary', type: 'textarea' },
-    { id: 'f-ICName', name: 'ICName', type: 'input' },
-    { id: 'f-CompletedByName', name: 'CompletedByName', type: 'input' },
-    { id: 'f-CompletedDate', name: 'CompletedDate', type: 'input' },
+    { id: 'f-HubName',         name: 'HubName',         type: 'select'   },
+    { id: 'f-IncidentTitle',   name: 'IncidentTitle',   type: 'input'    },
+    { id: 'f-IncidentDate',    name: 'IncidentDate',    type: 'input'    },
+    { id: 'f-IncidentTime',    name: 'IncidentTime',    type: 'input'    },
+    { id: 'f-IncidentType',    name: 'IncidentType',    type: 'select'   },
+    { id: 'f-Prognosis',       name: 'Prognosis',       type: 'radio'    },
+    { id: 'f-Severity',        name: 'Severity',        type: 'radio'    },
+    { id: 'f-IncidentStatus',  name: 'IncidentStatus',  type: 'radio'    },
+    { id: 'f-SituationSummary',name: 'SituationSummary',type: 'textarea' },
+    { id: 'f-ICName',          name: 'ICName',          type: 'input'    },
+    { id: 'f-CompletedByName', name: 'CompletedByName', type: 'input'    },
+    { id: 'f-CompletedDate',   name: 'CompletedDate',   type: 'input'    },
   ];
 
   function validate() {
@@ -739,65 +782,65 @@
   document.getElementById('irForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     if (!validate()) {
-      document.querySelector('.field.invalid').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.querySelector('.field-group.invalid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
-    const btn = document.getElementById('submitBtn');
+    const btn     = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const spinner = document.getElementById('spinner');
     btn.disabled = true;
     btnText.style.display = 'none';
     spinner.style.display = 'block';
 
-    // Build payload
     const agencies = Array.from(document.querySelectorAll('input[name="agencies"]:checked')).map(c => c.value);
-    
+
     const payload = new FormData();
-    payload.append('IncidentTitle', document.querySelector('[name=IncidentTitle]').value.trim());
-    payload.append('IncidentDate', document.querySelector('[name=IncidentDate]').value);
-    payload.append('IncidentTime', document.querySelector('[name=IncidentTime]').value);
-    payload.append('IncidentType', document.querySelector('[name=IncidentType]').value);
-    payload.append('StreetAddress', document.querySelector('[name=StreetAddress]').value.trim());
-    payload.append('Intersection1', document.querySelector('[name=Intersection1]').value.trim());
-    payload.append('Intersection2', document.querySelector('[name=Intersection2]').value.trim());
-    payload.append('Prognosis', document.querySelector('[name=Prognosis]:checked')?.value || '');
-    payload.append('Severity', document.querySelector('[name=Severity]:checked')?.value || '');
-    payload.append('IncidentStatus', document.querySelector('[name=IncidentStatus]:checked')?.value || '');
-    payload.append('FatalitiesYN', document.getElementById('togFatalities').checked);
-    payload.append('FatalitiesDetails', document.querySelector('[name=FatalitiesDetails]').value.trim());
-    payload.append('InjuriesYN', document.getElementById('togInjuries').checked);
-    payload.append('InjuriesDetails', document.querySelector('[name=InjuriesDetails]').value.trim());
-    payload.append('EvacueesYN', document.getElementById('togEvacuees').checked);
-    payload.append('EvacueesDetails', document.querySelector('[name=EvacueesDetails]').value.trim());
-    payload.append('SupportingAgencies', agencies.join(', '));
-    payload.append('LeadAgency', document.querySelector('[name=LeadAgency]').value.trim());
-    payload.append('RelatedEvents', document.querySelector('[name=RelatedEvents]').value.trim());
-    payload.append('SituationSummary', document.querySelector('[name=SituationSummary]').value.trim());
-    payload.append('AnticipatedActions', document.querySelector('[name=AnticipatedActions]').value.trim());
-    payload.append('ICName', document.querySelector('[name=ICName]').value.trim());
-    payload.append('ICDept', document.querySelector('[name=ICDept]').value.trim());
-    payload.append('ICContact', document.querySelector('[name=ICContact]').value.trim());
-    payload.append('CompletedByName', document.querySelector('[name=CompletedByName]').value.trim());
+    payload.append('IncidentTitle',       document.querySelector('[name=IncidentTitle]').value.trim());
+    payload.append('IncidentDate',        document.querySelector('[name=IncidentDate]').value);
+    payload.append('IncidentTime',        document.querySelector('[name=IncidentTime]').value);
+    payload.append('IncidentType',        document.querySelector('[name=IncidentType]').value);
+    payload.append('StreetAddress',       document.querySelector('[name=StreetAddress]').value.trim());
+    payload.append('Intersection1',       document.querySelector('[name=Intersection1]').value.trim());
+    payload.append('Intersection2',       document.querySelector('[name=Intersection2]').value.trim());
+    payload.append('Prognosis',           document.querySelector('[name=Prognosis]:checked')?.value || '');
+    payload.append('Severity',            document.querySelector('[name=Severity]:checked')?.value || '');
+    payload.append('IncidentStatus',      document.querySelector('[name=IncidentStatus]:checked')?.value || '');
+    payload.append('FatalitiesYN',        document.getElementById('togFatalities').checked);
+    payload.append('FatalitiesDetails',   document.querySelector('[name=FatalitiesDetails]').value.trim());
+    payload.append('InjuriesYN',          document.getElementById('togInjuries').checked);
+    payload.append('InjuriesDetails',     document.querySelector('[name=InjuriesDetails]').value.trim());
+    payload.append('EvacueesYN',          document.getElementById('togEvacuees').checked);
+    payload.append('EvacueesDetails',     document.querySelector('[name=EvacueesDetails]').value.trim());
+    payload.append('SupportingAgencies',  agencies.join(', '));
+    payload.append('LeadAgency',          document.querySelector('[name=LeadAgency]').value.trim());
+    payload.append('RelatedEvents',       document.querySelector('[name=RelatedEvents]').value.trim());
+    payload.append('SituationSummary',    document.querySelector('[name=SituationSummary]').value.trim());
+    payload.append('AnticipatedActions',  document.querySelector('[name=AnticipatedActions]').value.trim());
+    payload.append('ICName',              document.querySelector('[name=ICName]').value.trim());
+    payload.append('ICDept',              document.querySelector('[name=ICDept]').value.trim());
+    payload.append('ICContact',           document.querySelector('[name=ICContact]').value.trim());
+    payload.append('CompletedByName',     document.querySelector('[name=CompletedByName]').value.trim());
     payload.append('CompletedByPosition', document.querySelector('[name=CompletedByPosition]').value.trim());
-    payload.append('CompletedByContact', document.querySelector('[name=CompletedByContact]').value.trim());
-    payload.append('CompletedDate', document.querySelector('[name=CompletedDate]').value);
-    payload.append('ActivationID', document.querySelector('[name=ActivationID]').value);
-    payload.append('HubName', document.querySelector('[name=HubName]').value);
-    payload.append('FolderName', document.getElementById('folderName').value);
-    payload.append('Distribution', 'EOC Operations, EOC Command');
-    payload.append('RecordStatus', 'Submitted');
+    payload.append('CompletedByContact',  document.querySelector('[name=CompletedByContact]').value.trim());
+    payload.append('CompletedDate',       document.querySelector('[name=CompletedDate]').value);
+    payload.append('ActivationID',        document.querySelector('[name=ActivationID]').value);
+    payload.append('HubName',             document.querySelector('[name=HubName]').value);
+    payload.append('FolderName',          document.getElementById('folderName').value);
+    payload.append('Distribution',        'EOC Operations, EOC Command');
+    payload.append('RecordStatus',        'Submitted');
 
     selectedFiles.forEach((f, i) => payload.append(`attachment_${i}`, f, f.name));
 
     try {
       const res = await fetch('https://super-violet-90e9.loomex-it.workers.dev/incident-submit', {
-  method: 'POST',
-  headers: { 'X-Submit-Secret': '7ce93d730211ce20724195fb7d0f2918b95d0497db03acbb1e668107d0a8cc38' },
-  body: payload
-});
+        method: 'POST',
+        headers: { 'X-Submit-Secret': 'YOUR_INCIDENT_SECRET_VALUE' },
+        body: payload
+      });
       if (res.ok) {
         document.getElementById('form-area').style.display = 'none';
+        document.getElementById('pageFooter').style.display = 'none';
         document.getElementById('confirmation').style.display = 'block';
         window.scrollTo(0, 0);
       } else {
@@ -807,15 +850,14 @@
       btn.disabled = false;
       btnText.style.display = 'inline';
       spinner.style.display = 'none';
-      alert('Submission failed. Please try again or contact EOC Operations at eocoperations@loomex.ca');
+      alert('Submission failed. Please try again or contact EOC Staffing at eocstaffing@loomex.ca');
     }
   });
 
-  // Set today as default for completed date
+  // Default completed date to today
   document.querySelector('[name=CompletedDate]').valueAsDate = new Date();
 
-  // ---- Dynamic activation + site loading (linked) ----
-
+  // ---- Dynamic activation + site loading ----
   async function loadSitesForActivation(activationId) {
     const hubSelect = document.getElementById('hubSelect');
     document.getElementById('folderName').value = '';
@@ -825,7 +867,7 @@
     }
     hubSelect.innerHTML = '<option value="">-- Loading sites... --</option>';
     try {
-      const res = await fetch(`https://loomi-data.loomex-it.workers.dev/sites?activation=${encodeURIComponent(activationId)}`);
+      const res   = await fetch(`https://loomi-data.loomex-it.workers.dev/sites?activation=${encodeURIComponent(activationId)}`);
       const sites = await res.json();
       hubSelect.innerHTML = '<option value="">-- Select Hub --</option>';
       sites.forEach(site => {
@@ -841,13 +883,11 @@
     }
   }
 
-  // Update hidden folderName when hub selection changes
   document.getElementById('hubSelect').addEventListener('change', function() {
     const selected = this.options[this.selectedIndex];
     document.getElementById('folderName').value = selected.dataset.folder || '';
   });
 
-  // When activation changes, reload the site list
   document.getElementById('activationID').addEventListener('change', function() {
     loadSitesForActivation(this.value);
   });
@@ -855,16 +895,15 @@
   async function loadActivations() {
     const select = document.getElementById('activationID');
     try {
-      const res = await fetch('https://loomi-data.loomex-it.workers.dev/activations');
+      const res         = await fetch('https://loomi-data.loomex-it.workers.dev/activations');
       const activations = await res.json();
-      select.innerHTML = '<option value="">-- Select Activation --</option>';
+      select.innerHTML  = '<option value="">-- Select Activation --</option>';
       activations.forEach(act => {
         const opt = document.createElement('option');
         opt.value = act.id;
         opt.textContent = act.title;
         select.appendChild(opt);
       });
-      // Auto-select and load sites if only one activation
       if (activations.length === 1) {
         select.value = activations[0].id;
         loadSitesForActivation(activations[0].id);
