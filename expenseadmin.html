@@ -227,6 +227,32 @@
     }
   }
 
+  async function saveNoteFromList(token, el) {
+    const notes    = el.value.trim();
+    const statusEl = document.getElementById(`note-status-${token}`);
+    // Skip if nothing changed
+    const original = el.dataset.original ?? '';
+    if (notes === original) return;
+    el.dataset.original = notes;
+    statusEl.textContent = 'Saving...'; statusEl.style.color = 'var(--text-muted)';
+    try {
+      const res = await fetch(`${WORKER_URL}/expense-admin-note`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken}:${sessionTs}` },
+        body: JSON.stringify({ token, notes })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      // Update local data so re-renders don't reset it
+      const entry = allData.find(e => e.token === token);
+      if (entry) entry.internalNotes = notes;
+      statusEl.textContent = '✓'; statusEl.style.color = 'var(--green-dark)';
+      setTimeout(() => statusEl.textContent = '', 2000);
+    } catch(e) {
+      statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--error)';
+    }
+  }
+
   async function markFinanceApproved(reportNumber) {
     try {
       const res = await fetch(`${WORKER_URL}/expense-admin-set-status`, {
@@ -284,8 +310,15 @@
       const status       = statusHTML[s.status] || `<span class="status-badge">${s.status}</span>`;
       const approvedBy   = s.approvedBy ? `<br><span style="font-size:11px;color:var(--text-muted)">${s.approvedBy}</span>` : '';
       const notesBlock = [
-        s.rejectionReason ? `<div style="margin-top:6px;padding:5px 8px;background:#fff0f0;border-left:3px solid #cc2936;border-radius:0 4px 4px 0;font-size:11px;color:#7a1a1a;max-width:260px;line-height:1.4;">&#10007; ${s.rejectionReason}</div>` : '',
-        s.internalNotes   ? `<div style="margin-top:4px;padding:5px 8px;background:#fff8e1;border-left:3px solid #f59e0b;border-radius:0 4px 4px 0;font-size:11px;color:#7a5200;max-width:260px;line-height:1.4;">&#128221; ${s.internalNotes}</div>` : ''
+        s.rejectionReason ? `<div style="margin-top:6px;padding:5px 8px;background:#fff0f0;border-left:3px solid #cc2936;border-radius:0 4px 4px 0;font-size:11px;color:#7a1a1a;line-height:1.4;">&#10007; ${s.rejectionReason}</div>` : '',
+        `<div style="margin-top:6px;">
+          <textarea id="notes-${s.token}" rows="2"
+            style="width:100%;min-width:220px;border:1.5px solid #e8c96a;border-radius:6px;padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;background:#fffbf0;color:#5a3e00;resize:vertical;line-height:1.4;"
+            placeholder="Add internal note..."
+            onblur="saveNoteFromList('${s.token}', this)"
+          >${s.internalNotes || ''}</textarea>
+          <span id="note-status-${s.token}" style="font-size:11px;color:var(--text-muted);margin-left:4px;"></span>
+        </div>`
       ].join('');
       const financeBtn   = s.status === 'approved'
         ? `<br><button class="btn-finance" onclick="markFinanceApproved('${s.reportNumber}')">Mark Finance Approved</button>`
