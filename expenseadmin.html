@@ -281,6 +281,9 @@
         : `<span style="color:var(--text-muted);font-size:11px;">—</span>`;
       const status       = statusHTML[s.status] || `<span class="status-badge">${s.status}</span>`;
       const approvedBy   = s.approvedBy ? `<br><span style="font-size:11px;color:var(--text-muted)">${s.approvedBy}</span>` : '';
+      const notesBlock   = s.internalNotes
+        ? `<div style="margin-top:6px;padding:5px 8px;background:#fff8e1;border-left:3px solid #f59e0b;border-radius:0 4px 4px 0;font-size:11px;color:#7a5200;max-width:260px;line-height:1.4;">${s.internalNotes}</div>`
+        : '';
       const financeBtn   = s.status === 'approved'
         ? `<br><button class="btn-finance" onclick="markFinanceApproved('${s.reportNumber}')">Mark Finance Approved</button>`
         : '';
@@ -296,7 +299,7 @@
        <td style="white-space:nowrap">${submitted}<br><a href="expense-approve.html?token=${s.token}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Review →</a></td>
         <td class="mono">${claimed}</td>
         <td class="mono">${approved}</td>
-        <td style="white-space:normal;min-width:150px">${status}${approvedBy}${financeBtn}</td>
+        <td style="white-space:normal;min-width:150px">${status}${approvedBy}${financeBtn}${notesBlock}</td>
         <td>${spLink}</td>
         <td><button class="btn-delete" onclick="deleteReport('${s.reportNumber}')" title="Remove from tracker">&times;</button></td>
       </tr>`;
