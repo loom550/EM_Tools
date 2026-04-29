@@ -566,8 +566,7 @@
             <div id="rejectPanelTitle" style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;"></div>
             <textarea id="rejectReason" placeholder="Reason (required -- will be sent to contractor)..." style="border:1.5px solid var(--grey-border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;width:100%;color:var(--text);background:var(--white);resize:vertical;min-height:72px;margin-bottom:10px;" onfocus="this.style.borderColor='var(--error)'" onblur="this.style.borderColor='var(--grey-border)'"></textarea>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <input type="text" id="rejectAdminName" placeholder="Your name" style="max-width:180px;border:1.5px solid var(--grey-border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;">
-              <input type="password" id="rejectPassword" placeholder="Admin password" style="max-width:180px;border:1.5px solid var(--grey-border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;">
+              <input type="text" id="rejectAdminName" placeholder="Your name" style="max-width:220px;border:1.5px solid var(--grey-border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;">
               <button id="rejectConfirmBtn" onclick="submitReject()" style="background:var(--error);color:white;border:none;border-radius:8px;padding:10px 24px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Confirm</button>
               <button onclick="hideRejectPanel()" style="background:none;border:1.5px solid var(--grey-border);border-radius:8px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-muted);cursor:pointer;">Cancel</button>
             </div>
@@ -1376,26 +1375,22 @@
     document.getElementById('rejectPanel').style.display = 'none';
     document.getElementById('rejectBtns').style.display  = 'flex';
     document.getElementById('rejectReason').value   = '';
-    document.getElementById('rejectPassword').value = '';
     document.getElementById('rejectStatusMsg').style.display = 'none';
   }
 
   async function submitReject() {
     const reason    = document.getElementById('rejectReason').value.trim();
     const adminName = document.getElementById('rejectAdminName').value.trim();
-    const password  = document.getElementById('rejectPassword').value;
     const confirmBtn = document.getElementById('rejectConfirmBtn');
 
     if (!reason)    { showRejectStatus('Please enter a reason.', 'error'); return; }
     if (!adminName) { showRejectStatus('Please enter your name.', 'error'); return; }
-    if (!password && !adminSessionToken) { showRejectStatus('Please enter admin password.', 'error'); return; }
 
     confirmBtn.disabled = true; confirmBtn.textContent = 'Processing...';
     try {
-      if (!adminSessionToken) await getAdminSession(password);
       const res = await fetch(`${WORKER_URL}/expense-reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': adminAuthHeader() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, rejectionType: currentRejectType, reason, adminName })
       });
       const data = await res.json();
