@@ -302,7 +302,7 @@
 
     document.getElementById('tableBody').innerHTML = rows.map(s => {
       const submitted    = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-      const period       = s.periodStart && s.periodEnd ? `${s.periodStart} to ${s.periodEnd}` : '—';
+      const period       = s.periodStart && s.periodEnd ? `<span style="white-space:nowrap;">${s.periodStart}</span><br><span style="font-size:10px;color:var(--text-muted);">to ${s.periodEnd}</span>` : '—';
       const claimed      = s.total != null ? `$${parseFloat(s.total).toFixed(2)}` : '—';
       const approved     = s.approvedTotal != null
         ? `<strong style="color:var(--green-dark);">$${parseFloat(s.approvedTotal).toFixed(2)}</strong>`
