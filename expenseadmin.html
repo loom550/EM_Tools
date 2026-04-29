@@ -266,10 +266,12 @@
     document.getElementById('stateEmpty').style.display = 'none';
 
     const statusHTML = {
-      'pending':          '<span class="status-badge status-pending">&#9203; Pending</span>',
-      'approved':         '<span class="status-badge status-approved">&#10003; Approved</span>',
-      'rejected':         '<span class="status-badge status-rejected">&#10007; Rejected</span>',
-      'finance-approved': '<span class="status-badge status-finance-approved">&#10003;&#10003; Finance Approved</span>'
+      'pending':             '<span class="status-badge status-pending">&#9203; Pending</span>',
+      'approved':            '<span class="status-badge status-approved">&#10003; Approved</span>',
+      'rejected':            '<span class="status-badge status-rejected">&#10007; Rejected</span>',
+      'rejected_closed':     '<span class="status-badge status-rejected">&#10007; Rejected &amp; Closed</span>',
+      'revision_requested':  '<span class="status-badge" style="background:#fff8e1;color:#7a5200;">&#8617; Revision Requested</span>',
+      'finance-approved':    '<span class="status-badge status-finance-approved">&#10003;&#10003; Finance Approved</span>'
     };
 
     document.getElementById('tableBody').innerHTML = rows.map(s => {
@@ -281,9 +283,10 @@
         : `<span style="color:var(--text-muted);font-size:11px;">—</span>`;
       const status       = statusHTML[s.status] || `<span class="status-badge">${s.status}</span>`;
       const approvedBy   = s.approvedBy ? `<br><span style="font-size:11px;color:var(--text-muted)">${s.approvedBy}</span>` : '';
-      const notesBlock   = s.internalNotes
-        ? `<div style="margin-top:6px;padding:5px 8px;background:#fff8e1;border-left:3px solid #f59e0b;border-radius:0 4px 4px 0;font-size:11px;color:#7a5200;max-width:260px;line-height:1.4;">${s.internalNotes}</div>`
-        : '';
+      const notesBlock = [
+        s.rejectionReason ? `<div style="margin-top:6px;padding:5px 8px;background:#fff0f0;border-left:3px solid #cc2936;border-radius:0 4px 4px 0;font-size:11px;color:#7a1a1a;max-width:260px;line-height:1.4;">&#10007; ${s.rejectionReason}</div>` : '',
+        s.internalNotes   ? `<div style="margin-top:4px;padding:5px 8px;background:#fff8e1;border-left:3px solid #f59e0b;border-radius:0 4px 4px 0;font-size:11px;color:#7a5200;max-width:260px;line-height:1.4;">&#128221; ${s.internalNotes}</div>` : ''
+      ].join('');
       const financeBtn   = s.status === 'approved'
         ? `<br><button class="btn-finance" onclick="markFinanceApproved('${s.reportNumber}')">Mark Finance Approved</button>`
         : '';
