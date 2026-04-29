@@ -253,6 +253,20 @@ body {
   transition: border-color .15s;
 }
 .profile-field input:focus { outline: none; border-color: var(--green); }
+.profile-field select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: border-color .15s;
+  appearance: none;
+  cursor: pointer;
+}
+.profile-field select:focus { outline: none; border-color: var(--green); }
 .profile-field.full { grid-column: 1 / -1; }
 .profile-save-btn { background: var(--green); color: #fff; border: none; padding: 8px 20px; border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 16px; }
 .profile-save-btn:hover { background: var(--green-dim); }
@@ -426,7 +440,10 @@ body {
       <div class="profile-grid" style="margin-bottom:14px">
         <div class="profile-field"><label>Full Name <span style="color:var(--red)">*</span></label><input type="text" id="prof-name" placeholder="Your full name" readonly style="opacity:.6;cursor:not-allowed;"></div>
         <div class="profile-field"><label>Phone <span style="color:var(--red)">*</span></label><input type="tel" id="prof-phone" placeholder="Phone number"></div>
-        <div class="profile-field full"><label>Address <span style="color:var(--red)">*</span></label><input type="text" id="prof-address" placeholder="Street, City, Province, Postal Code"></div>
+        <div class="profile-field full"><label>Street Address <span style="color:var(--red)">*</span></label><input type="text" id="prof-street" placeholder="123 Main Street" autocomplete="street-address"></div>
+        <div class="profile-field"><label>City <span style="color:var(--red)">*</span></label><input type="text" id="prof-city" placeholder="City" autocomplete="address-level2"></div>
+        <div class="profile-field"><label>Province <span style="color:var(--red)">*</span></label><select id="prof-province" autocomplete="address-level1"><option value="">Select province...</option><option>AB</option><option>BC</option><option>MB</option><option>NB</option><option>NL</option><option>NS</option><option>NT</option><option>NU</option><option>ON</option><option>PE</option><option>QC</option><option>SK</option><option>YT</option></select></div>
+        <div class="profile-field"><label>Postal Code <span style="color:var(--red)">*</span></label><input type="text" id="prof-postal" placeholder="A1A 1A1" maxlength="7" autocomplete="postal-code" style="text-transform:uppercase;letter-spacing:.08em;"></div>
         <div class="profile-field"><label>Email <span style="color:var(--red)">*</span></label><input type="email" id="prof-email" placeholder="Email address"></div>
         <div class="profile-field"><label>Date of Birth <span style="color:var(--red)">*</span></label><input type="date" id="prof-dob"></div>
       </div>
@@ -530,6 +547,32 @@ var DOC_TYPES = [
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 
+function parseAddressFields(addr){
+  var PROVS=['AB','BC','MB','NB','NL','NS','NT','NU','ON','PE','QC','SK','YT'];
+  var result={street:'',city:'',province:'',postal:''};
+  if(!addr) return result;
+  // Extract postal code anywhere in string
+  var pm=addr.match(/\b([A-Za-z]\d[A-Za-z])\s*(\d[A-Za-z]\d)\b/);
+  if(pm){ result.postal=(pm[1]+' '+pm[2]).toUpperCase(); addr=addr.replace(pm[0],''); }
+  // Split remainder by comma, clean up
+  var parts=addr.split(',').map(function(p){return p.trim();}).filter(Boolean);
+  // Find province
+  var pi=-1;
+  for(var i=parts.length-1;i>=0;i--){
+    if(PROVS.indexOf(parts[i].toUpperCase().replace('.',''))>-1){pi=i;result.province=parts[i].toUpperCase().replace('.','');break;}
+  }
+  if(pi>-1){
+    result.city=parts[pi-1]||'';
+    result.street=parts.slice(0,Math.max(0,pi-1)).join(', ');
+  } else if(parts.length>=2){
+    result.city=parts[parts.length-1];
+    result.street=parts.slice(0,parts.length-1).join(', ');
+  } else {
+    result.street=parts[0]||'';
+  }
+  return result;
+}
+
 function dateStr(y,m,d){ return y+'-'+(m+1<10?'0':'')+(m+1)+'-'+(d<10?'0':'')+d; }
 function fmtDate(ds){ if(!ds)return '-'; var d=new Date(ds+'T00:00:00'); return MON_SHORT[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(); }
 function isInRange(ds,s,e){ return ds>=s&&ds<=e; }
@@ -613,8 +656,14 @@ async function loadProfile(){
     var data=await api('/avail-profile?email='+encodeURIComponent(auth.email)+'&contractorId='+encodeURIComponent(auth.contractorId));
     document.getElementById('prof-name').value=data.name||'';
     document.getElementById('prof-phone').value=data.phone||'';
-    document.getElementById('prof-address').value=data.address||'';
     document.getElementById('prof-email').value=data.email||'';
+    // Parse existing address into structured fields (best-effort)
+    var _ap=parseAddressFields(data.address||'');
+    document.getElementById('prof-street').value=_ap.street;
+    document.getElementById('prof-city').value=_ap.city;
+    document.getElementById('prof-postal').value=_ap.postal;
+    var _ps=document.getElementById('prof-province');
+    for(var _pi=0;_pi<_ps.options.length;_pi++){if(_ps.options[_pi].value===_ap.province){_ps.selectedIndex=_pi;break;}}
     document.getElementById('prof-dob').value=data.dob||'';
     document.getElementById('prof-emerg-name').value=data.emergencyName||'';
     document.getElementById('prof-emerg-phone').value=data.emergencyPhone||'';
@@ -635,15 +684,25 @@ async function saveProfile(){
   var btn=document.getElementById('prof-save-btn');
   var name=document.getElementById('prof-name').value.trim();
   var phone=document.getElementById('prof-phone').value.trim();
-  var address=document.getElementById('prof-address').value.trim();
+  var street=document.getElementById('prof-street').value.trim();
+  var city=document.getElementById('prof-city').value.trim();
+  var province=document.getElementById('prof-province').value;
+  var postalRaw=document.getElementById('prof-postal').value.replace(/\s/g,'').toUpperCase();
+  if(postalRaw.length===6) postalRaw=postalRaw.slice(0,3)+' '+postalRaw.slice(3);
   var email=document.getElementById('prof-email').value.trim();
   var dob=document.getElementById('prof-dob').value;
   var emergName=document.getElementById('prof-emerg-name').value.trim();
   var emergPhone=document.getElementById('prof-emerg-phone').value.trim();
-  if(!name||!phone||!address||!email||!dob||!emergName||!emergPhone){
+  if(!name||!phone||!street||!city||!province||!email||!dob||!emergName||!emergPhone){
     showToast('Please fill in all required fields.','error');
     return;
   }
+  if(postalRaw&&!/^[A-Z]\d[A-Z] \d[A-Z]\d$/.test(postalRaw)){
+    showToast('Postal code must be in format A1A 1A1.','error');
+    document.getElementById('prof-postal').focus();
+    return;
+  }
+  var address=[street,city,province,postalRaw].filter(Boolean).join(', ');
   btn.disabled=true; btn.textContent='Saving...';
   try{
     var locs=[];
@@ -1047,7 +1106,16 @@ async function registerPushSub(sub) {
     el('feedback-banner').style.display='none';
     localStorage.setItem('loomi_feedback_banner_dismissed','1');
   });
-  el('login-email').addEventListener('keydown', function(e){if(e.key==='Enter')el('login-cid').focus();});
+ el('login-email').addEventListener('keydown', function(e){if(e.key==='Enter')el('login-cid').focus();});
+  // Postal code: auto-uppercase + auto-format on blur
+  var _postalEl=document.getElementById('prof-postal');
+  if(_postalEl){
+    _postalEl.addEventListener('input',function(){this.value=this.value.toUpperCase();});
+    _postalEl.addEventListener('blur',function(){
+      var v=this.value.replace(/\s/g,'').toUpperCase();
+      if(v.length===6&&/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(v)) this.value=v.slice(0,3)+' '+v.slice(3);
+    });
+  }
   el('login-cid').addEventListener('keydown', function(e){if(e.key==='Enter')doLogin();});
 })();
 
