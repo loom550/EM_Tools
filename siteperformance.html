@@ -1,331 +1,569 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="/pwa-nav.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IC Crew Performance Rating</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; padding: 24px; }
-    .container { max-width: 860px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-    .header { background-color: #00A651; padding: 24px 32px; display: flex; align-items: center; justify-content: space-between; }
-    .header h1 { color: #fff; font-size: 22px; font-weight: bold; }
-    .header .logo { color: #fff; font-size: 13px; text-align: right; opacity: 0.9; }
-    .form-body { padding: 32px; }
-    .section-title { font-size: 14px; font-weight: bold; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e8f5ee; }
-    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-    .field-row.full { grid-template-columns: 1fr; }
-    .field-row.three { grid-template-columns: 1fr 1fr 1fr; }
-    .field-group { display: flex; flex-direction: column; gap: 6px; }
-    label { font-size: 13px; font-weight: bold; color: #1a3a5c; }
-    input[type="text"], input[type="date"], select, textarea { border: 1px solid #ccc; border-radius: 4px; padding: 10px 12px; font-size: 14px; font-family: Arial, sans-serif; width: 100%; color: #333; background: #fff; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: #00A651; box-shadow: 0 0 0 2px rgba(0,166,81,0.15); }
-    textarea { resize: vertical; min-height: 80px; }
-    .divider { border: none; border-top: 1px solid #e0e0e0; margin: 28px 0; }
+    :root {
+      --green:#00A651; --green-dark:#007a3d; --green-light:#e8f5ee; --green-mid:#c8e6d4;
+      --navy:#1a3a5c; --navy-light:#2a4a6c; --grey-footer:#6D6E71;
+      --grey-border:#d8dde3; --grey-bg:#f5f7fa; --white:#fff;
+      --text:#2c3e50; --text-muted:#6b7c93;
+      --error:#cc2936; --error-bg:#fdf0f0;
+      --amber:#f5a623; --amber-bg:#fffbeb;
+      --shadow:0 2px 8px rgba(0,0,0,.06),0 8px 32px rgba(0,0,0,.04);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--grey-bg);color:var(--text);min-height:100vh;padding:32px 16px 64px;}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 10%,rgba(0,166,81,.06) 0%,transparent 50%),radial-gradient(ellipse at 80% 90%,rgba(26,58,92,.05) 0%,transparent 50%);pointer-events:none;z-index:0;}
+    .container{max-width:860px;margin:0 auto;position:relative;z-index:1;}
 
-    /* Crew row */
-    .crew-row { background: #f9fdf9; border: 1px solid #d4edda; border-radius: 6px; padding: 16px; position: relative; margin-bottom: 12px; transition: border-color 0.2s, background 0.2s; }
-    .crew-row.needs-followup { border-color: #f5a623; background: #fffdf5; }
-    .crew-row-number { font-size: 12px; font-weight: bold; color: #00A651; margin-bottom: 10px; }
-    .crew-row-fields { display: grid; grid-template-columns: 2fr 2fr 1fr 3fr; gap: 12px; align-items: end; }
-    .crew-row-footer { display: flex; align-items: center; justify-content: flex-end; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e8e8e8; gap: 10px; }
+    /* HEADER */
+    .header{background:var(--navy);border-radius:12px 12px 0 0;padding:28px 36px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+    .header-left h1{color:#fff;font-size:20px;font-weight:700;letter-spacing:-.3px;}
+    .header-left p{color:rgba(255,255,255,.55);font-size:13px;margin-top:4px;}
+    .site-badge{background:var(--green);color:#fff;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:6px 14px;border-radius:20px;white-space:nowrap;font-family:'DM Mono',monospace;flex-shrink:0;}
 
-    /* Follow-up checkbox */
-    .followup-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: bold; color: #1a3a5c; user-select: none; }
-    .followup-label input[type="checkbox"] { display: none; }
-    .followup-checkbox-custom { width: 18px; height: 18px; border: 2px solid #ccc; border-radius: 3px; background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color 0.15s, background 0.15s; position: relative; }
-    .followup-label input[type="checkbox"]:checked + .followup-checkbox-custom { background: #f5a623; border-color: #f5a623; }
-    .followup-checkbox-custom::after { content: ''; display: none; width: 5px; height: 9px; border: 2px solid #fff; border-top: none; border-left: none; transform: rotate(45deg); position: absolute; top: 1px; }
-    .followup-label input[type="checkbox"]:checked + .followup-checkbox-custom::after { display: block; }
-    .followup-badge { display: none; font-size: 11px; font-weight: bold; color: #f5a623; background: #fff8e7; border: 1px solid #f5a623; border-radius: 4px; padding: 2px 8px; }
-    .crew-row.needs-followup .followup-badge { display: inline-block; }
+    /* CARD */
+    .card{background:var(--white);box-shadow:var(--shadow);}
+    .card-section{padding:32px 36px;border-bottom:1px solid #eef0f3;}
+    .card-section:last-of-type{border-bottom:none;}
+    .section-label{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--green);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--green-mid);}
 
-    /* Notes required state */
-    .notes-required-hint { font-size: 11px; color: #f5a623; margin-top: 3px; display: none; }
-    .crew-row.needs-followup .notes-required-hint { display: block; }
-    input.notes-field-required { border-color: #f5a623 !important; }
-    input.notes-field-required:focus { box-shadow: 0 0 0 2px rgba(245,166,35,0.2) !important; }
+    /* FIELDS */
+    .field-grid{display:grid;gap:16px;}
+    .field-grid.cols-2{grid-template-columns:1fr 1fr;}
+    .field-group{display:flex;flex-direction:column;gap:6px;}
+    label.fl{font-size:12px;font-weight:600;color:var(--navy);letter-spacing:.2px;}
+    label.fl .req{color:var(--green);margin-left:2px;}
+    input[type="text"],input[type="email"],select{border:1.5px solid var(--grey-border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;width:100%;color:var(--text);background:var(--white);transition:border-color .15s,box-shadow .15s;appearance:none;-webkit-appearance:none;}
+    input:focus,select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,166,81,.12);}
+    input::placeholder{color:#bcc5ce;}
+    input.invalid{border-color:var(--error);box-shadow:0 0 0 3px rgba(204,41,54,.08);}
 
-    /* Stars */
-    .star-rating { display: flex; flex-direction: row-reverse; gap: 4px; justify-content: flex-end; }
-    .star-rating input[type="radio"] { display: none; }
-    .star-rating label { font-size: 28px; color: #ccc; cursor: pointer; transition: color 0.15s; font-weight: normal; }
-    .star-rating input[type="radio"]:checked ~ label { color: #f5a623; }
-    .star-rating label:hover, .star-rating label:hover ~ label { color: #f5a623; }
+    /* AUTH */
+    .auth-desc{font-size:13px;color:var(--text-muted);margin-bottom:24px;line-height:1.6;}
+    .verify-btn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:11px 28px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:8px;}
+    .verify-btn:hover{background:var(--navy-light);}
+    .verify-btn:disabled{background:#a0adb8;cursor:not-allowed;}
 
-    .remove-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; color: #999; font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
-    .remove-btn:hover { background: #ffe0e0; color: #cc0000; }
-    .add-btn { background: #e8f5ee; color: #00A651; border: 1px dashed #00A651; border-radius: 6px; padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 8px; }
-    .add-btn:hover { background: #d0edda; }
-    .submit-section { margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px; align-items: center; }
-    .submit-btn { background-color: #00A651; color: #fff; border: none; border-radius: 6px; padding: 12px 36px; font-size: 16px; font-weight: bold; cursor: pointer; }
-    .submit-btn:hover { background-color: #008c44; }
-    .submit-btn:disabled { background-color: #aaa; cursor: not-allowed; }
-    .status-msg { font-size: 14px; padding: 10px 16px; border-radius: 6px; display: none; }
-    .status-msg.success { background: #e8f5ee; color: #00A651; border: 1px solid #00A651; display: block; }
-    .status-msg.error { background: #fdecea; color: #cc0000; border: 1px solid #cc0000; display: block; }
-    .footer { background-color: #6D6E71; padding: 12px 32px; text-align: center; }
-    .footer p { color: #fff; font-size: 12px; }
+    /* IC STATUS + WEEK NAV */
+    .ic-status{display:flex;align-items:center;gap:10px;padding:10px 20px;background:rgba(0,166,81,.06);border-bottom:1px solid var(--green-mid);font-size:13px;color:var(--navy);}
+    .ic-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+    .ic-name{font-weight:600;}
+    .ic-id{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);}
+    .week-nav{display:flex;align-items:center;gap:10px;padding:12px 20px;background:#f8f9fb;border-bottom:1px solid #eef0f3;}
+    .wn-btn{background:var(--white);border:1.5px solid var(--grey-border);color:var(--text);width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+    .wn-btn:hover:not(:disabled){border-color:var(--navy);color:var(--navy);}
+    .wn-btn:disabled{opacity:.35;cursor:not-allowed;}
+    .wn-label{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--navy);flex:1;text-align:center;}
+    .refresh-btn{background:none;border:1.5px solid var(--grey-border);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+    .refresh-btn:hover{border-color:var(--green);color:var(--green);}
+
+    /* MAIN CONTENT */
+    .main-content{display:none;}
+    .main-content.visible{display:block;}
+
+    /* CREW ROWS */
+    .crew-rows{display:flex;flex-direction:column;gap:10px;}
+    .crew-row{border:1.5px solid var(--grey-border);border-radius:10px;overflow:hidden;transition:border-color .15s;}
+    .crew-row:focus-within{border-color:#a8c5da;}
+    .crew-row.needs-followup{border-color:var(--amber);background:var(--amber-bg);}
+    .row-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fb;border-bottom:1px solid #eef0f3;flex-wrap:wrap;}
+    .row-num{font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text-muted);min-width:24px;}
+    .row-name{font-size:14px;font-weight:600;color:var(--navy);}
+    .row-pos{font-size:12px;color:var(--text-muted);margin-top:1px;}
+    .fu-badge{display:none;font-size:10px;font-weight:700;color:var(--amber);background:#fff8e1;border:1px solid var(--amber);border-radius:4px;padding:2px 8px;white-space:nowrap;}
+    .crew-row.needs-followup .fu-badge{display:inline-block;}
+    .row-remove{background:none;border:none;color:#c0c8d0;cursor:pointer;padding:4px;border-radius:4px;display:flex;align-items:center;transition:color .15s,background .15s;margin-left:auto;flex-shrink:0;}
+    .row-remove:hover{color:var(--error);background:var(--error-bg);}
+    .row-body{padding:14px 16px;display:grid;grid-template-columns:1fr 150px 72px;gap:14px;align-items:start;}
+
+    /* NOTES */
+    .notes-lbl{font-size:11px;font-weight:600;color:var(--navy);letter-spacing:.2px;display:block;margin-bottom:4px;}
+    .notes-input{border:1.5px solid var(--grey-border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'DM Sans',sans-serif;width:100%;color:var(--text);background:var(--white);transition:border-color .15s;}
+    .notes-input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,166,81,.12);}
+    .notes-input.req-hint{border-color:var(--amber);}
+    .notes-hint{font-size:11px;color:var(--amber);margin-top:3px;display:none;}
+    .crew-row.needs-followup .notes-hint{display:block;}
+
+    /* STARS */
+    .star-wrap{display:flex;flex-direction:column;gap:4px;}
+    .star-lbl{font-size:11px;font-weight:600;color:var(--navy);letter-spacing:.2px;}
+    .star-rating{display:flex;flex-direction:row-reverse;gap:2px;justify-content:flex-end;}
+    .star-rating input[type="radio"]{display:none;}
+    .star-rating label{font-size:26px;color:#ddd;cursor:pointer;transition:color .1s;line-height:1;}
+    .star-rating input[type="radio"]:checked ~ label{color:var(--amber);}
+    .star-rating label:hover,.star-rating label:hover ~ label{color:var(--amber);}
+
+    /* FOLLOW-UP */
+    .fu-wrap{display:flex;flex-direction:column;gap:4px;align-items:center;}
+    .fu-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);text-align:center;}
+    .fu-btn{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;cursor:pointer;border:1.5px solid var(--grey-border);background:var(--white);font-size:20px;transition:all .15s;user-select:none;}
+    .fu-btn:hover{border-color:var(--amber);}
+    .fu-btn.active{border-color:var(--amber);background:#fff8e1;}
+
+    /* ADD CREW */
+    .add-crew-btn{width:100%;padding:12px;background:none;border:1.5px dashed var(--grey-border);border-radius:10px;color:var(--green);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;}
+    .add-crew-btn:hover{background:var(--green-light);border-color:var(--green-mid);}
+    .manual-add-section{display:none;}
+    .manual-add-row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;padding:14px 16px;background:#f8f9fb;border:1.5px solid var(--grey-border);border-radius:10px;margin-top:10px;align-items:end;}
+    .save-manual-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s;}
+    .save-manual-btn:hover{background:var(--green-dark);}
+
+    /* EMPTY / LOADING */
+    .empty-state{text-align:center;padding:36px 20px;color:var(--text-muted);font-size:14px;background:#f8f9fb;border-radius:8px;border:1.5px dashed var(--grey-border);}
+    .loading-row{text-align:center;padding:24px;color:var(--text-muted);font-size:13px;}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(26,58,92,.2);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+    .spinner-w{border-color:rgba(255,255,255,.3);border-top-color:#fff;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* STATUS / SUBMIT */
+    .status-msg{font-size:13.5px;padding:10px 16px;border-radius:8px;display:none;flex:1;line-height:1.5;}
+    .status-msg.success{background:var(--green-light);color:var(--green-dark);border:1.5px solid var(--green-mid);display:block;}
+    .status-msg.error{background:var(--error-bg);color:var(--error);border:1.5px solid rgba(204,41,54,.2);display:block;}
+    .form-footer{padding:24px 36px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid #eef0f3;}
+    .submit-btn{background:var(--green);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;white-space:nowrap;flex-shrink:0;}
+    .submit-btn:hover{background:var(--green-dark);transform:translateY(-1px);}
+    .submit-btn:disabled{background:#a0adb8;cursor:not-allowed;transform:none;}
+    .page-footer{background:var(--grey-footer);border-radius:0 0 12px 12px;padding:14px 36px;text-align:center;}
+    .page-footer p{color:rgba(255,255,255,.7);font-size:12px;}
+    .page-footer a{color:rgba(255,255,255,.85);}
+
+    /* Ghost inputs for editable manual rows */
+    .ghost-input{font-family:'DM Sans',sans-serif;border:none;background:transparent;padding:0;outline:none;width:100%;}
+    .ghost-input:focus{text-decoration:underline;text-decoration-color:var(--green);}
+
+    @media(max-width:640px){
+      body{padding:0 0 48px;}
+      .header{padding:20px;border-radius:0;flex-wrap:wrap;}
+      .card-section{padding:24px 20px;}
+      .page-footer{border-radius:0;padding:14px 20px;}
+      .form-footer{padding:20px;flex-direction:column;align-items:stretch;}
+      .submit-btn{width:100%;text-align:center;}
+      .field-grid.cols-2{grid-template-columns:1fr;}
+      .row-body{grid-template-columns:1fr !important;}
+      .manual-add-row{grid-template-columns:1fr;}
+    }
+    @media(min-width:641px) and (max-width:800px){
+      .row-body{grid-template-columns:1fr 130px 64px;}
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
       <h1>IC Crew Performance Rating</h1>
-      <div class="logo">The Loomex Group<br>Response and Readiness Division</div>
+      <p>The Loomex Group &mdash; Response and Readiness Division</p>
     </div>
+    <div class="site-badge" id="siteBadge">Loading&hellip;</div>
+  </div>
 
-    <div class="form-body">
-      <div class="section-title">Submission Details</div>
-
-      <div class="field-row three">
+  <!-- AUTH CARD -->
+  <div class="card" id="authCard">
+    <div class="card-section">
+      <div class="section-label">Verify Identity</div>
+      <p class="auth-desc">Enter your name and Contractor ID exactly as they appear in your deployment records to access the rating form for your site.</p>
+      <div class="field-grid cols-2">
         <div class="field-group">
-          <label for="icName">IC Name *</label>
-          <input type="text" id="icName" placeholder="Enter IC name" required>
+          <label class="fl" for="icName">Full Name <span class="req">*</span></label>
+          <input type="text" id="icName" placeholder="First and last name" autocomplete="name">
         </div>
         <div class="field-group">
-          <label for="site">Site *</label>
-          <select id="site" required>
-            <option value="">Select site...</option>
-            <option value="Kingston">Kingston</option>
-            <option value="Kapuskasing">Kapuskasing</option>
-            <option value="Timmins">Timmins</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label for="submissionDate">Date *</label>
-          <input type="date" id="submissionDate" required>
+          <label class="fl" for="icCid">Contractor ID <span class="req">*</span></label>
+          <input type="text" id="icCid" placeholder="e.g. EVAC-CON-00123" style="font-family:'DM Mono',monospace;letter-spacing:.04em;">
         </div>
       </div>
-
-      <div class="field-row full" style="margin-top: 8px;">
-        <div class="field-group">
-          <label for="generalComments">General Comments</label>
-          <textarea id="generalComments" placeholder="Overall observations, site conditions, team notes..."></textarea>
-        </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <button class="verify-btn" id="verifyBtn">Verify Identity</button>
+        <div class="status-msg" id="authStatus" style="flex:1;margin:0;padding:8px 14px;font-size:13px;"></div>
       </div>
-
-      <hr class="divider">
-
-      <div class="section-title">Crew Ratings</div>
-      <div id="crewRows"></div>
-      <button type="button" class="add-btn" onclick="addCrewRow()">+ Add Crew Member</button>
-
-      <div class="submit-section">
-        <div class="status-msg" id="statusMsg"></div>
-        <button class="submit-btn" id="submitBtn" onclick="submitForm()">Submit Ratings</button>
-      </div>
-    </div>
-
-    <div class="footer">
-      <p>The Loomex Group - Response and Readiness Division</p>
     </div>
   </div>
 
-  <script>
-    // ---------------------------------------------------------------------------
-    // CONFIG
-    // WORKER_URL  — paste your Cloudflare Worker URL after deploying
-    // FORM_SECRET — must match the FORM_SECRET secret set in your Worker
-    // ---------------------------------------------------------------------------
-    const WORKER_URL  = 'https://emperformance.loomex-it.workers.dev';
-    const FORM_SECRET = 'loom550adsfhasdkfjhsdlkjfnzxcvjnzlshgfasfhgasjhgsldknflskdjgfaoishgfafjnglskfnmoeqpWIADKSEOUGRONFaeufa';
-    // ---------------------------------------------------------------------------
+  <!-- MAIN (hidden until auth) -->
+  <div class="main-content" id="mainContent">
 
-    let crewCount = 0;
+    <!-- IC status bar -->
+    <div class="ic-status">
+      <div class="ic-dot"></div>
+      <div>
+        <div class="ic-name" id="icStatusName"></div>
+        <div class="ic-id" id="icStatusId"></div>
+      </div>
+      <div style="margin-left:auto;font-size:12px;color:var(--text-muted);" id="icSiteLabel"></div>
+    </div>
 
-    document.getElementById('submissionDate').valueAsDate = new Date();
+    <!-- Week nav -->
+    <div class="week-nav">
+      <button class="wn-btn" id="prevWeekBtn" title="Previous week">&#8249;</button>
+      <div class="wn-label" id="weekLabel">Loading&hellip;</div>
+      <button class="wn-btn" id="nextWeekBtn" title="Next week">&#8250;</button>
+      <button class="refresh-btn" id="refreshBtn">&#8635;&nbsp;Refresh Crew</button>
+    </div>
 
-    function addCrewRow() {
-      crewCount++;
-      const rowId = `crew_${crewCount}`;
-      const row = document.createElement('div');
-      row.className = 'crew-row';
-      row.id = rowId;
-      row.innerHTML = `
-        <div class="crew-row-number">Crew Member ${crewCount}</div>
-        <button class="remove-btn" onclick="removeCrewRow('${rowId}')" title="Remove">&#x2715;</button>
-        <div class="crew-row-fields">
-          <div class="field-group">
-            <label>Name *</label>
-            <input type="text" class="crew-name" placeholder="Full name">
-          </div>
-          <div class="field-group">
-            <label>Position</label>
-            <input type="text" class="crew-position" placeholder="Role / position">
-          </div>
-          <div class="field-group">
-            <label>Rating *</label>
-            <div class="star-rating">
-              <input type="radio" name="rating_${rowId}" id="r5_${rowId}" value="5">
-              <label for="r5_${rowId}">&#9733;</label>
-              <input type="radio" name="rating_${rowId}" id="r4_${rowId}" value="4">
-              <label for="r4_${rowId}">&#9733;</label>
-              <input type="radio" name="rating_${rowId}" id="r3_${rowId}" value="3">
-              <label for="r3_${rowId}">&#9733;</label>
-              <input type="radio" name="rating_${rowId}" id="r2_${rowId}" value="2">
-              <label for="r2_${rowId}">&#9733;</label>
-              <input type="radio" name="rating_${rowId}" id="r1_${rowId}" value="1">
-              <label for="r1_${rowId}">&#9733;</label>
+    <div class="card">
+
+      <!-- CREW RATINGS -->
+      <div class="card-section">
+        <div class="section-label">Crew Ratings</div>
+        <div class="crew-rows" id="crewRows">
+          <div class="loading-row"><span class="spinner"></span>Loading crew&hellip;</div>
+        </div>
+
+        <!-- Manual add form -->
+        <div class="manual-add-section" id="manualAddSection">
+          <div class="manual-add-row">
+            <div class="field-group">
+              <label class="notes-lbl">Name</label>
+              <input type="text" id="manualName" placeholder="Full name">
             </div>
-          </div>
-          <div class="field-group">
-            <label>Notes</label>
-            <input type="text" class="crew-notes" placeholder="Optional notes">
-            <span class="notes-required-hint">Notes are required when flagging for follow-up.</span>
+            <div class="field-group">
+              <label class="notes-lbl">Position / Role</label>
+              <input type="text" id="manualPosition" placeholder="Role or position">
+            </div>
+            <button class="save-manual-btn" id="saveManualBtn">Add</button>
           </div>
         </div>
-        <div class="crew-row-footer">
-          <label class="followup-label" title="Flag this crew member for EOC staffing review">
-            <input type="checkbox" class="crew-followup" onchange="toggleFollowUp('${rowId}', this)">
-            <span class="followup-checkbox-custom"></span>
-            Needs Follow Up
-          </label>
-          <span class="followup-badge">Flagged for Review</span>
+
+        <button class="add-crew-btn" id="addCrewBtn">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add Crew Member Manually
+        </button>
+      </div>
+
+      <!-- GENERAL COMMENTS -->
+      <div class="card-section">
+        <div class="section-label">General Comments</div>
+        <div class="field-group">
+          <label class="fl" for="generalComments">Overall observations, site conditions, or team notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+          <textarea id="generalComments" placeholder="Enter any general comments about this week&#39;s deployment at your site&hellip;" style="border:1.5px solid var(--grey-border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;width:100%;color:var(--text);background:var(--white);resize:vertical;min-height:90px;transition:border-color .15s;" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--grey-border)'"></textarea>
         </div>
-      `;
-      document.getElementById('crewRows').appendChild(row);
+      </div>
+
+      <!-- FOOTER -->
+      <div class="form-footer">
+        <div class="status-msg" id="submitStatus"></div>
+        <button class="submit-btn" id="submitBtn">Submit Ratings</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <p>IC Crew Performance Ratings are reviewed by EOC Staffing. Questions? <a href="mailto:eocstaffing@loomex.ca">eocstaffing@loomex.ca</a></p>
+  </div>
+</div>
+
+<script>
+  var WORKER_URL = 'https://emperformance.loomex-it.workers.dev';
+  var EARLIEST_MONDAY = '2026-03-30';
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  var siteToken = '', siteName = '', icName = '', crewCount = 0, currentWeekStart = '';
+
+  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function getToken(){ return new URLSearchParams(location.search).get('token') || ''; }
+
+  function getMondayOfWeek(d){
+    var dt = new Date(d); var day = dt.getDay();
+    dt.setDate(dt.getDate() + (day===0 ? -6 : 1-day));
+    return dt.toISOString().slice(0,10);
+  }
+  function getWeekEnd(ws){
+    var d = new Date(ws+'T00:00:00'); d.setDate(d.getDate()+6);
+    return d.toISOString().slice(0,10);
+  }
+  function fmtWeek(ws){
+    var s = new Date(ws+'T00:00:00'), e = new Date(getWeekEnd(ws)+'T00:00:00');
+    return DAY[s.getDay()]+' '+MON[s.getMonth()]+' '+s.getDate()+' \u2013 '+DAY[e.getDay()]+' '+MON[e.getMonth()]+' '+e.getDate()+', '+e.getFullYear();
+  }
+
+  function showAuthStatus(msg, type){
+    var el = document.getElementById('authStatus');
+    el.innerHTML = msg; el.className = 'status-msg '+type;
+  }
+  function showSubmitStatus(msg, type){
+    var el = document.getElementById('submitStatus');
+    el.innerHTML = msg; el.className = 'status-msg '+type;
+  }
+
+  // ── INIT ────────────────────────────────────────────────────────────────────
+  async function init(){
+    siteToken = getToken();
+    currentWeekStart = getMondayOfWeek(new Date());
+
+    if(!siteToken){
+      document.getElementById('siteBadge').textContent = 'Invalid Link';
+      document.getElementById('siteBadge').style.background = '#cc2936';
+      showAuthStatus('This link is invalid or has expired. Please contact EOC Staffing for a valid link.', 'error');
+      document.getElementById('verifyBtn').disabled = true;
+      return;
     }
 
-    function removeCrewRow(rowId) {
-      document.getElementById(rowId)?.remove();
+    try {
+      var res  = await fetch(WORKER_URL+'/perf-init?token='+encodeURIComponent(siteToken));
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.error||'Invalid link');
+      siteName = data.siteName;
+      document.getElementById('siteBadge').textContent = siteName;
+      document.getElementById('icSiteLabel').textContent = siteName;
+    } catch(e){
+      document.getElementById('siteBadge').textContent = 'Error';
+      document.getElementById('siteBadge').style.background = '#cc2936';
+      showAuthStatus('Could not load site info: '+e.message, 'error');
+      document.getElementById('verifyBtn').disabled = true;
+      return;
     }
 
-    function toggleFollowUp(rowId, checkbox) {
-      const row = document.getElementById(rowId);
-      const notesInput = row.querySelector('.crew-notes');
-      if (checkbox.checked) {
-        row.classList.add('needs-followup');
-        notesInput.classList.add('notes-field-required');
-        notesInput.placeholder = 'Required — describe the follow-up concern';
-      } else {
-        row.classList.remove('needs-followup');
-        notesInput.classList.remove('notes-field-required');
-        notesInput.placeholder = 'Optional notes';
-      }
-    }
+    document.getElementById('verifyBtn').addEventListener('click', verifyIdentity);
+    document.getElementById('icName').addEventListener('keydown', function(e){ if(e.key==='Enter') verifyIdentity(); });
+    document.getElementById('icCid').addEventListener('keydown',  function(e){ if(e.key==='Enter') verifyIdentity(); });
+    document.getElementById('prevWeekBtn').addEventListener('click', function(){ navWeek(-1); });
+    document.getElementById('nextWeekBtn').addEventListener('click', function(){ navWeek(1); });
+    document.getElementById('refreshBtn').addEventListener('click', loadCrew);
+    document.getElementById('addCrewBtn').addEventListener('click', toggleManualAdd);
+    document.getElementById('saveManualBtn').addEventListener('click', saveManualCrew);
+    document.getElementById('submitBtn').addEventListener('click', submitForm);
+  }
 
-    function getSelectedRating(rowId) {
-      const selected = document.querySelector(`input[name="rating_${rowId}"]:checked`);
-      return selected ? parseInt(selected.value) : null;
-    }
+  // ── VERIFY ──────────────────────────────────────────────────────────────────
+  async function verifyIdentity(){
+    var name = document.getElementById('icName').value.trim();
+    var cid  = document.getElementById('icCid').value.trim();
+    if(!name||!cid){ showAuthStatus('Please enter both your name and Contractor ID.', 'error'); return; }
 
-    async function submitForm() {
-      const icName = document.getElementById('icName').value.trim();
-      const site = document.getElementById('site').value;
-      const submissionDate = document.getElementById('submissionDate').value;
-      const generalComments = document.getElementById('generalComments').value.trim();
+    var btn = document.getElementById('verifyBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Verifying\u2026';
 
-      if (!icName || !site || !submissionDate) {
-        showStatus('Please fill in IC Name, Site, and Date.', 'error');
-        return;
-      }
-
-      const crewRows = document.querySelectorAll('.crew-row');
-      if (crewRows.length === 0) {
-        showStatus('Please add at least one crew member.', 'error');
-        return;
-      }
-
-      const records = [];
-      let valid = true;
-      let validationMsg = '';
-
-      crewRows.forEach(row => {
-        if (!valid) return;
-        const name = row.querySelector('.crew-name').value.trim();
-        const position = row.querySelector('.crew-position').value.trim();
-        const rating = getSelectedRating(row.id);
-        const notes = row.querySelector('.crew-notes').value.trim();
-        const needsFollowUp = row.querySelector('.crew-followup').checked;
-
-        if (!name) {
-          valid = false;
-          validationMsg = 'Please enter a name for every crew member.';
-          return;
-        }
-
-        if (needsFollowUp && !notes) {
-          valid = false;
-          validationMsg = 'Notes are required for any crew member flagged for follow-up. Check the entries highlighted in orange.';
-          return;
-        }
-
-        const fields = {
-          'IC Name': icName,
-          'Site': site,
-          'Submission Date': submissionDate,
-          'General Comments': generalComments,
-          'Crew Member Name': name,
-          'Position': position,
-          'Notes': notes,
-          'Needs Follow Up': needsFollowUp
-        };
-
-        if (rating !== null) fields['Rating'] = rating;
-
-        records.push({ fields });
+    try {
+      var res  = await fetch(WORKER_URL+'/perf-validate', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({token:siteToken, name:name, contractorId:cid})
       });
-
-      if (!valid) {
-        showStatus(validationMsg, 'error');
-        return;
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.error||'Verification failed');
+      if(!data.valid){
+        showAuthStatus(data.error||'Verification failed. Please check your details.', 'error');
+        btn.disabled=false; btn.textContent='Verify Identity'; return;
       }
+      icName = data.icName;
+      document.getElementById('authCard').style.display = 'none';
+      document.getElementById('mainContent').classList.add('visible');
+      document.getElementById('icStatusName').textContent = icName;
+      document.getElementById('icStatusId').textContent = cid;
+      updateWeekNav();
+      await loadCrew();
+    } catch(e){
+      showAuthStatus('Error: '+e.message, 'error');
+      btn.disabled=false; btn.textContent='Verify Identity';
+    }
+  }
 
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.textContent = 'Submitting...';
+  // ── WEEK NAV ────────────────────────────────────────────────────────────────
+  function navWeek(delta){
+    var d = new Date(currentWeekStart+'T00:00:00');
+    d.setDate(d.getDate()+delta*7);
+    var next = d.toISOString().slice(0,10);
+    if(next < EARLIEST_MONDAY) return;
+    var maxD = new Date(); maxD.setDate(maxD.getDate()+28);
+    if(next > getMondayOfWeek(maxD)) return;
+    currentWeekStart = next; updateWeekNav(); loadCrew();
+  }
+  function updateWeekNav(){
+    document.getElementById('weekLabel').textContent = fmtWeek(currentWeekStart);
+    document.getElementById('prevWeekBtn').disabled = currentWeekStart <= EARLIEST_MONDAY;
+    var maxD = new Date(); maxD.setDate(maxD.getDate()+28);
+    document.getElementById('nextWeekBtn').disabled = currentWeekStart >= getMondayOfWeek(maxD);
+  }
 
-      try {
-        for (let i = 0; i < records.length; i += 10) {
-          const chunk = records.slice(i, i + 10);
-          const response = await fetch(WORKER_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Form-Secret': FORM_SECRET
-            },
-            body: JSON.stringify({ records: chunk })
-          });
-
-          if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error?.message || 'Submission failed');
-          }
-        }
-
-        showStatus(`${records.length} rating${records.length > 1 ? 's' : ''} submitted successfully.`, 'success');
-        btn.textContent = 'Submitted';
-
-        setTimeout(() => {
-          document.getElementById('icName').value = '';
-          document.getElementById('site').value = '';
-          document.getElementById('submissionDate').valueAsDate = new Date();
-          document.getElementById('generalComments').value = '';
-          document.getElementById('crewRows').innerHTML = '';
-          crewCount = 0;
-          addCrewRow();
-          btn.disabled = false;
-          btn.textContent = 'Submit Ratings';
-          document.getElementById('statusMsg').className = 'status-msg';
-        }, 4000);
-
-      } catch (err) {
-        showStatus(`Error: ${err.message}`, 'error');
-        btn.disabled = false;
-        btn.textContent = 'Submit Ratings';
+  // ── LOAD CREW ────────────────────────────────────────────────────────────────
+  async function loadCrew(){
+    var container = document.getElementById('crewRows');
+    container.innerHTML = '<div class="loading-row"><span class="spinner"></span>Loading crew for this week\u2026</div>';
+    crewCount = 0;
+    try {
+      var res  = await fetch(WORKER_URL+'/perf-crew?token='+encodeURIComponent(siteToken)+'&weekStart='+currentWeekStart);
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.error||'Failed to load crew');
+      container.innerHTML = '';
+      if(!data.length){
+        container.innerHTML = '<div class="empty-state">No confirmed crew found for this week at '+esc(siteName)+'.<br>You can add crew members manually using the button below.</div>';
+      } else {
+        data.forEach(function(c){ addCrewRow(c.name, c.position, false); });
       }
+    } catch(e){
+      container.innerHTML = '<div class="loading-row" style="color:var(--error)">Error loading crew: '+esc(e.message)+'</div>';
     }
+  }
 
-    function showStatus(msg, type) {
-      const el = document.getElementById('statusMsg');
-      el.textContent = msg;
-      el.className = `status-msg ${type}`;
+  // ── ADD CREW ROW ─────────────────────────────────────────────────────────────
+  function addCrewRow(name, position, isManual){
+    crewCount++;
+    var id = crewCount;
+    var container = document.getElementById('crewRows');
+    var empty = container.querySelector('.empty-state');
+    if(empty) empty.remove();
+
+    var div = document.createElement('div');
+    div.className = 'crew-row'; div.id = 'crew-'+id;
+    div.dataset.isManual = isManual ? '1' : '0';
+
+    var nameHtml = isManual
+      ? '<input type="text" class="ghost-input crew-name-input" value="'+esc(name)+'" placeholder="Crew member name" style="font-size:14px;font-weight:600;color:var(--navy);">' +
+        '<div><input type="text" class="ghost-input crew-pos-input" value="'+esc(position||'')+'" placeholder="Position / role" style="font-size:12px;color:var(--text-muted);margin-top:1px;"></div>'
+      : '<div class="row-name">'+esc(name)+'</div><div class="row-pos">'+esc(position||'')+'</div>';
+
+    div.innerHTML =
+      '<div class="row-hdr">' +
+        '<span class="row-num">#'+id+'</span>' +
+        '<div style="flex:1;min-width:0;">'+nameHtml+'</div>' +
+        '<span class="fu-badge">Flagged for Follow-Up</span>' +
+        '<button class="row-remove" id="rm-'+id+'" title="Remove">' +
+          '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="row-body">' +
+        '<div>' +
+          '<span class="notes-lbl">Notes</span>' +
+          '<input type="text" class="notes-input" id="notes-'+id+'" placeholder="Performance notes (optional)">' +
+          '<div class="notes-hint">Notes required when flagging for follow-up.</div>' +
+        '</div>' +
+        '<div class="star-wrap">' +
+          '<span class="star-lbl">Rating</span>' +
+          '<div class="star-rating">' +
+            '<input type="radio" name="rat_'+id+'" id="r5_'+id+'" value="5"><label for="r5_'+id+'">&#9733;</label>' +
+            '<input type="radio" name="rat_'+id+'" id="r4_'+id+'" value="4"><label for="r4_'+id+'">&#9733;</label>' +
+            '<input type="radio" name="rat_'+id+'" id="r3_'+id+'" value="3"><label for="r3_'+id+'">&#9733;</label>' +
+            '<input type="radio" name="rat_'+id+'" id="r2_'+id+'" value="2"><label for="r2_'+id+'">&#9733;</label>' +
+            '<input type="radio" name="rat_'+id+'" id="r1_'+id+'" value="1"><label for="r1_'+id+'">&#9733;</label>' +
+          '</div>' +
+        '</div>' +
+        '<div class="fu-wrap">' +
+          '<span class="fu-lbl">Follow<br>Up</span>' +
+          '<div class="fu-btn" id="fu-'+id+'" title="Flag for follow-up">&#9873;</div>' +
+        '</div>' +
+      '</div>';
+
+    container.appendChild(div);
+    document.getElementById('rm-'+id).addEventListener('click', function(){ removeCrewRow(id); });
+    document.getElementById('fu-'+id).addEventListener('click', function(){ toggleFollowUp(id); });
+  }
+
+  function removeCrewRow(id){
+    var el = document.getElementById('crew-'+id); if(el) el.remove();
+    var c = document.getElementById('crewRows');
+    if(!c.querySelector('.crew-row'))
+      c.innerHTML = '<div class="empty-state">No crew added. Add members manually or refresh to reload scheduled crew.</div>';
+  }
+
+  function toggleFollowUp(id){
+    var row   = document.getElementById('crew-'+id);
+    var btn   = document.getElementById('fu-'+id);
+    var notes = document.getElementById('notes-'+id);
+    var active = btn.classList.contains('active');
+    if(active){
+      btn.classList.remove('active'); row.classList.remove('needs-followup');
+      if(notes){ notes.classList.remove('req-hint'); notes.placeholder='Performance notes (optional)'; }
+    } else {
+      btn.classList.add('active'); row.classList.add('needs-followup');
+      if(notes){ notes.classList.add('req-hint'); notes.placeholder='Required \u2014 describe the follow-up concern'; notes.focus(); }
     }
+  }
 
-    addCrewRow();
-  </script>
+  function getRating(id){
+    var c = document.querySelector('input[name="rat_'+id+'"]:checked');
+    return c ? parseInt(c.value) : null;
+  }
+
+  // ── MANUAL ADD ──────────────────────────────────────────────────────────────
+  function toggleManualAdd(){
+    var s = document.getElementById('manualAddSection');
+    s.style.display = s.style.display === 'block' ? 'none' : 'block';
+    if(s.style.display === 'block') document.getElementById('manualName').focus();
+  }
+  function saveManualCrew(){
+    var name = document.getElementById('manualName').value.trim();
+    var pos  = document.getElementById('manualPosition').value.trim();
+    if(!name){ document.getElementById('manualName').classList.add('invalid'); return; }
+    document.getElementById('manualName').classList.remove('invalid');
+    addCrewRow(name, pos, true);
+    document.getElementById('manualName').value = '';
+    document.getElementById('manualPosition').value = '';
+    document.getElementById('manualAddSection').style.display = 'none';
+  }
+
+  // ── SUBMIT ──────────────────────────────────────────────────────────────────
+  async function submitForm(){
+    var records = []; var hasError = false; var errMsg = '';
+
+    document.querySelectorAll('.crew-row').forEach(function(rowEl){
+      if(hasError) return;
+      var id = parseInt(rowEl.id.replace('crew-','')); if(isNaN(id)) return;
+      var isManual = rowEl.dataset.isManual === '1';
+      var name, pos;
+      if(isManual){
+        var ni = rowEl.querySelector('.crew-name-input'), pi = rowEl.querySelector('.crew-pos-input');
+        name = ni ? ni.value.trim() : ''; pos = pi ? pi.value.trim() : '';
+        if(!name){ hasError=true; errMsg='Please enter a name for all manually added crew members.'; if(ni) ni.classList.add('invalid'); return; }
+        if(ni) ni.classList.remove('invalid');
+      } else {
+        var nn = rowEl.querySelector('.row-name'), pp = rowEl.querySelector('.row-pos');
+        name = nn ? nn.textContent : ''; pos = pp ? pp.textContent : '';
+      }
+      var rating  = getRating(id);
+      var notesEl = document.getElementById('notes-'+id);
+      var notes   = notesEl ? notesEl.value.trim() : '';
+      var fuEl    = document.getElementById('fu-'+id);
+      var fu      = fuEl ? fuEl.classList.contains('active') : false;
+      if(fu && !notes){ hasError=true; errMsg='Notes are required for all crew members flagged for follow-up (highlighted in orange).'; if(notesEl) notesEl.focus(); return; }
+      records.push({name:name, position:pos, rating:rating, notes:notes, needsFollowUp:fu});
+    });
+
+    if(hasError){ showSubmitStatus(errMsg,'error'); return; }
+    if(!records.length){ showSubmitStatus('Please add at least one crew member before submitting.','error'); return; }
+    if(!records.some(function(r){ return r.rating!==null; })){ showSubmitStatus('Please rate at least one crew member before submitting.','error'); return; }
+
+    var comments = document.getElementById('generalComments').value.trim();
+    var btn = document.getElementById('submitBtn');
+    btn.disabled=true; btn.innerHTML='<span class="spinner spinner-w"></span>Submitting\u2026';
+
+    try {
+      var res = await fetch(WORKER_URL+'/perf-submit', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          token:siteToken, icName:icName, site:siteName,
+          weekStart:currentWeekStart,
+          submissionDate:new Date().toISOString().slice(0,10),
+          generalComments:comments, records:records
+        })
+      });
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.error||'Submission failed');
+      showSubmitStatus('&#10003; '+data.count+' rating'+(data.count!==1?'s':'')+' submitted successfully. Thank you, '+esc(icName)+'.', 'success');
+      btn.textContent = 'Submitted';
+      setTimeout(function(){
+        document.getElementById('crewRows').innerHTML = '<div class="loading-row"><span class="spinner"></span>Loading crew\u2026</div>';
+        document.getElementById('generalComments').value = '';
+        document.getElementById('submitStatus').className = 'status-msg';
+        btn.disabled=false; btn.textContent='Submit Ratings';
+        loadCrew();
+      }, 5000);
+    } catch(e){
+      showSubmitStatus('Submission failed: '+esc(e.message)+'. Please try again or contact eocstaffing@loomex.ca.','error');
+      btn.disabled=false; btn.textContent='Submit Ratings';
+    }
+  }
+
+  init();
+</script>
 </body>
 </html>
-
