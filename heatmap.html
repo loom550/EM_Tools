@@ -9,6 +9,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:"IBM Plex Sans",Arial,sans-serif;background:#0d1117;color:#e6edf3;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── GATE ── */
 #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a4e7e 0%,#0d2d4a 100%);z-index:1000;}
 .gate-card{background:#161b22;border-radius:12px;padding:40px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);text-align:center;border:1px solid #2a3340;}
 .gate-logo{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;color:#7dbe42;letter-spacing:.12em;margin-bottom:6px;}
@@ -19,32 +21,92 @@ body{font-family:"IBM Plex Sans",Arial,sans-serif;background:#0d1117;color:#e6ed
 .gate-btn{width:100%;margin-top:10px;background:#1a4e7e;color:#fff;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;transition:background .2s;}
 .gate-btn:hover{background:#2f6ea8;}
 .gate-error{margin-top:10px;color:#e05252;font-size:12px;min-height:16px;}
+
+/* ── DETAILS UNLOCK MODAL ── */
+#details-gate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);}
+#details-gate.open{display:flex;}
+.dg-card{background:#161b22;border-radius:10px;padding:28px;max-width:320px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,.6);text-align:center;border:1px solid #2a3340;}
+.dg-title{font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:4px;}
+.dg-sub{font-size:11px;color:#8fa3b8;margin-bottom:18px;line-height:1.5;}
+.dg-input{width:100%;background:#1e2530;border:1.5px solid #2a3340;border-radius:6px;padding:10px 14px;font-size:14px;color:#e6edf3;font-family:"IBM Plex Mono",monospace;outline:none;text-align:center;letter-spacing:3px;transition:border-color .2s;}
+.dg-input:focus{border-color:#7dbe42;}
+.dg-actions{display:flex;gap:8px;margin-top:10px;}
+.dg-btn{flex:1;background:#1a4e7e;color:#fff;border:none;border-radius:6px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;}
+.dg-btn:hover{background:#2f6ea8;}
+.dg-cancel{flex:0 0 auto;background:transparent;color:#8fa3b8;border:1px solid #2a3340;border-radius:6px;padding:10px 14px;font-size:13px;cursor:pointer;}
+.dg-cancel:hover{color:#e6edf3;}
+.dg-error{margin-top:8px;color:#e05252;font-size:11px;min-height:14px;}
+
+/* ── APP SHELL ── */
 #app{display:none;flex:1;flex-direction:column;height:100vh;}
 .hdr{background:#1a4e7e;padding:0 20px;display:flex;align-items:center;gap:14px;height:50px;border-bottom:3px solid #7dbe42;flex-shrink:0;}
 .hdr-logo{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:#7dbe42;letter-spacing:.12em;}
 .hdr-div{width:1px;height:22px;background:rgba(255,255,255,.2);}
 .hdr-act{font-family:"IBM Plex Mono",monospace;font-size:11px;color:rgba(255,255,255,.55);letter-spacing:.08em;}
 .hdr-title{font-size:13px;font-weight:600;color:#fff;}
-.hdr-right{margin-left:auto;}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
 .ref-btn{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.75);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:"IBM Plex Mono",monospace;}
 .ref-btn:hover{background:rgba(255,255,255,.1);}
+.unlock-btn{background:rgba(125,190,66,.15);border:1px solid rgba(125,190,66,.4);color:#7dbe42;padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:"IBM Plex Mono",monospace;}
+.unlock-btn:hover{background:rgba(125,190,66,.25);}
+.unlock-btn.active{background:rgba(125,190,66,.25);border-color:#7dbe42;}
 .stats-bar{background:#161b22;border-bottom:1px solid #2a3340;padding:5px 20px;display:flex;gap:20px;align-items:center;font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8fa3b8;flex-shrink:0;flex-wrap:wrap;}
 .stat-item{display:flex;align-items:center;gap:5px;}
 .s-dot{width:6px;height:6px;border-radius:50%;background:#7dbe42;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-.map-wrap{flex:1;position:relative;}
+
+/* ── MAP + PANEL ── */
+.map-wrap{flex:1;position:relative;overflow:hidden;}
 #map{position:absolute;inset:0;}
+
+/* ── LEGEND ── */
 .legend{position:absolute;bottom:28px;right:10px;z-index:500;background:rgba(22,27,34,.95);border:1px solid #2a3340;border-radius:6px;padding:12px 14px;font-size:11px;color:#c0cad6;min-width:165px;box-shadow:0 4px 16px rgba(0,0,0,.4);}
 .legend-title{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8fa3b8;margin-bottom:8px;}
 .legend-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
 .legend-bubble{border-radius:50%;background:rgba(47,152,121,.5);border:2px solid #2f9879;flex-shrink:0;}
 .legend-sep{border-top:1px solid #2a3340;margin:7px 0;}
 .legend-act{font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin:6px 0 4px;}
+
+/* ── DETAILS PANEL ── */
+#detail-panel{position:absolute;top:0;right:-340px;bottom:0;width:320px;background:#161b22;border-left:1px solid #2a3340;z-index:600;display:flex;flex-direction:column;transition:right .25s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 20px rgba(0,0,0,.4);}
+#detail-panel.open{right:0;}
+.dp-header{padding:14px 16px;border-bottom:1px solid #2a3340;background:#1e2530;flex-shrink:0;display:flex;align-items:center;gap:10px;}
+.dp-fsa{font-family:"IBM Plex Mono",monospace;font-size:16px;font-weight:600;color:#7dbe42;letter-spacing:.1em;}
+.dp-count{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8fa3b8;margin-top:2px;}
+.dp-close{margin-left:auto;background:transparent;border:none;color:#8fa3b8;cursor:pointer;font-size:20px;line-height:1;padding:2px 4px;border-radius:3px;}
+.dp-close:hover{color:#e6edf3;}
+.dp-body{flex:1;overflow-y:auto;padding:12px;}
+.dp-body::-webkit-scrollbar{width:5px;}
+.dp-body::-webkit-scrollbar-track{background:#161b22;}
+.dp-body::-webkit-scrollbar-thumb{background:#2a3340;border-radius:3px;}
+.dp-loading{text-align:center;padding:32px 0;color:#8fa3b8;font-size:12px;}
+.dp-spinner{display:inline-block;width:20px;height:20px;border:2px solid #2a3340;border-top-color:#7dbe42;border-radius:50%;animation:spin .7s linear infinite;margin-bottom:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ct-card{background:#1e2530;border:1px solid #2a3340;border-radius:6px;padding:11px 12px;margin-bottom:8px;}
+.ct-name{font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:5px;}
+.ct-row{font-size:11px;color:#8fa3b8;margin-bottom:3px;display:flex;align-items:flex-start;gap:5px;line-height:1.4;}
+.ct-row span{color:#c0cad6;}
+.ct-label{color:#8fa3b8;flex-shrink:0;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;min-width:48px;}
+.ct-roles{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;}
+.ct-role-tag{background:rgba(26,78,126,.4);border:1px solid rgba(26,78,126,.7);color:#7aa8d4;padding:1px 6px;border-radius:3px;font-size:10px;font-family:"IBM Plex Mono",monospace;}
+.ct-locs{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+.ct-loc-tag{background:rgba(47,152,121,.15);border:1px solid rgba(47,152,121,.3);color:#2f9879;padding:1px 6px;border-radius:3px;font-size:10px;}
+.dp-lock-notice{text-align:center;padding:28px 16px;color:#8fa3b8;font-size:12px;line-height:1.6;}
+.dp-lock-icon{font-size:28px;margin-bottom:10px;color:#2a3340;}
+.dp-unlock-inline{background:#1a4e7e;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;}
+.dp-unlock-inline:hover{background:#2f6ea8;}
+.dp-error{color:#e05252;font-size:12px;text-align:center;padding:20px;}
+.click-hint{position:absolute;bottom:28px;left:10px;z-index:500;background:rgba(22,27,34,.9);border:1px solid #2a3340;border-radius:5px;padding:7px 10px;font-size:10px;color:#8fa3b8;font-family:"IBM Plex Mono",monospace;pointer-events:none;}
+
+/* ── MAP OVERRIDES ── */
 .leaflet-tooltip{background:#1e2530!important;border:1px solid #2a3340!important;color:#e6edf3!important;font-family:"IBM Plex Sans",Arial,sans-serif!important;font-size:12px!important;border-radius:4px!important;box-shadow:0 4px 12px rgba(0,0,0,.4)!important;}
 .leaflet-container{background:#1a2030;}
+.bubble-clickable{cursor:pointer;}
 </style>
 </head>
 <body>
+
+<!-- Outer gate -->
 <div id="gate">
   <div class="gate-card">
     <div class="gate-logo">LOOMI</div>
@@ -55,6 +117,22 @@ body{font-family:"IBM Plex Sans",Arial,sans-serif;background:#0d1117;color:#e6ed
     <div class="gate-error" id="ge"></div>
   </div>
 </div>
+
+<!-- Details unlock modal -->
+<div id="details-gate">
+  <div class="dg-card">
+    <div class="dg-title">&#128274; Contractor Details</div>
+    <div class="dg-sub">Contractor names and contact details require an additional access code. Contact EOC Staffing if you need access.</div>
+    <input class="dg-input" type="password" id="dg-input" placeholder="Details access code" autocomplete="off">
+    <div class="dg-actions">
+      <button class="dg-cancel" id="dg-cancel">Cancel</button>
+      <button class="dg-btn" id="dg-btn">Unlock</button>
+    </div>
+    <div class="dg-error" id="dg-error"></div>
+  </div>
+</div>
+
+<!-- App -->
 <div id="app">
   <div class="hdr">
     <span class="hdr-logo">LOOMI</span>
@@ -63,6 +141,7 @@ body{font-family:"IBM Plex Sans",Arial,sans-serif;background:#0d1117;color:#e6ed
     <div class="hdr-div"></div>
     <span class="hdr-title">Contractor Heat Map</span>
     <div class="hdr-right">
+      <button class="unlock-btn" id="unlock-btn">&#128274; Details</button>
       <button class="ref-btn" id="refresh-btn">&#8635; Refresh</button>
     </div>
   </div>
@@ -71,6 +150,7 @@ body{font-family:"IBM Plex Sans",Arial,sans-serif;background:#0d1117;color:#e6ed
   </div>
   <div class="map-wrap">
     <div id="map"></div>
+    <div class="click-hint" id="click-hint">Click a bubble to see details</div>
     <div class="legend">
       <div class="legend-title">Contractor Pool</div>
       <div class="legend-row"><div class="legend-bubble" style="width:10px;height:10px;"></div><span>1&ndash;2</span></div>
@@ -85,20 +165,40 @@ body{font-family:"IBM Plex Sans",Arial,sans-serif;background:#0d1117;color:#e6ed
         <div class="legend-row"><div style="width:14px;height:14px;background:#1a4e7e;border:2px solid #fff;border-radius:3px;flex-shrink:0;"></div><span>Host Site</span></div>
       </div>
     </div>
+    <!-- Detail panel -->
+    <div id="detail-panel">
+      <div class="dp-header">
+        <div>
+          <div class="dp-fsa" id="dp-fsa">—</div>
+          <div class="dp-count" id="dp-count"></div>
+        </div>
+        <button class="dp-close" id="dp-close">&#10005;</button>
+      </div>
+      <div class="dp-body" id="dp-body">
+        <div class="dp-lock-notice">
+          <div class="dp-lock-icon">&#128274;</div>
+          Click a bubble on the map to view contractors in that area.
+        </div>
+      </div>
+    </div>
   </div>
 </div>
+
 <script>
 var WORKER = 'https://evacscheduling.loomex-it.workers.dev';
 var FSA_URL = 'https://tools.loomex.ca/fsa-coords.json';
 var pass = sessionStorage.getItem('loomi_hm_pass') || '';
+var detailsPass = sessionStorage.getItem('loomi_hm_dpass') || '';
+var detailsUnlocked = !!detailsPass;
 var map = null;
 var fsaLayer = null;
 var siteLayer = null;
-var FSA_COORDS = null; // loaded dynamically
+var FSA_COORDS = null;
+var pendingFSA = null; // FSA queued for after details unlock
 
 var ACTIVATION_PALETTE = ['#00A651','#d4a017','#2f9879','#7b5ea7','#e05252','#4a90d9'];
 
-function bubbleRadius(count){return Math.max(5,Math.min(35,Math.sqrt(count)*5));}
+function bubbleRadius(count){ return Math.max(5,Math.min(35,Math.sqrt(count)*5)); }
 
 function siteCategory(locationType){
   var lt=(locationType||'').toLowerCase();
@@ -109,38 +209,95 @@ function siteCategory(locationType){
 
 function siteIconHtml(category,color){
   var c=color||'#1a4e7e';
-  if(category==='eoc')
-    return '<div style="width:14px;height:14px;background:#1a4e7e;border:2px solid #7dbe42;transform:rotate(45deg);box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>';
-  if(category==='host')
-    return '<div style="width:14px;height:14px;background:'+c+';border:2px solid rgba(255,255,255,.9);border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>';
+  if(category==='eoc') return '<div style="width:14px;height:14px;background:#1a4e7e;border:2px solid #7dbe42;transform:rotate(45deg);box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>';
+  if(category==='host') return '<div style="width:14px;height:14px;background:'+c+';border:2px solid rgba(255,255,255,.9);border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>';
   return '<div style="width:14px;height:14px;background:'+c+';border:2px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>';
 }
 
-document.getElementById('gate-btn').addEventListener('click',function(){
-  var v=document.getElementById('gi').value.trim();if(!v)return;pass=v;loadAll();
-});
-document.getElementById('gi').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('gate-btn').click();});
-document.getElementById('refresh-btn').addEventListener('click',function(){loadData();});
+// ── OUTER GATE ──
+document.getElementById('gate-btn').addEventListener('click',function(){ var v=document.getElementById('gi').value.trim(); if(!v)return; pass=v; loadAll(); });
+document.getElementById('gi').addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('gate-btn').click(); });
 
+// ── DETAILS GATE ──
+document.getElementById('unlock-btn').addEventListener('click',function(){ openDetailsGate(null); });
+document.getElementById('dg-cancel').addEventListener('click',function(){ closeDetailsGate(); });
+document.getElementById('dg-btn').addEventListener('click',function(){ submitDetailsPass(); });
+document.getElementById('dg-input').addEventListener('keydown',function(e){ if(e.key==='Enter') submitDetailsPass(); if(e.key==='Escape') closeDetailsGate(); });
+
+function openDetailsGate(fsa){
+  pendingFSA=fsa;
+  document.getElementById('dg-error').textContent='';
+  document.getElementById('dg-input').value='';
+  document.getElementById('details-gate').classList.add('open');
+  setTimeout(function(){ document.getElementById('dg-input').focus(); },80);
+}
+
+function closeDetailsGate(){
+  document.getElementById('details-gate').classList.remove('open');
+  pendingFSA=null;
+}
+
+async function submitDetailsPass(){
+  var v=document.getElementById('dg-input').value.trim();
+  if(!v)return;
+  var btn=document.getElementById('dg-btn');
+  btn.disabled=true; btn.textContent='Checking…';
+  // Verify against a known FSA or a dummy check by hitting the endpoint
+  try{
+    var testRes=await fetch(WORKER+'/heatmap-details?pass='+encodeURIComponent(pass)+'&details_pass='+encodeURIComponent(v)+'&fsa=TEST');
+    if(testRes.status===403){
+      document.getElementById('dg-error').textContent='Incorrect access code. Try again.';
+      btn.disabled=false; btn.textContent='Unlock';
+      return;
+    }
+    // 400 (missing fsa = TEST is invalid) or 200 = correct password
+    detailsPass=v;
+    detailsUnlocked=true;
+    sessionStorage.setItem('loomi_hm_dpass',v);
+    var unlockBtn=document.getElementById('unlock-btn');
+    unlockBtn.textContent='&#128275; Details';
+    unlockBtn.classList.add('active');
+    closeDetailsGate();
+    if(pendingFSA){
+      var fsa=pendingFSA;
+      pendingFSA=null;
+      loadFSADetails(fsa);
+    }
+    btn.disabled=false; btn.textContent='Unlock';
+  }catch(e){
+    document.getElementById('dg-error').textContent='Error: '+e.message;
+    btn.disabled=false; btn.textContent='Unlock';
+  }
+}
+
+// ── REFRESH ──
+document.getElementById('refresh-btn').addEventListener('click',function(){ loadData(); });
+document.getElementById('dp-close').addEventListener('click',function(){ closePanel(); });
+
+function closePanel(){
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+// ── MAP INIT ──
 function initMap(){
   if(map)return;
-  // Centre on Canada, zoom to show all provinces
   map=L.map('map',{center:[54.0,-96.0],zoom:4,zoomControl:true});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
     maxZoom:13
   }).addTo(map);
+  map.on('click',function(){ closePanel(); });
 }
 
+// ── LOAD ALL ──
 async function loadAll(){
   document.getElementById('ge').textContent='';
-  // Load FSA coords and heatmap data in parallel
   try{
     var results=await Promise.all([
-      fetch(FSA_URL).then(function(r){return r.json();}),
+      fetch(FSA_URL).then(function(r){ return r.json(); }),
       fetch(WORKER+'/heatmap-data?pass='+encodeURIComponent(pass)).then(function(r){
-        if(r.status===401)throw new Error('UNAUTHORIZED');
-        if(!r.ok)throw new Error('HTTP '+r.status);
+        if(r.status===401) throw new Error('UNAUTHORIZED');
+        if(!r.ok) throw new Error('HTTP '+r.status);
         return r.json();
       })
     ]);
@@ -149,6 +306,12 @@ async function loadAll(){
     sessionStorage.setItem('loomi_hm_pass',pass);
     document.getElementById('gate').style.display='none';
     document.getElementById('app').style.display='flex';
+    // Restore details unlock state
+    if(detailsUnlocked){
+      var ub=document.getElementById('unlock-btn');
+      ub.textContent='&#128275; Details';
+      ub.classList.add('active');
+    }
     initMap();
     renderMap(data);
   }catch(e){
@@ -164,42 +327,49 @@ async function loadAll(){
 }
 
 async function loadData(){
-  if(!FSA_COORDS){loadAll();return;}
+  if(!FSA_COORDS){ loadAll(); return; }
   try{
     var res=await fetch(WORKER+'/heatmap-data?pass='+encodeURIComponent(pass));
-    if(!res.ok)return;
+    if(!res.ok) return;
     renderMap(await res.json());
   }catch(e){}
 }
 
+// ── RENDER MAP ──
 function renderMap(data){
-  if(fsaLayer){map.removeLayer(fsaLayer);fsaLayer=null;}
-  if(siteLayer){map.removeLayer(siteLayer);siteLayer=null;}
+  if(fsaLayer){ map.removeLayer(fsaLayer); fsaLayer=null; }
+  if(siteLayer){ map.removeLayer(siteLayer); siteLayer=null; }
   fsaLayer=L.layerGroup();
   siteLayer=L.layerGroup();
 
-  // Build activation -> colour map
   var actColours={},actOrder=[];
   for(var i=0;i<data.sites.length;i++){
     var act=data.sites[i].activationTitle||'Unknown';
-    if(!actColours[act]){actColours[act]=ACTIVATION_PALETTE[actOrder.length%ACTIVATION_PALETTE.length];actOrder.push(act);}
+    if(!actColours[act]){ actColours[act]=ACTIVATION_PALETTE[actOrder.length%ACTIVATION_PALETTE.length]; actOrder.push(act); }
   }
 
-  // Contractor FSA bubbles
-  var totalContractors=0,plotted=0,missing=[];
+  var totalContractors=0,plotted=0;
   for(var fsa in data.fsaMap){
     var count=data.fsaMap[fsa];
     totalContractors+=count;
     var coords=FSA_COORDS[fsa];
-    if(!coords){missing.push(fsa+'('+count+')');continue;}
+    if(!coords) continue;
     plotted+=count;
     (function(f,c,co){
       var circle=L.circleMarker([co[0],co[1]],{
-        radius:bubbleRadius(c),fillColor:'#2f9879',color:'#1f7a5e',
-        weight:1.5,opacity:0.9,fillOpacity:0.5
+        radius:bubbleRadius(c),
+        fillColor:'#2f9879',color:'#1f7a5e',
+        weight:1.5,opacity:0.9,fillOpacity:0.5,
+        className:'bubble-clickable'
       });
-      circle.bindTooltip('<strong>'+f+'</strong><br><span style="color:#2f9879">'+c+' contractor'+(c!==1?'s':'')+'</span>',
-        {permanent:false,direction:'top',offset:[0,-4]});
+      circle.bindTooltip(
+        '<strong>'+f+'</strong><br><span style="color:#2f9879">'+c+' contractor'+(c!==1?'s':'')+'</span>'+(detailsUnlocked?'<br><span style="color:#8fa3b8;font-size:10px">Click for details</span>':'<br><span style="color:#8fa3b8;font-size:10px">&#128274; Unlock for names</span>'),
+        {permanent:false,direction:'top',offset:[0,-4]}
+      );
+      circle.on('click',function(e){
+        L.DomEvent.stopPropagation(e);
+        onBubbleClick(f,c);
+      });
       circle.addTo(fsaLayer);
     })(fsa,count,coords);
   }
@@ -208,53 +378,121 @@ function renderMap(data){
   for(var i=0;i<data.sites.length;i++){
     var site=data.sites[i];
     var siteCoords=FSA_COORDS[site.postalCode];
-    if(!siteCoords)continue;
+    if(!siteCoords) continue;
     var cat=siteCategory(site.locationType);
     var actColour=actColours[site.activationTitle||'Unknown']||ACTIVATION_PALETTE[0];
     var typeLabel=cat==='eoc'?'EOC':cat==='host'?'Host Site':'Hub Site';
-    (function(s,co,c,tl,ic){
+    (function(s,co,tl,ic){
       var icon=L.divIcon({html:ic,iconSize:[14,14],iconAnchor:[7,7],className:''});
       var marker=L.marker([co[0],co[1]],{icon:icon,zIndexOffset:1000});
-      marker.bindTooltip('<strong>'+s.name+'</strong><br><span style="color:#8fa3b8;font-size:10px">'+tl+(s.activationTitle?' &bull; '+s.activationTitle:'')+'</span>',
-        {permanent:false,direction:'top',offset:[0,-8]});
+      marker.bindTooltip(
+        '<strong>'+s.name+'</strong><br><span style="color:#8fa3b8;font-size:10px">'+tl+(s.activationTitle?' &bull; '+s.activationTitle:'')+'</span>',
+        {permanent:false,direction:'top',offset:[0,-8]}
+      );
+      marker.on('click',function(e){ L.DomEvent.stopPropagation(e); });
       marker.addTo(siteLayer);
-    })(site,siteCoords,actColour,typeLabel,siteIconHtml(cat,actColour));
+    })(site,siteCoords,typeLabel,siteIconHtml(cat,actColour));
   }
 
   fsaLayer.addTo(map);
   siteLayer.addTo(map);
 
-  // Stats
+  // Stats bar
   var lu=new Date();
   var unplotted=totalContractors-plotted;
   var statsHtml=
     '<span class="stat-item"><span class="s-dot"></span>Updated '+lu.toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit'})+'</span>'+
     '<span class="stat-item"><span style="width:7px;height:7px;border-radius:50%;background:#2f9879;display:inline-block;"></span>'+totalContractors+' active contractors</span>'+
     '<span class="stat-item"><span style="width:7px;height:7px;border-radius:50%;background:#1a4e7e;display:inline-block;"></span>'+data.sites.length+' sites</span>';
-  if(unplotted>0){
-    statsHtml+='<span class="stat-item" style="color:#d4a017;">&#9888; '+unplotted+' contractors missing valid postal code</span>';
-  }
+  if(unplotted>0) statsHtml+='<span class="stat-item" style="color:#d4a017;">&#9888; '+unplotted+' contractors missing valid postal code</span>';
+  if(detailsUnlocked) statsHtml+='<span class="stat-item" style="color:#7dbe42;">&#128275; Details unlocked</span>';
   document.getElementById('stats-bar').innerHTML=statsHtml;
 
-  // Legend
+  // Legend sites
   var legendHtml='<div class="legend-row"><div style="width:14px;height:14px;background:#1a4e7e;border:2px solid #7dbe42;transform:rotate(45deg);flex-shrink:0;"></div><span>EOC</span></div>';
   for(var ai=0;ai<actOrder.length;ai++){
     var act=actOrder[ai],col=actColours[act];
     legendHtml+='<div class="legend-act" style="color:'+col+'">'+act+'</div>';
     legendHtml+='<div class="legend-row"><div style="width:14px;height:14px;background:'+col+';border:2px solid rgba(255,255,255,.9);border-radius:50%;flex-shrink:0;"></div><span>Hub Site</span></div>';
-    var hasHost=data.sites.some(function(s){return s.activationTitle===act&&siteCategory(s.locationType)==='host';});
-    if(hasHost){legendHtml+='<div class="legend-row"><div style="width:14px;height:14px;background:'+col+';border:2px solid rgba(255,255,255,.9);border-radius:3px;flex-shrink:0;"></div><span>Host Site</span></div>';}
+    var hasHost=data.sites.some(function(s){ return s.activationTitle===act&&siteCategory(s.locationType)==='host'; });
+    if(hasHost) legendHtml+='<div class="legend-row"><div style="width:14px;height:14px;background:'+col+';border:2px solid rgba(255,255,255,.9);border-radius:3px;flex-shrink:0;"></div><span>Host Site</span></div>';
   }
   document.getElementById('legend-sites').innerHTML=legendHtml;
 
-  // Zoom to show all plotted contractor bubbles
+  // Fit bounds
   var bounds=[];
-  for(var fsa in data.fsaMap){if(FSA_COORDS[fsa])bounds.push(FSA_COORDS[fsa]);}
-  for(var i=0;i<data.sites.length;i++){if(FSA_COORDS[data.sites[i].postalCode])bounds.push(FSA_COORDS[data.sites[i].postalCode]);}
-  if(bounds.length>0){map.fitBounds(bounds,{padding:[40,40]});}
+  for(var fsa in data.fsaMap){ if(FSA_COORDS[fsa]) bounds.push(FSA_COORDS[fsa]); }
+  for(var i=0;i<data.sites.length;i++){ if(FSA_COORDS[data.sites[i].postalCode]) bounds.push(FSA_COORDS[data.sites[i].postalCode]); }
+  if(bounds.length>0) map.fitBounds(bounds,{padding:[40,40]});
 }
 
-if(pass)loadAll();
+// ── BUBBLE CLICK ──
+function onBubbleClick(fsa,count){
+  document.getElementById('dp-fsa').textContent=fsa;
+  document.getElementById('dp-count').textContent=count+' contractor'+(count!==1?'s':'');
+  document.getElementById('detail-panel').classList.add('open');
+
+  if(!detailsUnlocked){
+    document.getElementById('dp-body').innerHTML=
+      '<div class="dp-lock-notice">'+
+      '<div class="dp-lock-icon">&#128274;</div>'+
+      'Contractor details require an additional access code.'+
+      '<br><button class="dp-unlock-inline" id="dp-unlock-inline-btn">Unlock Details</button>'+
+      '</div>';
+    document.getElementById('dp-unlock-inline-btn').addEventListener('click',function(){ openDetailsGate(fsa); });
+    return;
+  }
+  loadFSADetails(fsa);
+}
+
+async function loadFSADetails(fsa){
+  document.getElementById('dp-fsa').textContent=fsa;
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('dp-body').innerHTML='<div class="dp-loading"><div class="dp-spinner"></div><br>Loading…</div>';
+  try{
+    var res=await fetch(WORKER+'/heatmap-details?pass='+encodeURIComponent(pass)+'&details_pass='+encodeURIComponent(detailsPass)+'&fsa='+encodeURIComponent(fsa));
+    var data=await res.json();
+    if(!res.ok) throw new Error(data.error||'HTTP '+res.status);
+    renderDetailPanel(data);
+  }catch(e){
+    document.getElementById('dp-body').innerHTML='<div class="dp-error">Failed to load: '+e.message+'</div>';
+  }
+}
+
+function renderDetailPanel(data){
+  document.getElementById('dp-count').textContent=data.contractors.length+' contractor'+(data.contractors.length!==1?'s':'');
+  if(!data.contractors.length){
+    document.getElementById('dp-body').innerHTML='<div class="dp-loading" style="color:#8fa3b8">No contractors found in this postal area.</div>';
+    return;
+  }
+  var html=data.contractors.map(function(c){
+    var rolesHtml='';
+    if(c.roles){
+      rolesHtml='<div class="ct-roles">'+c.roles.split(',').map(function(r){
+        return '<span class="ct-role-tag">'+r.trim()+'</span>';
+      }).join('')+'</div>';
+    }
+    var locsHtml='';
+    if(c.preferredLocations&&c.preferredLocations.length){
+      locsHtml='<div class="ct-locs">'+c.preferredLocations.map(function(l){
+        return '<span class="ct-loc-tag">'+l+'</span>';
+      }).join('')+'</div>';
+    }
+    return '<div class="ct-card">'+
+      '<div class="ct-name">'+esc(c.name)+'</div>'+
+      (c.address?'<div class="ct-row"><span class="ct-label">Address</span><span>'+esc(c.address)+'</span></div>':'')+
+      (c.phone?'<div class="ct-row"><span class="ct-label">Phone</span><span>'+esc(c.phone)+'</span></div>':'')+
+      (c.startDate?'<div class="ct-row"><span class="ct-label">Available</span><span>'+esc(c.startDate)+'</span></div>':'')+
+      (c.roles?'<div class="ct-row" style="flex-direction:column;"><span class="ct-label" style="margin-bottom:3px">Roles</span>'+rolesHtml+'</div>':'')+
+      (locsHtml?'<div class="ct-row" style="flex-direction:column;"><span class="ct-label" style="margin-bottom:3px">Preferred</span>'+locsHtml+'</div>':'')+
+      '</div>';
+  }).join('');
+  document.getElementById('dp-body').innerHTML=html;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+if(pass) loadAll();
 </script>
 </body>
 </html>
