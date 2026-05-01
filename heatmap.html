@@ -310,9 +310,9 @@ async function loadAll(){
     // Restore details unlock state
     if(detailsUnlocked){
       var ub=document.getElementById('unlock-btn');
-      ub.textContent='&#128275; Details';
+      ub.innerHTML='&#128275; Details';
       ub.classList.add('active');
-    }
+      
     initMap();
     renderMap(data);
   }catch(e){
