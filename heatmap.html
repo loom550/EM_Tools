@@ -257,12 +257,13 @@ async function submitDetailsPass(){
     var unlockBtn=document.getElementById('unlock-btn');
     unlockBtn.textContent='&#128275; Details';
     unlockBtn.classList.add('active');
-    closeDetailsGate();
-    if(pendingFSA){
-      var fsa=pendingFSA;
-      pendingFSA=null;
-      loadFSADetails(fsa);
-    }
+   closeDetailsGate();
+    var fsa=pendingFSA;
+    pendingFSA=null;
+    // Re-render map so tooltips update and stats bar shows unlocked state
+    loadData().then(function(){
+      if(fsa) loadFSADetails(fsa);
+    });
     btn.disabled=false; btn.textContent='Unlock';
   }catch(e){
     document.getElementById('dg-error').textContent='Error: '+e.message;
@@ -327,7 +328,7 @@ async function loadAll(){
 }
 
 async function loadData(){
-  if(!FSA_COORDS){ loadAll(); return; }
+  if(!FSA_COORDS){ return loadAll(); }
   try{
     var res=await fetch(WORKER+'/heatmap-data?pass='+encodeURIComponent(pass));
     if(!res.ok) return;
