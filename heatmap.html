@@ -307,12 +307,11 @@ async function loadAll(){
     sessionStorage.setItem('loomi_hm_pass',pass);
     document.getElementById('gate').style.display='none';
     document.getElementById('app').style.display='flex';
-    // Restore details unlock state
     if(detailsUnlocked){
       var ub=document.getElementById('unlock-btn');
       ub.innerHTML='&#128275; Details';
       ub.classList.add('active');
-      
+    }
     initMap();
     renderMap(data);
   }catch(e){
