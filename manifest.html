@@ -431,6 +431,22 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
 /* ── REFRESH BTN ─────────────────────────────────────────────────────────── */
 .btn-refresh{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.75);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;}
 .btn-refresh:hover{background:rgba(255,255,255,.1);}
+
+/* ── PREVIEW MODAL ───────────────────────────────────────────────────────── */
+.preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:350;display:none;align-items:center;justify-content:center;padding:16px;}
+.preview-overlay.open{display:flex;}
+.preview-modal{background:var(--card);width:100%;max-width:820px;height:90vh;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-lg);}
+.preview-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.preview-title{font-size:14px;font-weight:700;color:var(--navy);}
+.preview-sub{font-size:12px;color:var(--text-muted);flex:1;}
+.preview-print{background:var(--navy);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.preview-print:hover{background:var(--navy-dk);}
+.preview-close{background:transparent;border:none;font-size:22px;color:var(--text-muted);cursor:pointer;line-height:1;padding:2px 6px;}
+.preview-frame{flex:1;border:none;width:100%;}
+.btn-preview{width:100%;height:44px;margin-top:14px;background:transparent;color:var(--navy);border:2px solid var(--navy);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
+.btn-preview:hover:not(:disabled){background:var(--navy-lt);}
+.btn-preview:disabled{opacity:.4;cursor:not-allowed;}
+
 </style>
 </head>
 <body>
@@ -626,6 +642,19 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Preview manifest modal -->
+<div class="preview-overlay" id="preview-overlay">
+  <div class="preview-modal">
+    <div class="preview-hdr">
+      <span class="preview-title">Manifest Preview</span>
+      <span class="preview-sub" id="preview-sub"></span>
+      <button class="preview-print" onclick="document.getElementById('preview-frame').contentWindow.print()">&#128438; Print</button>
+      <button class="preview-close" id="preview-close">&times;</button>
+    </div>
+    <iframe class="preview-frame" id="preview-frame"></iframe>
   </div>
 </div>
 
@@ -937,7 +966,8 @@ function renderPaxPanel(flightId) {
       '<label class="email-label">Email Manifest To</label>' +
       '<input class="email-input" type="email" id="manifest-email" placeholder="recipient@example.com">' +
       '<div class="email-hint">Separate multiple addresses with commas. Leave blank to use default.</div>' +
-      '<button class="btn-generate" id="btn-generate" ' + (flightPax.length === 0 ? 'disabled' : '') + '>' +
+      '<button class="btn-preview" id="btn-preview" ' + (flightPax.length === 0 ? 'disabled' : '') + '>&#128441; Preview Manifest</button>' +
+'<button class="btn-generate" id="btn-generate" ' + (flightPax.length === 0 ? 'disabled' : '') + '>' +
         '<span id="gen-icon">&#128441;</span>' +
         '<span id="gen-label">' + (flight.direction === 'Inbound' ? 'Confirm Arrival' : 'Generate Manifest') + '</span>' +
       '</button>' +
@@ -968,9 +998,13 @@ function renderPaxPanel(flightId) {
     });
   });
 
-  // Wire up generate
+ // Wire up generate
   var genBtn = document.getElementById('btn-generate');
   if (genBtn) genBtn.addEventListener('click', function() { generateManifest(flightId); });
+
+  // Wire up preview
+  var prevBtn = document.getElementById('btn-preview');
+  if (prevBtn) prevBtn.addEventListener('click', function() { openPreviewManifest(flightId); });
 }
 
 function renderPaxRow(p, isUnassigned, targetFlightId) {
@@ -1511,6 +1545,99 @@ function showToast(msg, type) {
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+ // ── PREVIEW MANIFEST ──────────────────────────────────────────────────────────
+document.getElementById('preview-close').addEventListener('click', function() {
+  document.getElementById('preview-overlay').classList.remove('open');
+});
+document.getElementById('preview-overlay').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+
+function openPreviewManifest(flightId) {
+  var flight = flights.find(function(f) { return f.id === flightId; });
+  if (!flight) return;
+  var flightPax = allPax.filter(function(p) { return p.flightId === flightId; });
+  if (!flightPax.length) { showToast('No passengers assigned', 'err'); return; }
+  var dnb = (document.getElementById('dnb-note') || {}).value || '';
+  document.getElementById('preview-frame').srcdoc = buildClientManifestHTML(flight, flightPax, dnb);
+  document.getElementById('preview-sub').textContent = 'Flight ' + flight.flightNumber + ' — ' + flightPax.length + ' passenger(s)';
+  document.getElementById('preview-overlay').classList.add('open');
+}
+
+function buildClientManifestHTML(flight, paxList, didNotBoardNote) {
+  var counts = { F:0, M:0, C:0, I:0 };
+  paxList.forEach(function(p) { if (counts[p.passengerType] !== undefined) counts[p.passengerType]++; });
+  var totalLug = paxList.reduce(function(s,p) { return s+(Number(p.luggageWeight)||0); }, 0);
+  var totalCarry = paxList.reduce(function(s,p) { return s+(Number(p.carryOnWeight)||0); }, 0);
+
+  var paxRows = paxList.map(function(p, i) {
+    var med = [];
+    if (p.medWheelchair) med.push('Wheelchair');
+    if (p.medWalker) med.push('Walker');
+    if (p.medOxygen) med.push('Oxygen');
+    if (p.medCPAP) med.push('CPAP');
+    if (p.medHearingAid) med.push('Hearing Aid');
+    if (p.medOther) med.push('Other device');
+    if (p.prescriptionsRequired) med.push('Rx required');
+    var medStr = med.length ? '<br><em style="color:#a00;font-size:8.5pt;">' + esc(med.join(', ')) + '</em>' : '';
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td>' + esc(p.firstName) + '</td><td>' + esc(p.lastName) + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='F'?'✓':'') + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='M'?'✓':'') + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='C'?'✓':'') + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='I'?'✓':'') + '</td>' +
+      '<td style="text-align:right">' + (p.luggageWeight||0) + '</td>' +
+      '<td style="text-align:right">' + (p.carryOnWeight||0) + '</td>' +
+      '<td>' + esc(p.specialRequirements||'') + medStr + '</td>' +
+    '</tr>';
+  }).join('');
+
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+    '@page{size:letter;margin:15mm;}' +
+    'body{font-family:Arial,sans-serif;font-size:10.5pt;color:#111;margin:0;}' +
+    'h1{font-size:15pt;margin:0 0 10px;}' +
+    '.draft{background:#fff3cd;border:2px dashed #e8a000;padding:8px 14px;margin-bottom:14px;font-size:11pt;font-weight:700;color:#8a5c00;text-align:center;border-radius:4px;}' +
+    '.hdr-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 32px;margin-bottom:14px;}' +
+    '.hdr-row{display:flex;gap:6px;font-size:10pt;}' +
+    '.hdr-label{color:#555;min-width:110px;}' +
+    '.hdr-val{font-weight:600;color:#1a4e7e;}' +
+    'table{width:100%;border-collapse:collapse;font-size:9.5pt;}' +
+    'th{background:#1a4e7e;color:#fff;padding:5px 7px;border:1px solid #aaa;font-weight:700;}' +
+    'td{padding:4px 7px;border:1px solid #ccc;}' +
+    'tr:nth-child(even) td{background:#f0f4f8;}' +
+    '.totals-row td{font-weight:700;background:#dce6f0;border-top:2px solid #1a4e7e;}' +
+    '.dnb{margin-top:10px;font-size:9.5pt;color:#b00;font-style:italic;}' +
+    '.footer{margin-top:14px;font-size:8pt;color:#aaa;border-top:1px solid #ddd;padding-top:6px;display:flex;justify-content:space-between;}' +
+  '</style></head><body>' +
+  '<div class="draft">⚠ PREVIEW ONLY — NOT AN OFFICIAL MANIFEST</div>' +
+  '<h1>PASSENGER MANIFEST 1</h1>' +
+  '<div class="hdr-grid">' +
+    '<div class="hdr-row"><span class="hdr-label">Flight Date:</span><span class="hdr-val">' + esc(flight.flightDate||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">Airline:</span><span class="hdr-val">' + esc(flight.airline||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">ETD:</span><span class="hdr-val">' + esc(flight.etd||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">Flight #:</span><span class="hdr-val">' + esc(flight.flightNumber||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">Tail Number:</span><span class="hdr-val">' + esc(flight.tailNumber||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">ETA:</span><span class="hdr-val">' + esc(flight.eta||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">AC Type:</span><span class="hdr-val">' + esc(flight.acType||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">Departure:</span><span class="hdr-val">' + esc(flight.departureLocation||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">Seats:</span><span class="hdr-val">' + (flight.seats||'') + '</span></div>' +
+    '<div class="hdr-row"><span class="hdr-label">Destination:</span><span class="hdr-val">' + esc(flight.destination||'') + '</span></div>' +
+  '</div>' +
+  '<table><thead><tr><th>#</th><th>First Name</th><th>Last Name</th><th>F</th><th>M</th><th>C</th><th>I</th><th>Luggage Wt (lbs)</th><th>Carry-On Wt (lbs)</th><th>Special Requirements</th></tr></thead>' +
+  '<tbody>' + paxRows + '</tbody>' +
+  '<tfoot><tr class="totals-row">' +
+    '<td colspan="2">Totals</td>' +
+    '<td style="text-align:center">' + paxList.length + '</td>' +
+    '<td style="text-align:center">' + counts.F + '</td><td style="text-align:center">' + counts.M + '</td>' +
+    '<td style="text-align:center">' + counts.C + '</td><td style="text-align:center">' + counts.I + '</td>' +
+    '<td style="text-align:right">' + totalLug + '</td><td style="text-align:right">' + totalCarry + '</td>' +
+    '<td></td>' +
+  '</tr></tfoot></table>' +
+  (didNotBoardNote ? '<div class="dnb">** ' + esc(didNotBoardNote) + '</div>' : '') +
+  '<div class="footer"><span>Loomex Response and Readiness — Confidential</span><span>PREVIEW — ' + new Date().toISOString().slice(0,10) + '</span></div>' +
+  '</body></html>';
+} 
 </script>
 </body>
 </html>
