@@ -703,6 +703,92 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
   </div>
 </div>
 
+<!-- Edit flight modal -->
+<div class="modal-overlay" id="edit-flight-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">Edit Flight</span>
+      <button class="modal-close" id="edit-flight-modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="efm-id">
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>Flight #</label>
+          <input type="text" id="efm-num" autocorrect="off">
+        </div>
+        <div class="modal-field">
+          <label>Tail Number</label>
+          <input type="text" id="efm-tail" autocorrect="off" style="text-transform:uppercase">
+        </div>
+      </div>
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>Airline</label>
+          <input type="text" id="efm-airline" autocorrect="off">
+        </div>
+        <div class="modal-field">
+          <label>AC Type</label>
+          <input type="text" id="efm-actype" autocorrect="off">
+        </div>
+      </div>
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>Departure</label>
+          <input type="text" id="efm-dep" autocorrect="off">
+        </div>
+        <div class="modal-field">
+          <label>Destination</label>
+          <input type="text" id="efm-dest" autocorrect="off">
+        </div>
+      </div>
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>Direction</label>
+          <select id="efm-direction">
+            <option value="">Select...</option>
+            <option value="Inbound">Inbound</option>
+            <option value="Outbound">Outbound</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Mode</label>
+          <select id="efm-mode">
+            <option value="">Select...</option>
+            <option value="Fixed-wing">Fixed-wing</option>
+            <option value="Helicopter">Helicopter</option>
+            <option value="Bus">Bus</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>ETD</label>
+          <input type="text" id="efm-etd" placeholder="14:30">
+        </div>
+        <div class="modal-field">
+          <label>ETA</label>
+          <input type="text" id="efm-eta" placeholder="16:45">
+        </div>
+      </div>
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>Date</label>
+          <input type="date" id="efm-date">
+        </div>
+        <div class="modal-field">
+          <label>Seats</label>
+          <input type="number" id="efm-seats" min="1" inputmode="numeric">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-save" id="efm-save">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Edit pax modal -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
@@ -814,6 +900,7 @@ var inboundWarningsDismissed = {};
 var uploadQueue = [];
 var uploadQueueIndex = 0;
 var uploadMasterRows = [];
+var activeWarnings = {};
 var hidePastFlights = false;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -949,19 +1036,19 @@ function renderPaxPanel(flightId) {
 
   var flightPax = allPax.filter(function(p) { return p.flightId === flightId; });
 
-  // Pool: At Hub, not already on this outbound flight
+  // Pool: At Hub only, not already on this flight
   var pool = allPax.filter(function(p) {
     return p.paxStatus === 'At Hub' && p.flightId !== flightId;
   });
 
-  // Duplicate detection across pool + assigned
+  // Duplicate detection
   var nameCounts = {};
   pool.concat(flightPax).forEach(function(p) {
     var key = (p.firstName + ' ' + p.lastName).toLowerCase().trim();
     nameCounts[key] = (nameCounts[key] || 0) + 1;
   });
 
-  // Apply search filter
+  // Search filter
   var searchQ = poolSearchQuery.toLowerCase().trim();
   var filteredPool = searchQ ? pool.filter(function(p) {
     return (p.firstName + ' ' + p.lastName).toLowerCase().indexOf(searchQ) >= 0;
@@ -970,29 +1057,13 @@ function renderPaxPanel(flightId) {
     return (p.firstName + ' ' + p.lastName).toLowerCase().indexOf(searchQ) >= 0;
   }) : flightPax;
 
-  // Apply alpha sort
-  if (poolSortAlpha) {
-    filteredPool = filteredPool.slice().sort(function(a, b) {
-      return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName);
-    });
-    filteredAssigned = filteredAssigned.slice().sort(function(a, b) {
-      return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName);
-    });
-  }
-
-  // Group pool by inbound flightId
-  var poolGroups = {};
-  filteredPool.forEach(function(p) {
-    var key = p.flightId || '__none__';
-    if (!poolGroups[key]) poolGroups[key] = [];
-    poolGroups[key].push(p);
+  // Always alpha
+  filteredPool = filteredPool.slice().sort(function(a, b) {
+    return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName);
   });
-
-  // Apply flight filter
-  var groupKeys = Object.keys(poolGroups);
-  if (poolFlightFilter) {
-    groupKeys = groupKeys.filter(function(k) { return k === poolFlightFilter; });
-  }
+  filteredAssigned = filteredAssigned.slice().sort(function(a, b) {
+    return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName);
+  });
 
   var counts = { F:0, M:0, C:0, I:0 };
   flightPax.forEach(function(p) { if (counts[p.passengerType] !== undefined) counts[p.passengerType]++; });
@@ -1007,7 +1078,10 @@ function renderPaxPanel(flightId) {
 
   // Flight header
   html += '<div class="flt-detail-hdr">' +
-    '<div class="flt-detail-num">' + esc(flight.flightNumber) + '</div>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+      '<div class="flt-detail-num">' + esc(flight.flightNumber) + '</div>' +
+      (!departed ? '<button onclick="openEditFlightModal(\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.8);cursor:pointer;font-family:inherit;">&#9998; Edit</button>' : '') +
+    '</div>' +
     '<div class="flt-detail-meta">' +
       (flight.airline ? '<span>&#9992; ' + esc(flight.airline) + '</span>' : '') +
       (flight.acType ? '<span>' + esc(flight.acType) + '</span>' : '') +
@@ -1030,73 +1104,48 @@ function renderPaxPanel(flightId) {
   if (!departed) {
     html += '<div style="padding:8px 16px;background:#f8f9fb;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
       '<input type="text" id="pool-search" class="pool-search-input" placeholder="&#128269; Search name..." value="' + esc(poolSearchQuery) + '">' +
-      '<button onclick="togglePoolSort()" class="btn-pool-sort' + (poolSortAlpha ? ' active' : '') + '" title="Sort alphabetically">A\u2192Z</button>' +
       (pool.length > 0 ? '<button onclick="openInboundPicker(\'' + flightId + '\')" class="btn-add-inbound">+ Add from Inbound Flight</button>' : '') +
     '</div>';
-
-    // Flight filter pills
-    var allGroupKeys = Object.keys(poolGroups);
-    if (allGroupKeys.length > 1) {
-      html += '<div style="padding:6px 16px;background:#f0f4f9;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
-        '<span style="font-size:11px;color:var(--text-muted);font-weight:600">FILTER:</span>' +
-        '<button onclick="filterPoolFlight(\'\')" style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px;border:1px solid var(--border);background:' + (!poolFlightFilter ? 'var(--navy)' : '#fff') + ';color:' + (!poolFlightFilter ? '#fff' : 'var(--text-dim)') + ';cursor:pointer;">All (' + filteredPool.length + ')</button>';
-      allGroupKeys.forEach(function(k) {
-        var f = flights.find(function(f) { return f.id === k; });
-        var label = f ? 'Flt ' + f.flightNumber : 'Manual';
-        var cnt = poolGroups[k] ? poolGroups[k].length : 0;
-        html += '<button onclick="filterPoolFlight(\'' + k + '\')" style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;border:1px solid var(--border);background:' + (poolFlightFilter === k ? 'var(--navy)' : '#fff') + ';color:' + (poolFlightFilter === k ? '#fff' : 'var(--text-dim)') + ';cursor:pointer;">' + esc(label) + ' (' + cnt + ')</button>';
-      });
-      html += '</div>';
-    }
   }
 
-  // Pool section
+  // Active warnings (from previous bulk assign actions)
+  if (!departed) {
+    Object.keys(activeWarnings).forEach(function(key) {
+      var parts = key.split(':');
+      if (parts[0] !== flightId) return;
+      if (inboundWarningsDismissed[key]) return;
+      var inboundFlightId = parts[1];
+      var inbFlt = flights.find(function(f) { return f.id === inboundFlightId; });
+      var notAtHub = activeWarnings[key];
+      if (!notAtHub || !notAtHub.length) return;
+      html += '<div class="not-at-hub-warning">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+          '<span style="font-size:12px;font-weight:700;color:var(--red);">&#9888; ' + notAtHub.length + ' from Flt ' + esc(inbFlt ? inbFlt.flightNumber : inboundFlightId) + ' not at hub</span>' +
+          '<button onclick="dismissWarning(\'' + flightId + '\',\'' + inboundFlightId + '\')" style="background:transparent;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;line-height:1;">&times;</button>' +
+        '</div>' +
+        notAtHub.map(function(p) {
+          return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(217,64,64,.1);">' +
+            '<div class="ptype-badge b-' + p.passengerType + '" style="width:24px;height:24px;font-size:11px;">' + p.passengerType + '</div>' +
+            '<span style="flex:1;font-size:13px;font-weight:500;">' + esc(p.firstName) + ' ' + esc(p.lastName) + '</span>' +
+            '<span style="font-size:11px;color:var(--text-muted);margin-right:6px;">' + esc(p.paxStatus) + '</span>' +
+            '<button onclick="forceAssignPax(\'' + p.id + '\',\'' + flightId + '\')" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--red);background:var(--red-lt);color:var(--red);cursor:pointer;">Force Add</button>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    });
+  }
+
+  // Pool — flat alpha
   if (!departed) {
     if (filteredPool.length === 0 && pool.length === 0 && flightPax.length === 0) {
-      html += '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No passengers yet.<br>Add via the intake form or upload an inbound manifest.</div>';
+      html += '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No passengers yet.<br>Upload an inbound manifest to add to the pool.</div>';
     } else if (filteredPool.length === 0 && searchQ) {
       html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">No pool matches for "' + esc(searchQ) + '"</div>';
-    } else {
-      groupKeys.forEach(function(k) {
-        var groupPax = poolGroups[k];
-        if (!groupPax || !groupPax.length) return;
-        var inboundFlt = flights.find(function(f) { return f.id === k; });
-        var groupLabel = inboundFlt
-          ? 'Flt ' + inboundFlt.flightNumber + (inboundFlt.flightDate ? ' \u00b7 ' + inboundFlt.flightDate : '') + (inboundFlt.departureLocation ? ' \u00b7 ' + esc(inboundFlt.departureLocation) : '')
-          : 'Manually Added';
-
-        html += '<div class="section-label" style="justify-content:space-between;">' +
-          '<span>' + groupLabel + ' <span class="section-badge">' + groupPax.length + '</span></span>' +
-          (inboundFlt ? '<button onclick="bulkAssignGroup(\'' + k + '\',\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:6px;border:none;background:var(--navy);color:#fff;cursor:pointer;">Add All</button>' : '') +
-        '</div>';
-
-        groupPax.forEach(function(p) {
-          var key = (p.firstName + ' ' + p.lastName).toLowerCase().trim();
-          html += renderPaxRow(p, true, flightId, nameCounts[key] > 1);
-        });
-
-        // Non-At-Hub warning for this inbound group
-        if (inboundFlt && !inboundWarningsDismissed[flightId + ':' + k]) {
-          var notAtHub = allPax.filter(function(p) {
-            return p.flightId === k && p.paxStatus !== 'At Hub';
-          });
-          if (notAtHub.length) {
-            html += '<div class="not-at-hub-warning">' +
-              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
-                '<span style="font-size:12px;font-weight:700;color:var(--red);">&#9888; ' + notAtHub.length + ' from Flt ' + esc(inboundFlt.flightNumber) + ' not at hub</span>' +
-                '<button onclick="dismissWarning(\'' + flightId + '\',\'' + k + '\')" style="background:transparent;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;line-height:1;">&times;</button>' +
-              '</div>' +
-              notAtHub.map(function(p) {
-                return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(217,64,64,.1);">' +
-                  '<div class="ptype-badge b-' + p.passengerType + '" style="width:24px;height:24px;font-size:11px;">' + p.passengerType + '</div>' +
-                  '<span style="flex:1;font-size:13px;font-weight:500;">' + esc(p.firstName) + ' ' + esc(p.lastName) + '</span>' +
-                  '<span style="font-size:11px;color:var(--text-muted);margin-right:6px;">' + esc(p.paxStatus) + '</span>' +
-                  '<button onclick="forceAssignPax(\'' + p.id + '\',\'' + flightId + '\')" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--red);background:var(--red-lt);color:var(--red);cursor:pointer;">Force Add</button>' +
-                '</div>';
-              }).join('') +
-            '</div>';
-          }
-        }
+    } else if (filteredPool.length > 0) {
+      html += '<div class="section-label">Hub Pool <span class="section-badge">' + filteredPool.length + '</span></div>';
+      filteredPool.forEach(function(p) {
+        var key = (p.firstName + ' ' + p.lastName).toLowerCase().trim();
+        html += renderPaxRow(p, true, flightId, nameCounts[key] > 1);
       });
     }
   }
@@ -1139,7 +1188,6 @@ function renderPaxPanel(flightId) {
   var panel = document.getElementById('pax-panel-content');
   panel.innerHTML = html;
 
-  // Wire search live filter
   var searchInput = document.getElementById('pool-search');
   if (searchInput) {
     searchInput.addEventListener('input', function() {
@@ -1148,7 +1196,6 @@ function renderPaxPanel(flightId) {
     });
   }
 
-  // Wire assign buttons
   panel.querySelectorAll('.assign-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -1156,7 +1203,6 @@ function renderPaxPanel(flightId) {
     });
   });
 
-  // Wire edit buttons
   panel.querySelectorAll('.pax-edit-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -1164,7 +1210,6 @@ function renderPaxPanel(flightId) {
     });
   });
 
-  // Wire generate and preview
   var genBtn = document.getElementById('btn-generate');
   if (genBtn) genBtn.addEventListener('click', function() { generateManifest(flightId); });
   var prevBtn = document.getElementById('btn-preview');
@@ -1187,7 +1232,7 @@ function renderPaxRow(p, isUnassigned, targetFlightId, isDupe) {
   var inboundBadge = '';
   if (isUnassigned && p.flightId) {
     var inbFlt = flights.find(function(f) { return f.id === p.flightId; });
-    if (inbFlt) inboundBadge = '<span style="font-size:10px;background:var(--teal-lt);color:var(--teal);padding:1px 6px;border-radius:8px;margin-left:4px;">Flt ' + esc(inbFlt.flightNumber) + '</span>';
+    if (inbFlt) inboundBadge = '<span style="font-size:10px;background:var(--teal-lt);color:var(--teal);padding:1px 6px;border-radius:8px;margin-left:4px;">Flt ' + esc(inbFlt.flightNumber) + (inbFlt.flightDate ? ' \u00b7 ' + inbFlt.flightDate : '') + '</span>';
   }
   return '<div class="pax-row' + (isUnassigned ? ' unassigned-row' : '') + '"' + (isDupe ? ' style="background:#fffbf0;"' : '') + '>' +
     '<div class="ptype-badge b-' + p.passengerType + '">' + p.passengerType + '</div>' +
@@ -1955,18 +2000,25 @@ function bulkAssignFromFlights(inboundFlightIds, outboundFlightId) {
   });
 
   Promise.allSettled(promises).then(function() {
+    // Build warnings for non-At-Hub pax on these inbound flights
+    inboundFlightIds.forEach(function(inboundId) {
+      var notAtHub = allPax.filter(function(p) {
+        return p.flightId === inboundId && p.paxStatus !== 'At Hub';
+      });
+      if (notAtHub.length) {
+        activeWarnings[outboundFlightId + ':' + inboundId] = notAtHub;
+      }
+    });
     renderFlights();
     if (selectedFlightId) renderPaxPanel(selectedFlightId);
     showToast(paxToAssign.length + ' passengers assigned', 'ok');
   });
 }
 
-function bulkAssignGroup(inboundFlightId, outboundFlightId) {
-  bulkAssignFromFlights([inboundFlightId], outboundFlightId);
-}
-
 function dismissWarning(outboundFlightId, inboundFlightId) {
-  inboundWarningsDismissed[outboundFlightId + ':' + inboundFlightId] = true;
+  var key = outboundFlightId + ':' + inboundFlightId;
+  inboundWarningsDismissed[key] = true;
+  delete activeWarnings[key];
   renderPaxPanel(outboundFlightId);
 }
 
@@ -1993,6 +2045,82 @@ function filterPoolFlight(fid) {
   poolFlightFilter = fid;
   if (selectedFlightId) renderPaxPanel(selectedFlightId);
 }
+// ── EDIT FLIGHT MODAL ─────────────────────────────────────────────────────────
+function openEditFlightModal(flightId) {
+  var flight = flights.find(function(f) { return f.id === flightId; });
+  if (!flight) return;
+
+  document.getElementById('efm-id').value = flightId;
+  document.getElementById('efm-num').value = flight.flightNumber || '';
+  document.getElementById('efm-tail').value = flight.tailNumber || '';
+  document.getElementById('efm-airline').value = flight.airline || '';
+  document.getElementById('efm-actype').value = flight.acType || '';
+  document.getElementById('efm-dep').value = flight.departureLocation || '';
+  document.getElementById('efm-dest').value = flight.destination || '';
+  document.getElementById('efm-direction').value = flight.direction || '';
+  document.getElementById('efm-mode').value = flight.mode || '';
+  document.getElementById('efm-etd').value = flight.etd || '';
+  document.getElementById('efm-eta').value = flight.eta || '';
+  document.getElementById('efm-date').value = flight.flightDate || '';
+  document.getElementById('efm-seats').value = flight.seats || '';
+
+  document.getElementById('edit-flight-modal').classList.add('open');
+}
+
+function closeEditFlightModal() {
+  document.getElementById('edit-flight-modal').classList.remove('open');
+}
+
+function saveEditFlight() {
+  var flightId = document.getElementById('efm-id').value;
+  var body = {
+    flightNumber: document.getElementById('efm-num').value.trim(),
+    tailNumber: document.getElementById('efm-tail').value.trim().toUpperCase(),
+    airline: document.getElementById('efm-airline').value.trim(),
+    acType: document.getElementById('efm-actype').value.trim(),
+    departureLocation: document.getElementById('efm-dep').value.trim(),
+    destination: document.getElementById('efm-dest').value.trim(),
+    direction: document.getElementById('efm-direction').value,
+    mode: document.getElementById('efm-mode').value,
+    etd: document.getElementById('efm-etd').value.trim(),
+    eta: document.getElementById('efm-eta').value.trim(),
+    flightDate: document.getElementById('efm-date').value,
+    seats: document.getElementById('efm-seats').value || null,
+  };
+
+  var btn = document.getElementById('efm-save');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  api('PATCH', '/api/flights/' + flightId, body)
+    .then(function(data) {
+      btn.disabled = false; btn.textContent = 'Save Changes';
+      if (data.error) { showToast('Error: ' + data.error, 'err'); return; }
+      var flight = flights.find(function(f) { return f.id === flightId; });
+      if (flight) {
+        Object.assign(flight, {
+          flightNumber: body.flightNumber, tailNumber: body.tailNumber,
+          airline: body.airline, acType: body.acType,
+          departureLocation: body.departureLocation, destination: body.destination,
+          direction: body.direction, mode: body.mode,
+          etd: body.etd, eta: body.eta, flightDate: body.flightDate, seats: body.seats,
+        });
+      }
+      closeEditFlightModal();
+      renderFlights();
+      if (selectedFlightId) renderPaxPanel(selectedFlightId);
+      showToast('Flight updated', 'ok');
+    })
+    .catch(function(e) {
+      btn.disabled = false; btn.textContent = 'Save Changes';
+      showToast('Save failed: ' + e.message, 'err');
+    });
+}
+
+document.getElementById('edit-flight-modal-close').addEventListener('click', closeEditFlightModal);
+document.getElementById('edit-flight-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditFlightModal();
+});
+document.getElementById('efm-save').addEventListener('click', saveEditFlight);
 </script>
 </body>
 </html>
