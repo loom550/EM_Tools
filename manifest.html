@@ -1895,7 +1895,10 @@ function openPreviewManifest(flightId) {
   if (!flight) return;
   var isOutbound = flight.direction && flight.direction.toLowerCase() !== 'inbound';
   var flightPax = allPax.filter(function(p) {
-    return isOutbound ? p.outboundFlightId === flightId : p.flightId === flightId;
+    if (isOutbound) {
+      return p.outboundFlightId === flightId || (!p.outboundFlightId && p.flightId === flightId);
+    }
+    return p.flightId === flightId;
   });
   if (!flightPax.length) { showToast('No passengers assigned', 'err'); return; }
   var dnb = (document.getElementById('dnb-note') || {}).value || '';
