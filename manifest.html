@@ -895,7 +895,9 @@ function renderPaxPanel(flightId) {
   var totalLug = flightPax.reduce(function(s, p) { return s + (Number(p.luggageWeight)||0); }, 0);
   var totalCarry = flightPax.reduce(function(s, p) { return s + (Number(p.carryOnWeight)||0); }, 0);
 
-  var departed = flight.status === 'Departed' || flight.status === 'Received';
+  var locked = flight.status === 'Departed' || flight.status === 'Departed-Revised' || flight.status === 'Received';
+  var canUnlock = flight.status === 'Departed' || flight.status === 'Departed-Revised';
+  var departed = locked; // keep alias for rest of function
 
   var html = '';
 
@@ -969,12 +971,17 @@ function renderPaxPanel(flightId) {
       '<button class="btn-preview" id="btn-preview" ' + (flightPax.length === 0 ? 'disabled' : '') + '>&#128441; Preview Manifest</button>' +
 '<button class="btn-generate" id="btn-generate" ' + (flightPax.length === 0 ? 'disabled' : '') + '>' +
         '<span id="gen-icon">&#128441;</span>' +
-        '<span id="gen-label">' + (flight.direction === 'Inbound' ? 'Confirm Arrival' : 'Generate Manifest') + '</span>' +
+        '<span id="gen-label">' + (flight.direction === 'Inbound' ? 'Confirm Arrival' : (flight._wasRevised ? 'Regenerate & Email Revision' : 'Generate Manifest')) + '</span>' +
       '</button>' +
       '<div class="generate-result" id="gen-result"></div>' +
     '</div>';
   } else {
-    html += '<div class="departed-notice">&#128274; ' + (flight.status === 'Received' ? 'Arrival confirmed. Record is locked.' : 'This flight has departed. Manifest is locked.') + '<br><small style="margin-top:4px;display:block">Contact EOC to make corrections.</small></div>';
+    if (canUnlock) {
+      html += '<div class="departed-notice">&#128274; ' + (flight.status === 'Departed-Revised' ? 'Revised manifest sent.' : 'This flight has departed. Manifest is locked.') +
+        '<br><button onclick="unlockFlight(\'' + flightId + '\')" style="margin-top:10px;height:36px;padding:0 16px;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">&#128275; Unlock for Editing</button></div>';
+    } else {
+      html += '<div class="departed-notice">&#128274; Arrival confirmed. Record is locked.<br><small style="margin-top:4px;display:block">Contact EOC to make corrections.</small></div>';
+    }
   }
 
   var panel = document.getElementById('pax-panel-content');
@@ -1093,7 +1100,7 @@ function generateManifest(flightId) {
 
     // Update flight status locally
     var flight = flights.find(function(f) { return f.id === flightId; });
-    if (flight) flight.status = 'Departed';
+    if (flight) flight.status = flight._wasRevised ? 'Departed-Revised' : 'Departed';
     renderFlights();
     renderPaxPanel(flightId);
   })
@@ -1638,6 +1645,21 @@ function buildClientManifestHTML(flight, paxList, didNotBoardNote) {
   '<div class="footer"><span>Loomex Response and Readiness — Confidential</span><span>PREVIEW — ' + new Date().toISOString().slice(0,10) + '</span></div>' +
   '</body></html>';
 } 
+// ── UNLOCK FLIGHT ─────────────────────────────────────────────────────────────
+function unlockFlight(flightId) {
+  if (!confirm('Unlock this manifest for editing?\n\nWhen you regenerate, it will be sent as a revision and the flight status will update to Departed-Revised.')) return;
+  api('POST', '/api/flights/' + flightId + '/unlock')
+    .then(function(data) {
+      if (data.error) { showToast('Error: ' + data.error, 'err'); return; }
+      var flight = flights.find(function(f) { return f.id === flightId; });
+      if (flight) { flight.status = 'Loading'; flight._wasRevised = true; }
+      renderFlights();
+      renderPaxPanel(flightId);
+      showToast('Flight unlocked — make changes then regenerate', 'ok');
+    })
+    .catch(function(e) { showToast('Unlock failed: ' + e.message, 'err'); });
+}
+  
 </script>
 </body>
 </html>
