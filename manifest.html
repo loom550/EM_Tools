@@ -449,7 +449,36 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
 .btn-toggle-past{background:transparent;border:1px solid var(--border);color:var(--text-muted);width:28px;height:28px;border-radius:6px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s;}
 .btn-toggle-past:hover{border-color:var(--navy);color:var(--navy);}
 .btn-toggle-past.active{background:var(--navy-lt);border-color:var(--navy);color:var(--navy);}
-  
+/* ── INBOUND PICKER ──────────────────────────────────────────────────────── */
+.inbound-picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:450;display:none;align-items:center;justify-content:center;padding:16px;}
+.inbound-picker-overlay.open{display:flex;}
+.inbound-picker-modal{background:var(--card);width:100%;max-width:500px;border-radius:14px;display:flex;flex-direction:column;max-height:85vh;overflow:hidden;box-shadow:var(--shadow-lg);}
+.inbound-picker-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.inbound-picker-title{font-size:15px;font-weight:700;color:var(--navy);}
+.inbound-picker-close{background:transparent;border:none;font-size:22px;color:var(--text-muted);cursor:pointer;line-height:1;}
+.inbound-picker-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.inbound-picker-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.btn-inbound-confirm{flex:1;height:44px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-inbound-cancel{height:44px;padding:0 16px;background:transparent;color:var(--text-muted);border:1.5px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;}
+.picker-flight-row:hover{border-color:var(--navy)!important;}
+
+/* ── POOL CONTROLS ───────────────────────────────────────────────────────── */
+.pool-search-input{flex:1;min-width:120px;height:34px;padding:0 10px;border:1.5px solid var(--input-border);border-radius:7px;font-size:13px;font-family:inherit;color:var(--text);background:var(--input-bg);outline:none;}
+.pool-search-input:focus{border-color:var(--navy);}
+.btn-pool-sort{height:34px;padding:0 12px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text-muted);background:transparent;transition:all .12s;flex-shrink:0;}
+.btn-pool-sort:hover,.btn-pool-sort.active{border-color:var(--navy);color:var(--navy);background:var(--navy-lt);}
+.btn-add-inbound{height:34px;padding:0 14px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;background:var(--teal);white-space:nowrap;flex-shrink:0;}
+.btn-add-inbound:hover{background:#267e65;}
+
+/* ── NOT AT HUB WARNING ──────────────────────────────────────────────────── */
+.not-at-hub-warning{margin:0 16px 8px;padding:10px 12px;background:var(--red-lt);border:1px solid rgba(217,64,64,.25);border-radius:8px;}
+
+/* ── FILE QUEUE ──────────────────────────────────────────────────────────── */
+.file-queue-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f0faf5;border:1px solid rgba(47,152,121,.25);border-radius:6px;margin-top:6px;font-size:13px;color:var(--teal);}
+.file-queue-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.file-queue-remove{background:transparent;border:none;font-size:16px;color:var(--text-muted);cursor:pointer;flex-shrink:0;line-height:1;}
+
+.pax-info{flex:1;min-width:0;}
 </style>
 </head>
 <body>
@@ -513,7 +542,7 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
           </div>
           <div class="aff-grid">
             <div class="aff-field">
-              <label>Departure</label>
+              <label style="display:flex;align-items:center;gap:6px;">Departure <button type="button" id="aff-dep-hub-btn" style="font-size:10px;padding:1px 7px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">Use Hub</button></label>
               <input type="text" id="aff-dep" placeholder="e.g. Kashechewan" autocorrect="off">
             </div>
             <div class="aff-field">
@@ -600,22 +629,19 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
       <div id="upload-state-picker">
         <div class="upload-drop-zone" id="upload-drop-zone">
           <div class="upload-drop-icon">&#128196;</div>
-          <div class="upload-drop-label">Drop manifest here or tap to browse</div>
-          <div class="upload-drop-sub">PDF, JPG, or PNG &bull; Max 15 MB</div>
-          <input type="file" class="upload-file-input" id="upload-file-input" accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp,.bmp,.tiff,.tif,.doc,.docx,.xls,.xlsx">
+          <div class="upload-drop-label">Drop manifests here or tap to browse</div>
+          <div class="upload-drop-sub">PDF, JPG, PNG, XLS, DOCX &bull; Max 15 MB each &bull; Multiple files OK</div>
+          <input type="file" class="upload-file-input" id="upload-file-input" multiple accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp,.bmp,.tiff,.tif,.doc,.docx,.xls,.xlsx">
         </div>
-        <div class="upload-selected-file" id="upload-selected-file">
-          <span>&#128196;</span>
-          <span class="upload-selected-file-name" id="upload-file-name"></span>
-          <button class="upload-file-clear" id="upload-file-clear">&times;</button>
-        </div>
-        <button class="btn-upload" id="btn-upload" disabled>&#9650; Extract Passengers</button>
+        <div id="upload-file-queue"></div>
+        <button class="btn-upload" id="btn-upload" disabled>&#9650; Extract All Passengers</button>
       </div>
+      
       <div id="upload-state-processing" style="display:none">
         <div class="upload-processing">
           <div class="upload-processing-spinner"></div>
-          <div class="upload-processing-label">Extracting passengers...</div>
-          <div class="upload-processing-sub">This may take 1-2 minutes depending on the size of the manifest.</div>
+          <div class="upload-processing-label" id="upload-processing-label">Extracting passengers...</div>
+          <div class="upload-processing-sub" id="upload-processing-sub">This may take 1-2 minutes depending on the size of the manifest.</div>
         </div>
       </div>
       <div id="upload-state-review" style="display:none">
@@ -659,6 +685,21 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
       <button class="preview-close" id="preview-close">&times;</button>
     </div>
     <iframe class="preview-frame" id="preview-frame"></iframe>
+  </div>
+</div>
+
+<!-- Inbound flight picker modal -->
+<div class="inbound-picker-overlay" id="inbound-picker-overlay">
+  <div class="inbound-picker-modal">
+    <div class="inbound-picker-hdr">
+      <span class="inbound-picker-title">Add from Inbound Flights</span>
+      <button class="inbound-picker-close" id="inbound-picker-close">&times;</button>
+    </div>
+    <div class="inbound-picker-body" id="inbound-picker-body"></div>
+    <div class="inbound-picker-footer">
+      <button class="btn-inbound-confirm" id="btn-inbound-confirm">&#10003; Add Selected</button>
+      <button class="btn-inbound-cancel" id="btn-inbound-cancel">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -766,6 +807,13 @@ var flights = [];
 var allPax = [];
 var selectedFlightId = null;
 var editingPaxId = null;
+var poolSearchQuery = '';
+var poolSortAlpha = false;
+var poolFlightFilter = '';
+var inboundWarningsDismissed = {};
+var uploadQueue = [];
+var uploadQueueIndex = 0;
+var uploadMasterRows = [];
 var hidePastFlights = false;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -784,8 +832,9 @@ var hidePastFlights = false;
     this.title = hidePastFlights ? 'Show completed flights' : 'Hide completed flights';
     renderFlights();
   });
-  setupAddFlightForm();
+ setupAddFlightForm();
   setupModal();
+  setupInboundPicker();
 })();
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -899,7 +948,51 @@ function renderPaxPanel(flightId) {
   if (!flight) return;
 
   var flightPax = allPax.filter(function(p) { return p.flightId === flightId; });
-  var unassigned = allPax.filter(function(p) { return !p.flightId; });
+
+  // Pool: At Hub, not already on this outbound flight
+  var pool = allPax.filter(function(p) {
+    return p.paxStatus === 'At Hub' && p.flightId !== flightId;
+  });
+
+  // Duplicate detection across pool + assigned
+  var nameCounts = {};
+  pool.concat(flightPax).forEach(function(p) {
+    var key = (p.firstName + ' ' + p.lastName).toLowerCase().trim();
+    nameCounts[key] = (nameCounts[key] || 0) + 1;
+  });
+
+  // Apply search filter
+  var searchQ = poolSearchQuery.toLowerCase().trim();
+  var filteredPool = searchQ ? pool.filter(function(p) {
+    return (p.firstName + ' ' + p.lastName).toLowerCase().indexOf(searchQ) >= 0;
+  }) : pool;
+  var filteredAssigned = searchQ ? flightPax.filter(function(p) {
+    return (p.firstName + ' ' + p.lastName).toLowerCase().indexOf(searchQ) >= 0;
+  }) : flightPax;
+
+  // Apply alpha sort
+  if (poolSortAlpha) {
+    filteredPool = filteredPool.slice().sort(function(a, b) {
+      return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName);
+    });
+    filteredAssigned = filteredAssigned.slice().sort(function(a, b) {
+      return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName);
+    });
+  }
+
+  // Group pool by inbound flightId
+  var poolGroups = {};
+  filteredPool.forEach(function(p) {
+    var key = p.flightId || '__none__';
+    if (!poolGroups[key]) poolGroups[key] = [];
+    poolGroups[key].push(p);
+  });
+
+  // Apply flight filter
+  var groupKeys = Object.keys(poolGroups);
+  if (poolFlightFilter) {
+    groupKeys = groupKeys.filter(function(k) { return k === poolFlightFilter; });
+  }
 
   var counts = { F:0, M:0, C:0, I:0 };
   flightPax.forEach(function(p) { if (counts[p.passengerType] !== undefined) counts[p.passengerType]++; });
@@ -908,7 +1001,7 @@ function renderPaxPanel(flightId) {
 
   var locked = flight.status === 'Departed' || flight.status === 'Departed-Revised' || flight.status === 'Received';
   var canUnlock = flight.status === 'Departed' || flight.status === 'Departed-Revised';
-  var departed = locked; // keep alias for rest of function
+  var departed = locked;
 
   var html = '';
 
@@ -933,42 +1026,90 @@ function renderPaxPanel(flightId) {
     '<div class="flt-stat"><span class="flt-stat-val">' + totalCarry + '</span><span class="flt-stat-lbl">Carry lbs</span></div>' +
   '</div>';
 
-  // Pool destination filter bar
-  var destCounts = {};
-  unassigned.forEach(function(p) {
-    var d = p.destinationHub || 'Unknown';
-    destCounts[d] = (destCounts[d] || 0) + 1;
-  });
-  var destKeys = Object.keys(destCounts);
-  if (!departed && unassigned.length && destKeys.length > 1) {
-    html += '<div style="padding:8px 16px;background:#f8f9fb;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
-      '<span style="font-size:11px;color:var(--text-muted);font-weight:600">POOL FILTER:</span>' +
-      '<button onclick="filterPoolDest(\'\')" id="pool-filter-all" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;border:1px solid var(--border);background:var(--navy);color:#fff;cursor:pointer;">All (' + unassigned.length + ')</button>' +
-      destKeys.map(function(d) {
-        return '<button onclick="filterPoolDest(\'' + esc(d) + '\')" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--text-dim);cursor:pointer;">' + esc(d) + ' (' + destCounts[d] + ')</button>';
-      }).join('') +
+  // Actions bar
+  if (!departed) {
+    html += '<div style="padding:8px 16px;background:#f8f9fb;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+      '<input type="text" id="pool-search" class="pool-search-input" placeholder="&#128269; Search name..." value="' + esc(poolSearchQuery) + '">' +
+      '<button onclick="togglePoolSort()" class="btn-pool-sort' + (poolSortAlpha ? ' active' : '') + '" title="Sort alphabetically">A\u2192Z</button>' +
+      (pool.length > 0 ? '<button onclick="openInboundPicker(\'' + flightId + '\')" class="btn-add-inbound">+ Add from Inbound Flight</button>' : '') +
     '</div>';
+
+    // Flight filter pills
+    var allGroupKeys = Object.keys(poolGroups);
+    if (allGroupKeys.length > 1) {
+      html += '<div style="padding:6px 16px;background:#f0f4f9;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
+        '<span style="font-size:11px;color:var(--text-muted);font-weight:600">FILTER:</span>' +
+        '<button onclick="filterPoolFlight(\'\')" style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px;border:1px solid var(--border);background:' + (!poolFlightFilter ? 'var(--navy)' : '#fff') + ';color:' + (!poolFlightFilter ? '#fff' : 'var(--text-dim)') + ';cursor:pointer;">All (' + filteredPool.length + ')</button>';
+      allGroupKeys.forEach(function(k) {
+        var f = flights.find(function(f) { return f.id === k; });
+        var label = f ? 'Flt ' + f.flightNumber : 'Manual';
+        var cnt = poolGroups[k] ? poolGroups[k].length : 0;
+        html += '<button onclick="filterPoolFlight(\'' + k + '\')" style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;border:1px solid var(--border);background:' + (poolFlightFilter === k ? 'var(--navy)' : '#fff') + ';color:' + (poolFlightFilter === k ? '#fff' : 'var(--text-dim)') + ';cursor:pointer;">' + esc(label) + ' (' + cnt + ')</button>';
+      });
+      html += '</div>';
+    }
   }
 
-  // Unassigned pax (only if flight is active)
-  if (!departed && unassigned.length) {
-    var filteredUnassigned = poolDestFilter
-      ? unassigned.filter(function(p) { return (p.destinationHub || 'Unknown') === poolDestFilter; })
-      : unassigned;
-    html += '<div class="section-label">Unassigned Passengers <span class="section-badge">' + filteredUnassigned.length + '</span> <span style="font-size:11px;font-weight:400;color:var(--text-muted);">— tap to assign</span></div>';
-    filteredUnassigned.forEach(function(p) {
-      html += renderPaxRow(p, true, flightId);
-    });
+  // Pool section
+  if (!departed) {
+    if (filteredPool.length === 0 && pool.length === 0 && flightPax.length === 0) {
+      html += '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No passengers yet.<br>Add via the intake form or upload an inbound manifest.</div>';
+    } else if (filteredPool.length === 0 && searchQ) {
+      html += '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">No pool matches for "' + esc(searchQ) + '"</div>';
+    } else {
+      groupKeys.forEach(function(k) {
+        var groupPax = poolGroups[k];
+        if (!groupPax || !groupPax.length) return;
+        var inboundFlt = flights.find(function(f) { return f.id === k; });
+        var groupLabel = inboundFlt
+          ? 'Flt ' + inboundFlt.flightNumber + (inboundFlt.flightDate ? ' \u00b7 ' + inboundFlt.flightDate : '') + (inboundFlt.departureLocation ? ' \u00b7 ' + esc(inboundFlt.departureLocation) : '')
+          : 'Manually Added';
+
+        html += '<div class="section-label" style="justify-content:space-between;">' +
+          '<span>' + groupLabel + ' <span class="section-badge">' + groupPax.length + '</span></span>' +
+          (inboundFlt ? '<button onclick="bulkAssignGroup(\'' + k + '\',\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:6px;border:none;background:var(--navy);color:#fff;cursor:pointer;">Add All</button>' : '') +
+        '</div>';
+
+        groupPax.forEach(function(p) {
+          var key = (p.firstName + ' ' + p.lastName).toLowerCase().trim();
+          html += renderPaxRow(p, true, flightId, nameCounts[key] > 1);
+        });
+
+        // Non-At-Hub warning for this inbound group
+        if (inboundFlt && !inboundWarningsDismissed[flightId + ':' + k]) {
+          var notAtHub = allPax.filter(function(p) {
+            return p.flightId === k && p.paxStatus !== 'At Hub';
+          });
+          if (notAtHub.length) {
+            html += '<div class="not-at-hub-warning">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                '<span style="font-size:12px;font-weight:700;color:var(--red);">&#9888; ' + notAtHub.length + ' from Flt ' + esc(inboundFlt.flightNumber) + ' not at hub</span>' +
+                '<button onclick="dismissWarning(\'' + flightId + '\',\'' + k + '\')" style="background:transparent;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;line-height:1;">&times;</button>' +
+              '</div>' +
+              notAtHub.map(function(p) {
+                return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(217,64,64,.1);">' +
+                  '<div class="ptype-badge b-' + p.passengerType + '" style="width:24px;height:24px;font-size:11px;">' + p.passengerType + '</div>' +
+                  '<span style="flex:1;font-size:13px;font-weight:500;">' + esc(p.firstName) + ' ' + esc(p.lastName) + '</span>' +
+                  '<span style="font-size:11px;color:var(--text-muted);margin-right:6px;">' + esc(p.paxStatus) + '</span>' +
+                  '<button onclick="forceAssignPax(\'' + p.id + '\',\'' + flightId + '\')" style="font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid var(--red);background:var(--red-lt);color:var(--red);cursor:pointer;">Force Add</button>' +
+                '</div>';
+              }).join('') +
+            '</div>';
+          }
+        }
+      });
+    }
   }
 
-  // Assigned pax
-  if (flightPax.length) {
-    html += '<div class="section-label">Assigned to ' + esc(flight.flightNumber) + '</div>';
-    flightPax.forEach(function(p) {
-      html += renderPaxRow(p, false, flightId);
+  // Assigned section
+  if (filteredAssigned.length) {
+    html += '<div class="section-label">Assigned to ' + esc(flight.flightNumber) + ' <span class="section-badge" style="background:var(--teal);">' + filteredAssigned.length + '</span></div>';
+    filteredAssigned.forEach(function(p) {
+      var key = (p.firstName + ' ' + p.lastName).toLowerCase().trim();
+      html += renderPaxRow(p, false, flightId, nameCounts[key] > 1);
     });
-  } else if (!unassigned.length) {
-    html += '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No passengers assigned yet.<br>Add them via the intake form.</div>';
+  } else if (!departed && !pool.length && !searchQ) {
+    html += '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No passengers assigned yet.</div>';
   }
 
   // Generate section
@@ -980,7 +1121,7 @@ function renderPaxPanel(flightId) {
       '<input class="email-input" type="email" id="manifest-email" placeholder="recipient@example.com">' +
       '<div class="email-hint">Separate multiple addresses with commas. Leave blank to use default.</div>' +
       '<button class="btn-preview" id="btn-preview" ' + (flightPax.length === 0 ? 'disabled' : '') + '>&#128441; Preview Manifest</button>' +
-'<button class="btn-generate" id="btn-generate" ' + (flightPax.length === 0 ? 'disabled' : '') + '>' +
+      '<button class="btn-generate" id="btn-generate" ' + (flightPax.length === 0 ? 'disabled' : '') + '>' +
         '<span id="gen-icon">&#128441;</span>' +
         '<span id="gen-label">' + (flight.direction === 'Inbound' ? 'Confirm Arrival' : (flight._wasRevised ? 'Regenerate & Email Revision' : 'Generate Manifest')) + '</span>' +
       '</button>' +
@@ -998,34 +1139,40 @@ function renderPaxPanel(flightId) {
   var panel = document.getElementById('pax-panel-content');
   panel.innerHTML = html;
 
-  // Wire up assign buttons
+  // Wire search live filter
+  var searchInput = document.getElementById('pool-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      poolSearchQuery = this.value;
+      renderPaxPanel(flightId);
+    });
+  }
+
+  // Wire assign buttons
   panel.querySelectorAll('.assign-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      var paxId = this.getAttribute('data-pax-id');
-      assignPax(paxId, flightId);
+      assignPax(this.getAttribute('data-pax-id'), flightId);
     });
   });
 
-  // Wire up edit buttons
+  // Wire edit buttons
   panel.querySelectorAll('.pax-edit-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      var paxId = this.getAttribute('data-pax-id');
-      openEditModal(paxId);
+      openEditModal(this.getAttribute('data-pax-id'));
     });
   });
 
- // Wire up generate
+  // Wire generate and preview
   var genBtn = document.getElementById('btn-generate');
   if (genBtn) genBtn.addEventListener('click', function() { generateManifest(flightId); });
-
-  // Wire up preview
   var prevBtn = document.getElementById('btn-preview');
   if (prevBtn) prevBtn.addEventListener('click', function() { openPreviewManifest(flightId); });
 }
 
-function renderPaxRow(p, isUnassigned, targetFlightId) {
+  
+function renderPaxRow(p, isUnassigned, targetFlightId, isDupe) {
   var medFlags = [];
   if (p.medWheelchair) medFlags.push('Wheelchair');
   if (p.medWalker) medFlags.push('Walker');
@@ -1036,21 +1183,24 @@ function renderPaxRow(p, isUnassigned, targetFlightId) {
   var medFlag = medFlags.length ? '<span style="color:var(--yellow);margin-right:3px" title="' + esc(medFlags.join(', ')) + '">&#9888;</span>' : '';
   var rxFlag = p.prescriptionsRequired ? '<span style="color:var(--red);margin-right:3px" title="Prescriptions required">&#8982;</span>' : '';
   var destBadge = p.destinationHub ? '<span style="font-size:10px;background:var(--navy-lt);color:var(--navy);padding:1px 6px;border-radius:8px;margin-left:4px">' + esc(p.destinationHub) + '</span>' : '';
-  return '<div class="pax-row' + (isUnassigned ? ' unassigned-row' : '') + '">' +
+  var dupeBadge = isDupe ? '<span style="font-size:10px;background:var(--yellow-lt);color:#8a5c00;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700;">DUP</span>' : '';
+  var inboundBadge = '';
+  if (isUnassigned && p.flightId) {
+    var inbFlt = flights.find(function(f) { return f.id === p.flightId; });
+    if (inbFlt) inboundBadge = '<span style="font-size:10px;background:var(--teal-lt);color:var(--teal);padding:1px 6px;border-radius:8px;margin-left:4px;">Flt ' + esc(inbFlt.flightNumber) + '</span>';
+  }
+  return '<div class="pax-row' + (isUnassigned ? ' unassigned-row' : '') + '"' + (isDupe ? ' style="background:#fffbf0;"' : '') + '>' +
     '<div class="ptype-badge b-' + p.passengerType + '">' + p.passengerType + '</div>' +
     '<div class="pax-info">' +
-      '<div class="pax-name">' + medFlag + rxFlag + esc(p.firstName) + ' ' + esc(p.lastName) + destBadge + '</div>' +
+      '<div class="pax-name">' + medFlag + rxFlag + esc(p.firstName) + ' ' + esc(p.lastName) + destBadge + dupeBadge + inboundBadge + '</div>' +
       '<div class="pax-sub">' + (p.dob ? p.dob + ' &bull; ' : '') + (p.specialRequirements ? '&#9888; Special req.' : '') + '</div>' +
     '</div>' +
-    '<div class="pax-wt">' +
-      '<span>' + (p.luggageWeight||0) + ' lug</span>' +
-      '<span>' + (p.carryOnWeight||0) + ' carry</span>' +
-    '</div>' +
+    '<div class="pax-wt"><span>' + (p.luggageWeight||0) + ' lug</span><span>' + (p.carryOnWeight||0) + ' carry</span></div>' +
     '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-  (isUnassigned ? '<button class="assign-btn" data-pax-id="' + p.id + '">Assign</button>' : '') +
-  '<button class="pax-edit-btn" data-pax-id="' + p.id + '">Edit</button>' +
+    (isUnassigned ? '<button class="assign-btn" data-pax-id="' + p.id + '">Assign</button>' : '') +
+    '<button class="pax-edit-btn" data-pax-id="' + p.id + '">Edit</button>' +
     '</div>' +
-'</div>'
+  '</div>';
 }
 
 // ── ASSIGN PAX ────────────────────────────────────────────────────────────────
@@ -1133,6 +1283,9 @@ function setupAddFlightForm() {
     form.classList.toggle('open');
     if (form.classList.contains('open')) {
       document.getElementById('aff-date').value = new Date().toISOString().slice(0, 10);
+      // Restore saved departure
+      var saved = localStorage.getItem('loomex_last_departure');
+      if (saved) document.getElementById('aff-dep').value = saved;
       document.getElementById('aff-num').focus();
     }
   });
@@ -1143,6 +1296,14 @@ function setupAddFlightForm() {
   });
 
   document.getElementById('aff-save').addEventListener('click', saveNewFlight);
+
+  // Use Hub button — strip " Hub" from hub name
+  document.getElementById('aff-dep-hub-btn').addEventListener('click', function() {
+    if (hubContext && hubContext.hub) {
+      var hubName = hubContext.hub.replace(/\s*Hub\s*$/i, '').trim();
+      document.getElementById('aff-dep').value = hubName;
+    }
+  });
 }
 
 function saveNewFlight() {
@@ -1173,6 +1334,10 @@ function saveNewFlight() {
       btn.disabled = false;
       btn.textContent = 'Save Flight';
       if (data.error) { showToast('Error: ' + data.error, 'err'); return; }
+      // Persist departure for next time
+      if (body.departureLocation) {
+        localStorage.setItem('loomex_last_departure', body.departureLocation);
+      }
       flights.push(data);
       document.getElementById('add-flight-form').classList.remove('open');
       clearAddFlightForm();
@@ -1313,25 +1478,25 @@ var uploadId = '';
 function openUploadModal(flightId, flightNum) {
   uploadFlightId = flightId;
   uploadFlightNum = flightNum;
-  uploadSelectedFile = null;
+  uploadQueue = [];
+  uploadQueueIndex = 0;
+  uploadMasterRows = [];
   uploadRows = [];
   uploadId = '';
 
   document.getElementById('upload-modal-flight').textContent = 'Flight ' + flightNum;
   setUploadState('picker');
   resetFilePicker();
-
   document.getElementById('upload-modal-overlay').classList.add('open');
   setupUploadModal();
 }
 
 function closeUploadModal() {
   document.getElementById('upload-modal-overlay').classList.remove('open');
-  if (uploadId) { loadData(); } // refresh pax count if we committed
+  if (uploadId) { loadData(); }
 }
 
 function setupUploadModal() {
-  // Only wire once
   if (document.getElementById('upload-modal-overlay').dataset.wired) return;
   document.getElementById('upload-modal-overlay').dataset.wired = '1';
 
@@ -1341,50 +1506,65 @@ function setupUploadModal() {
   });
   document.getElementById('btn-upload-done').addEventListener('click', closeUploadModal);
 
-  // Drop zone
   var dz = document.getElementById('upload-drop-zone');
   dz.addEventListener('click', function() { document.getElementById('upload-file-input').click(); });
   dz.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag-over'); });
   dz.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
   dz.addEventListener('drop', function(e) {
     e.preventDefault(); this.classList.remove('drag-over');
-    var f = e.dataTransfer.files[0];
-    if (f) selectFile(f);
+    Array.from(e.dataTransfer.files).forEach(selectFile);
   });
 
   document.getElementById('upload-file-input').addEventListener('change', function() {
-    if (this.files[0]) selectFile(this.files[0]);
-  });
-
-  document.getElementById('upload-file-clear').addEventListener('click', function(e) {
-    e.stopPropagation();
-    resetFilePicker();
+    Array.from(this.files).forEach(selectFile);
+    this.value = ''; // allow re-selecting same file
   });
 
   document.getElementById('btn-upload').addEventListener('click', function() {
-    if (uploadSelectedFile) doUpload();
+    if (uploadQueue.length) doUpload();
   });
 }
 
 function selectFile(file) {
- var ext = (file.name || '').toLowerCase();
+  var ext = (file.name || '').toLowerCase();
   var allowedExts = ['.pdf','.jpg','.jpeg','.png','.heic','.heif','.webp','.bmp','.tiff','.tif','.doc','.docx','.xls','.xlsx'];
   if (!allowedExts.some(function(e) { return ext.endsWith(e); })) {
-    showToast('Unsupported file type', 'err'); return;
+    showToast('Unsupported: ' + file.name, 'err'); return;
   }
-  if (file.size > 15 * 1024 * 1024) { showToast('File too large (max 15 MB)', 'err'); return; }
-  uploadSelectedFile = file;
-  document.getElementById('upload-file-name').textContent = file.name;
-  document.getElementById('upload-selected-file').classList.add('show');
+  if (file.size > 15 * 1024 * 1024) { showToast('Too large (max 15 MB): ' + file.name, 'err'); return; }
+  uploadQueue.push(file);
+  renderFileQueue();
   document.getElementById('btn-upload').disabled = false;
 }
 
+function renderFileQueue() {
+  var el = document.getElementById('upload-file-queue');
+  if (!el) return;
+  el.innerHTML = uploadQueue.map(function(f, i) {
+    return '<div class="file-queue-item">' +
+      '<span>&#128196;</span>' +
+      '<span class="file-queue-item-name">' + esc(f.name) + '</span>' +
+      '<button class="file-queue-remove" onclick="removeFromQueue(' + i + ')">&times;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function removeFromQueue(idx) {
+  uploadQueue.splice(idx, 1);
+  renderFileQueue();
+  if (!uploadQueue.length) document.getElementById('btn-upload').disabled = true;
+}
+
 function resetFilePicker() {
-  uploadSelectedFile = null;
-  document.getElementById('upload-file-input').value = '';
-  document.getElementById('upload-file-name').textContent = '';
-  document.getElementById('upload-selected-file').classList.remove('show');
-  document.getElementById('btn-upload').disabled = true;
+  uploadQueue = [];
+  uploadQueueIndex = 0;
+  uploadMasterRows = [];
+  var el = document.getElementById('upload-file-queue');
+  if (el) el.innerHTML = '';
+  var inp = document.getElementById('upload-file-input');
+  if (inp) inp.value = '';
+  var btn = document.getElementById('btn-upload');
+  if (btn) btn.disabled = true;
 }
 
 function setUploadState(state) {
@@ -1394,28 +1574,51 @@ function setUploadState(state) {
 }
 
 function doUpload() {
-  if (!uploadSelectedFile) return;
+  if (!uploadQueue.length) return;
+  uploadQueueIndex = 0;
+  uploadMasterRows = [];
+  uploadId = '';
+  processNextFile();
+}
+
+function processNextFile() {
+  if (uploadQueueIndex >= uploadQueue.length) {
+    // All files processed — show combined review table
+    uploadRows = uploadMasterRows;
+    renderReviewTable();
+    setUploadState('review');
+    return;
+  }
+
+  var file = uploadQueue[uploadQueueIndex];
+  var label = document.getElementById('upload-processing-label');
+  var sub = document.getElementById('upload-processing-sub');
+  if (label) label.textContent = 'Extracting passengers...';
+  if (sub) sub.textContent = 'File ' + (uploadQueueIndex + 1) + ' of ' + uploadQueue.length + ': ' + file.name;
   setUploadState('processing');
 
   var formData = new FormData();
-  formData.append('file', uploadSelectedFile);
+  formData.append('file', file);
 
   var url = WORKER + '/api/manifest-upload/' + uploadFlightId + '?token=' + encodeURIComponent(hubToken);
   fetch(url, { method: 'POST', body: formData })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data.error) { setUploadState('picker'); showToast('Extraction error: ' + data.error, 'err'); return; }
-      uploadId = data.uploadId;
-      uploadRows = data.rows || [];
-      renderReviewTable();
-      setUploadState('review');
+      if (data.error) {
+        showToast('Error on ' + file.name + ': ' + data.error, 'err');
+      } else {
+        if (!uploadId) uploadId = data.uploadId;
+        uploadMasterRows = uploadMasterRows.concat(data.rows || []);
+      }
+      uploadQueueIndex++;
+      processNextFile();
     })
     .catch(function(e) {
-      setUploadState('picker');
-      showToast('Upload failed: ' + e.message, 'err');
+      showToast('Failed: ' + file.name + ' — ' + e.message, 'err');
+      uploadQueueIndex++;
+      processNextFile();
     });
 }
-
 function renderReviewTable() {
   var tbody = document.getElementById('review-tbody');
   var high = 0, low = 0, missing = 0;
@@ -1516,13 +1719,6 @@ function doCommit() {
   });
 }
 
-// ── POOL DESTINATION FILTER ───────────────────────────────────────────────────
-var poolDestFilter = '';
-function filterPoolDest(dest) {
-  poolDestFilter = dest;
-  if (selectedFlightId) renderPaxPanel(selectedFlightId);
-}
-
 function api(method, path, body) {
   var opts = {
     method: method,
@@ -1601,10 +1797,10 @@ function buildClientManifestHTML(flight, paxList, didNotBoardNote) {
     return '<tr>' +
       '<td>' + (i+1) + '</td>' +
       '<td>' + esc(p.firstName) + '</td><td>' + esc(p.lastName) + '</td>' +
-      '<td style="text-align:center">' + (p.passengerType==='F'?'✓':'') + '</td>' +
-      '<td style="text-align:center">' + (p.passengerType==='M'?'✓':'') + '</td>' +
-      '<td style="text-align:center">' + (p.passengerType==='C'?'✓':'') + '</td>' +
-      '<td style="text-align:center">' + (p.passengerType==='I'?'✓':'') + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='F'?'\u2713':'') + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='M'?'\u2713':'') + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='C'?'\u2713':'') + '</td>' +
+      '<td style="text-align:center">' + (p.passengerType==='I'?'\u2713':'') + '</td>' +
       '<td style="text-align:right">' + (p.luggageWeight||0) + '</td>' +
       '<td style="text-align:right">' + (p.carryOnWeight||0) + '</td>' +
       '<td>' + esc(p.specialRequirements||'') + medStr + '</td>' +
@@ -1628,18 +1824,13 @@ function buildClientManifestHTML(flight, paxList, didNotBoardNote) {
     '.dnb{margin-top:10px;font-size:9.5pt;color:#b00;font-style:italic;}' +
     '.footer{margin-top:14px;font-size:8pt;color:#aaa;border-top:1px solid #ddd;padding-top:6px;display:flex;justify-content:space-between;}' +
   '</style></head><body>' +
-  '<div class="draft">⚠ PREVIEW ONLY — NOT AN OFFICIAL MANIFEST</div>' +
-  '<h1>PASSENGER MANIFEST 1</h1>' +
+  '<div class="draft">\u26a0 PREVIEW ONLY \u2014 NOT AN OFFICIAL MANIFEST</div>' +
+  '<h1>PASSENGER MANIFEST</h1>' +
   '<div class="hdr-grid">' +
     '<div class="hdr-row"><span class="hdr-label">Flight Date:</span><span class="hdr-val">' + esc(flight.flightDate||'') + '</span></div>' +
-    '<div class="hdr-row"><span class="hdr-label">Airline:</span><span class="hdr-val">' + esc(flight.airline||'') + '</span></div>' +
-    '<div class="hdr-row"><span class="hdr-label">ETD:</span><span class="hdr-val">' + esc(flight.etd||'') + '</span></div>' +
     '<div class="hdr-row"><span class="hdr-label">Flight #:</span><span class="hdr-val">' + esc(flight.flightNumber||'') + '</span></div>' +
     '<div class="hdr-row"><span class="hdr-label">Tail Number:</span><span class="hdr-val">' + esc(flight.tailNumber||'') + '</span></div>' +
-    '<div class="hdr-row"><span class="hdr-label">ETA:</span><span class="hdr-val">' + esc(flight.eta||'') + '</span></div>' +
-    '<div class="hdr-row"><span class="hdr-label">AC Type:</span><span class="hdr-val">' + esc(flight.acType||'') + '</span></div>' +
     '<div class="hdr-row"><span class="hdr-label">Departure:</span><span class="hdr-val">' + esc(flight.departureLocation||'') + '</span></div>' +
-    '<div class="hdr-row"><span class="hdr-label">Seats:</span><span class="hdr-val">' + (flight.seats||'') + '</span></div>' +
     '<div class="hdr-row"><span class="hdr-label">Destination:</span><span class="hdr-val">' + esc(flight.destination||'') + '</span></div>' +
   '</div>' +
   '<table><thead><tr><th>#</th><th>First Name</th><th>Last Name</th><th>F</th><th>M</th><th>C</th><th>I</th><th>Luggage Wt (lbs)</th><th>Carry-On Wt (lbs)</th><th>Special Requirements</th></tr></thead>' +
@@ -1653,9 +1844,9 @@ function buildClientManifestHTML(flight, paxList, didNotBoardNote) {
     '<td></td>' +
   '</tr></tfoot></table>' +
   (didNotBoardNote ? '<div class="dnb">** ' + esc(didNotBoardNote) + '</div>' : '') +
-  '<div class="footer"><span>Loomex Response and Readiness — Confidential</span><span>PREVIEW — ' + new Date().toISOString().slice(0,10) + '</span></div>' +
+  '<div class="footer"><span>Loomex Response and Readiness \u2014 Confidential</span><span>PREVIEW \u2014 ' + new Date().toISOString().slice(0,10) + '</span></div>' +
   '</body></html>';
-} 
+}
 // ── UNLOCK FLIGHT ─────────────────────────────────────────────────────────────
 function unlockFlight(flightId) {
   if (!confirm('Unlock this manifest for editing?\n\nWhen you regenerate, it will be sent as a revision and the flight status will update to Departed-Revised.')) return;
@@ -1670,7 +1861,138 @@ function unlockFlight(flightId) {
     })
     .catch(function(e) { showToast('Unlock failed: ' + e.message, 'err'); });
 }
-  
+// ── INBOUND PICKER ────────────────────────────────────────────────────────────
+var inboundPickerOutboundId = '';
+
+function openInboundPicker(outboundFlightId) {
+  inboundPickerOutboundId = outboundFlightId;
+
+  // Build count of At-Hub pax per inbound flight
+  var paxCounts = {};
+  allPax.forEach(function(p) {
+    if (p.paxStatus === 'At Hub' && p.flightId && p.flightId !== outboundFlightId) {
+      paxCounts[p.flightId] = (paxCounts[p.flightId] || 0) + 1;
+    }
+  });
+
+  var inboundFlights = Object.keys(paxCounts).map(function(fid) {
+    return flights.find(function(f) { return f.id === fid; });
+  }).filter(Boolean).sort(function(a, b) {
+    return (a.flightNumber || '').localeCompare(b.flightNumber || '');
+  });
+
+  var body = document.getElementById('inbound-picker-body');
+
+  if (!inboundFlights.length) {
+    body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:14px;">No inbound flights with At Hub passengers.</div>';
+  } else {
+    body.innerHTML =
+      '<div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">' +
+        '<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">' +
+          '<input type="checkbox" id="picker-select-all" style="width:16px;height:16px;accent-color:var(--navy);"> Select All' +
+        '</label>' +
+      '</div>' +
+      inboundFlights.map(function(f) {
+        var cnt = paxCounts[f.id];
+        return '<label class="picker-flight-row" style="display:flex;align-items:center;gap:12px;padding:12px;border:1.5px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:border-color .12s;">' +
+          '<input type="checkbox" class="picker-flight-cb" data-flight-id="' + f.id + '" style="width:18px;height:18px;accent-color:var(--navy);flex-shrink:0;">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:14px;font-weight:700;color:var(--navy);">Flight ' + esc(f.flightNumber) + '</div>' +
+            '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' +
+              (f.flightDate ? f.flightDate : '') +
+              (f.departureLocation ? ' \u00b7 ' + esc(f.departureLocation) : '') +
+              (f.destination ? ' \u2192 ' + esc(f.destination) : '') +
+            '</div>' +
+          '</div>' +
+          '<span style="font-size:13px;font-weight:700;color:var(--teal);white-space:nowrap;">' + cnt + ' at hub</span>' +
+        '</label>';
+      }).join('');
+
+    document.getElementById('picker-select-all').addEventListener('change', function() {
+      var checked = this.checked;
+      document.querySelectorAll('.picker-flight-cb').forEach(function(cb) { cb.checked = checked; });
+    });
+  }
+
+  document.getElementById('inbound-picker-overlay').classList.add('open');
+}
+
+function closeInboundPicker() {
+  document.getElementById('inbound-picker-overlay').classList.remove('open');
+}
+
+function setupInboundPicker() {
+  document.getElementById('inbound-picker-close').addEventListener('click', closeInboundPicker);
+  document.getElementById('btn-inbound-cancel').addEventListener('click', closeInboundPicker);
+  document.getElementById('inbound-picker-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeInboundPicker();
+  });
+  document.getElementById('btn-inbound-confirm').addEventListener('click', function() {
+    var selectedIds = [];
+    document.querySelectorAll('.picker-flight-cb:checked').forEach(function(cb) {
+      selectedIds.push(cb.getAttribute('data-flight-id'));
+    });
+    if (!selectedIds.length) { showToast('Select at least one flight', 'err'); return; }
+    closeInboundPicker();
+    bulkAssignFromFlights(selectedIds, inboundPickerOutboundId);
+  });
+}
+
+function bulkAssignFromFlights(inboundFlightIds, outboundFlightId) {
+  var paxToAssign = allPax.filter(function(p) {
+    return p.paxStatus === 'At Hub' && inboundFlightIds.indexOf(p.flightId) >= 0;
+  });
+  if (!paxToAssign.length) { showToast('No At Hub passengers in selected flights', 'err'); return; }
+
+  showToast('Assigning ' + paxToAssign.length + ' passengers...', '');
+
+  var promises = paxToAssign.map(function(p) {
+    return api('PATCH', '/api/pax/' + p.id, { flightId: outboundFlightId })
+      .then(function(data) {
+        if (!data.error) p.flightId = outboundFlightId;
+      })
+      .catch(function() {});
+  });
+
+  Promise.allSettled(promises).then(function() {
+    renderFlights();
+    if (selectedFlightId) renderPaxPanel(selectedFlightId);
+    showToast(paxToAssign.length + ' passengers assigned', 'ok');
+  });
+}
+
+function bulkAssignGroup(inboundFlightId, outboundFlightId) {
+  bulkAssignFromFlights([inboundFlightId], outboundFlightId);
+}
+
+function dismissWarning(outboundFlightId, inboundFlightId) {
+  inboundWarningsDismissed[outboundFlightId + ':' + inboundFlightId] = true;
+  renderPaxPanel(outboundFlightId);
+}
+
+function forceAssignPax(paxId, outboundFlightId) {
+  if (!confirm('This passenger is not currently At Hub. Force add them to this flight anyway?')) return;
+  api('PATCH', '/api/pax/' + paxId, { flightId: outboundFlightId, paxStatus: 'At Hub' })
+    .then(function(data) {
+      if (data.error) { showToast('Error: ' + data.error, 'err'); return; }
+      var pax = allPax.find(function(p) { return p.id === paxId; });
+      if (pax) { pax.flightId = outboundFlightId; pax.paxStatus = 'At Hub'; }
+      renderFlights();
+      renderPaxPanel(outboundFlightId);
+      showToast('Passenger force-added', 'ok');
+    })
+    .catch(function(e) { showToast('Error: ' + e.message, 'err'); });
+}
+
+function togglePoolSort() {
+  poolSortAlpha = !poolSortAlpha;
+  if (selectedFlightId) renderPaxPanel(selectedFlightId);
+}
+
+function filterPoolFlight(fid) {
+  poolFlightFilter = fid;
+  if (selectedFlightId) renderPaxPanel(selectedFlightId);
+}
 </script>
 </body>
 </html>
