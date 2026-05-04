@@ -985,7 +985,10 @@ function renderFlights() {
   });
   if (hidePastFlights) sorted = sorted.filter(function(f) { return f.status !== 'Departed' && f.status !== 'Departed-Revised' && f.status !== 'Received'; });
   container.innerHTML = sorted.map(function(f) {
-    var paxForFlight = allPax.filter(function(p) { return p.flightId === f.id; });
+    var isOut = f.direction && f.direction.toLowerCase() !== 'inbound';
+    var paxForFlight = allPax.filter(function(p) {
+      return isOut ? (p.outboundFlightId === f.id || (!p.outboundFlightId && p.flightId === f.id)) : p.flightId === f.id;
+    });
     var totalLug = paxForFlight.reduce(function(s, p) { return s + (Number(p.luggageWeight) || 0); }, 0);
     var totalCarry = paxForFlight.reduce(function(s, p) { return s + (Number(p.carryOnWeight) || 0); }, 0);
     var statusClass = f.status === 'Departed' ? 'pill-departed' : f.status === 'Ready' ? 'pill-ready' : 'pill-loading';
@@ -1047,7 +1050,13 @@ function renderPaxPanel(flightId) {
   }
   if (!flight) return;
 
-  var flightPax = allPax.filter(function(p) { return p.flightId === flightId; });
+  var isOutbound = flight.direction && flight.direction.toLowerCase() !== 'inbound';
+  var flightPax = allPax.filter(function(p) {
+    if (isOutbound) {
+      return p.outboundFlightId === flightId || (!p.outboundFlightId && p.flightId === flightId);
+    }
+    return p.flightId === flightId;
+  });
 
   // Pool: At Hub only, not already on this flight
   var pool = allPax.filter(function(p) {
@@ -2096,11 +2105,11 @@ function dismissWarning(outboundFlightId, inboundFlightId) {
 
 function forceAssignPax(paxId, outboundFlightId) {
   if (!confirm('This passenger is not currently At Hub. Force add them to this flight anyway?')) return;
-  api('PATCH', '/api/pax/' + paxId, { flightId: outboundFlightId, paxStatus: 'At Hub' })
+  api('PATCH', '/api/pax/' + paxId, { outboundFlightId: outboundFlightId, paxStatus: 'At Hub' })
     .then(function(data) {
       if (data.error) { showToast('Error: ' + data.error, 'err'); return; }
       var pax = allPax.find(function(p) { return p.id === paxId; });
-      if (pax) { pax.flightId = outboundFlightId; pax.paxStatus = 'At Hub'; }
+      if (pax) { pax.outboundFlightId = outboundFlightId; pax.paxStatus = 'At Hub'; }
       renderFlights();
       renderPaxPanel(outboundFlightId);
       showToast('Passenger force-added', 'ok');
