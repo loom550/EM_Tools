@@ -1370,7 +1370,7 @@ function generateManifest(flightId) {
       result.className = 'generate-result error';
       result.textContent = 'Error: ' + data.error;
       result.style.display = 'block';
-      document.getElementById('gen-icon').textContent = '&#128441;';
+      document.getElementById('gen-icon').innerHTML = '&#128441;';
       document.getElementById('gen-label').textContent = 'Generate Manifest';
       return;
     }
@@ -1391,7 +1391,7 @@ function generateManifest(flightId) {
   .catch(function(e) {
     btn.disabled = false;
     btn.classList.remove('generating');
-    document.getElementById('gen-icon').textContent = '&#128441;';
+    document.getElementById('gen-icon').innerHTML = '&#128441;';
     document.getElementById('gen-label').textContent = 'Generate Manifest';
     result.className = 'generate-result error';
     result.textContent = 'Network error: ' + e.message;
