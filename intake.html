@@ -488,7 +488,7 @@ function setMode(m) {
   renderFlightSelect();
   if (isOut) loadPool();
   clearPoolSelection();
-  resetForm();
+  resetForm(); // resetForm already restores saved dest when mode === 'out'
 }
 
 function loadFlights() {
@@ -822,6 +822,14 @@ function submitPax() {
     updatePoolCount();
   }
 
+ // Persist destination for next entry
+  if (mode === 'out' && pax.destinationHub) {
+    localStorage.setItem('loomi_last_dest', JSON.stringify({
+      value: document.getElementById('dest-hub-select').value,
+      hub: pax.destinationHub,
+      email: pax.destinationHubEmail,
+    }));
+  }
   clearPoolSelection();
   resetForm();
   flushQueue();
@@ -866,11 +874,31 @@ function resetForm() {
   ['first-name','last-name','dob','luggage-wt','carryon-wt','special-reqs'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = '';
   });
-  var ds = document.getElementById('dest-hub-select');
-  if (ds) { ds.value = ''; ds.classList.remove('invalid'); }
-  document.getElementById('dest-other-field').classList.remove('show');
-  var on = document.getElementById('dest-other-name'); if (on) on.value = '';
-  var oe = document.getElementById('dest-other-email'); if (oe) oe.value = '';
+ var ds = document.getElementById('dest-hub-select');
+  if (ds) {
+    ds.classList.remove('invalid');
+    var savedDest = null;
+    try { savedDest = JSON.parse(localStorage.getItem('loomi_last_dest')); } catch(e) {}
+    if (mode === 'out' && savedDest && savedDest.value) {
+      ds.value = savedDest.value;
+      if (savedDest.value === '__other__') {
+        document.getElementById('dest-other-field').classList.add('show');
+        var on = document.getElementById('dest-other-name');
+        var oe = document.getElementById('dest-other-email');
+        if (on) on.value = savedDest.hub || '';
+        if (oe) oe.value = savedDest.email || '';
+      } else {
+        document.getElementById('dest-other-field').classList.remove('show');
+        var on = document.getElementById('dest-other-name'); if (on) on.value = '';
+        var oe = document.getElementById('dest-other-email'); if (oe) oe.value = '';
+      }
+    } else {
+      ds.value = '';
+      document.getElementById('dest-other-field').classList.remove('show');
+      var on = document.getElementById('dest-other-name'); if (on) on.value = '';
+      var oe = document.getElementById('dest-other-email'); if (oe) oe.value = '';
+    }
+  }
   document.getElementById('err-dest').classList.remove('show');
   if (mode === 'in') document.getElementById('flight-select').value = '';
   document.getElementById('flight-select').classList.remove('invalid');
