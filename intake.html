@@ -526,7 +526,22 @@ function renderFlightSelect() {
     opt.textContent = f.flightNumber + (f.destination ? ' \u2192 ' + f.destination : '') + (f.etd ? ' (' + f.etd + ')' : '');
     sel.appendChild(opt);
   });
-  if (prev) sel.value = prev;
+  if (prev) {
+    sel.value = prev;
+  } else if (mode === 'out') {
+    var savedDest = null;
+    try { savedDest = JSON.parse(localStorage.getItem('loomi_last_dest')); } catch(e) {}
+    if (savedDest && savedDest.value && sel.querySelector('option[value="' + savedDest.value + '"]')) {
+      sel.value = savedDest.value;
+      if (savedDest.value === '__other__') {
+        document.getElementById('dest-other-field').classList.add('show');
+        var on = document.getElementById('dest-other-name');
+        var oe = document.getElementById('dest-other-email');
+        if (on) on.value = savedDest.hub || '';
+        if (oe) oe.value = savedDest.email || '';
+      }
+    }
+  }
 }
 
 function loadHostSites() {
