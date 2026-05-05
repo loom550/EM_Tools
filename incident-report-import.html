@@ -302,30 +302,12 @@
       return { siteId: site.id, listId: data.value[0].id };
     }
 
-    async function fetchSourceList(siteId, listName, token) {
-      const lr = await fetch(
-        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists?$filter=displayName eq '${encodeURIComponent(listName)}'`,
-        { headers: { Authorization: `Bearer ${token}` } });
-      if (!lr.ok) return [];
-      const ld = await lr.json();
-      if (!ld.value?.length) return [];
-      const ir = await fetch(
-        `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${ld.value[0].id}/items?$expand=fields($select=Title,id)&$top=999`,
-        { headers: { Authorization: `Bearer ${token}` } });
-      if (!ir.ok) return [];
-      const id = await ir.json();
-      return id.value
-        .map(i => ({ id: parseInt(i.id), title: i.fields?.Title || '' }))
-        .filter(i => i.title)
-        .sort((a, b) => a.title.localeCompare(b.title));
-    }
-
-    async function fetchSessionOptions(siteId, token) {
-      const [activations, hubs] = await Promise.all([
-        fetchSourceList(siteId, 'Activations', token),
-        fetchSourceList(siteId, 'HUBS / LOCATIONS', token),
-      ]);
-      return { activations, hubs };
+    async function fetchSessionOptions() {
+      const r = await fetch('https://loomex-expense.loomex-it.workers.dev/expense-config');
+      if (!r.ok) throw new Error('Could not load config (' + r.status + ')');
+      const data = await r.json();
+      // data.activations = [{ id, name, sites: [{ id, name, jobNumber }] }]
+      return data.activations || [];
     }
 
     async function postItem(siteId, listId, fields, token) {
@@ -352,8 +334,8 @@
       const [spCache,   setSpCache]   = useState(null); // { siteId, listId }
       const [sessionAct, setSessionActRaw] = useState(sessionStorage.getItem('loomex-activation-id') || '');
       const [sessionHub, setSessionHubRaw] = useState(sessionStorage.getItem('loomex-hub-id') || '');
-      const [actOptions, setActOptions] = useState([]);
-      const [hubOptions, setHubOptions] = useState([]);
+      const [activations, setActivations] = useState([]); // [{ id, name, sites: [{id, name}] }]
+      const [hubOptions,   setHubOptions]   = useState([]); // sites for selected activation
       const [queue,     setQueue]     = useState([]);
       const [activeId,  setActiveId]  = useState(null);
       const [drag,      setDrag]      = useState(false);
@@ -363,9 +345,13 @@
       const setSessionAct = val => {
         setSessionActRaw(val);
         sessionStorage.setItem('loomex-activation-id', val);
+        sessionStorage.removeItem('loomex-hub-id');
+        setSessionHubRaw('');
+        const match = activations.find(a => a.id === val);
+        setHubOptions(match ? match.sites || [] : []);
         setQueue(q => q.map(i =>
           ['pending','ready','extracting'].includes(i.status)
-            ? { ...i, form: { ...i.form, ActivationID: val } } : i));
+            ? { ...i, form: { ...i.form, ActivationID: val, HubID: '' } } : i));
       };
       const setSessionHub = val => {
         setSessionHubRaw(val);
@@ -407,10 +393,17 @@
           const token = await getTokenFor(inst, acct);
           const { siteId, listId } = await resolveSiteList(token);
           setSpCache({ siteId, listId });
-          const opts = await fetchSessionOptions(siteId, token);
-          setActOptions(opts.activations);
-          setHubOptions(opts.hubs);
-        } catch (e) { console.warn('SP init:', e.message); }
+        } catch (e) { console.warn('SP resolve:', e.message); }
+        try {
+          const acts = await fetchSessionOptions();
+          setActivations(acts);
+          // Restore hub options for previously selected activation
+          const savedAct = sessionStorage.getItem('loomex-activation-id');
+          if (savedAct) {
+            const match = acts.find(a => a.id === savedAct);
+            if (match) setHubOptions(match.sites || []);
+          }
+        } catch (e) { console.warn('Config fetch:', e.message); }
       };
 
       const signIn = async () => {
@@ -476,15 +469,8 @@
             if (v === undefined || v === null || v === '') return;
             spFields[key] = type === 'bool' ? (v === 'true' || v === true) : v;
           });
-          // Lookup fields -- submit LookupId (integer) not display text
-          if (item.form.ActivationID) {
-            const match = actOptions.find(o => o.title === item.form.ActivationID);
-            if (match) spFields.ActivationIDLookupId = match.id;
-          }
-          if (item.form.HubID) {
-            const match = hubOptions.find(o => o.title === item.form.HubID);
-            if (match) spFields.HubIDLookupId = match.id;
-          }
+          if (item.form.ActivationID) spFields.ActivationID = item.form.ActivationID;
+          if (item.form.HubID)        spFields.HubID        = item.form.HubID;
           await postItem(siteId, listId, spFields, token);
           upd(id, { status: 'done' });
           const next = queue.find(i => i.id !== id && ['ready','extracting','pending'].includes(i.status));
@@ -561,7 +547,7 @@
                 onChange={e => setSessionAct(e.target.value)}
               />
               <datalist id="act-options">
-                {actOptions.map(o => <option key={o.id} value={o.title} />)}
+                {activations.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
               </datalist>
               <div className="session-divider" />
               <span className="session-bar-label">Hub</span>
@@ -573,12 +559,12 @@
                 onChange={e => setSessionHub(e.target.value)}
               />
               <datalist id="hub-options">
-                {hubOptions.map(o => <option key={o.id} value={o.title} />)}
+                {hubOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
               </datalist>
               <span className="session-bar-hint">
-                {actOptions.length || hubOptions.length
-                  ? 'Start typing to see existing values'
-                  : 'Type values — or add records to SP list for autocomplete'}
+                {activations.length
+                  ? `${activations.length} active activations loaded`
+                  : 'Loading activations…'}
               </span>
             </div>
           )}
