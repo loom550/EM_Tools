@@ -723,6 +723,26 @@ function clearPoolSelection() {
   document.getElementById('weights-notice').classList.remove('show');
   resetForm();
 }
+  function applyFlightDestination(dest) {
+  var destSel = document.getElementById('dest-hub-select');
+  if (!destSel) return;
+  var matched = hostSites.find(function(s) {
+    var hn = s.hubName.toLowerCase();
+    var d = dest.toLowerCase();
+    return hn === d || hn.indexOf(d) >= 0 || d.indexOf(hn) >= 0;
+  });
+  if (matched) {
+    destSel.value = matched.title;
+    document.getElementById('dest-other-field').classList.remove('show');
+    var on = document.getElementById('dest-other-name'); if (on) on.value = '';
+  } else {
+    destSel.value = '__other__';
+    document.getElementById('dest-other-field').classList.add('show');
+    var on = document.getElementById('dest-other-name'); if (on) on.value = dest;
+  }
+  destSel.classList.remove('invalid');
+  document.getElementById('err-dest').classList.remove('show');
+}
 
 function setupForm() {
   document.querySelectorAll('.ptype-btn').forEach(function(btn) {
@@ -751,6 +771,10 @@ function setupForm() {
       pool = [];
       updatePoolCount();
       document.getElementById('pool-results').classList.add('hidden');
+    } else if (mode === 'out' && this.value) {
+      var fid = this.value;
+      var flight = flights.find(function(f) { return f.id === fid; });
+      if (flight && flight.destination) applyFlightDestination(flight.destination);
     }
   });
   document.getElementById('dest-hub-select').addEventListener('change', function() {
@@ -813,6 +837,7 @@ function submitPax() {
     prescriptionsRequired: mode === 'in' ? rxRequired : false,
     flightId: flightSel.value,
     flightLabel: flightSel.value ? flightSel.selectedOptions[0].text : (mode === 'in' ? 'Unassigned' : ''),
+    destination: (function() { var f = flights.find(function(fl) { return fl.id === flightSel.value; }); return (f && f.destination) || ''; })(),
     destinationHub: mode === 'out' ? destinationHub : '',
     destinationHubEmail: mode === 'out' ? destinationHubEmail : '',
     direction: mode,
@@ -931,6 +956,13 @@ function resetForm() {
     if (mode === 'out') { var s = document.getElementById('pool-search'); if (s) s.focus(); }
     else document.getElementById('first-name').focus();
   }, 100);
+if (mode === 'out') {
+    var flightId = document.getElementById('flight-select').value;
+    if (flightId) {
+      var rf = flights.find(function(f) { return f.id === flightId; });
+      if (rf && rf.destination) applyFlightDestination(rf.destination);
+    }
+  }
 }
 
 function flushQueue() {
@@ -958,6 +990,7 @@ function flushQueue() {
         medOther: pax.medOther || false,
         prescriptionsRequired: pax.prescriptionsRequired || false,
         flightId: pax.flightId,
+        destination: pax.destination || '',
         destinationHub: pax.destinationHub || '',
         destinationHubEmail: pax.destinationHubEmail || '',
         direction: pax.direction || 'in',
