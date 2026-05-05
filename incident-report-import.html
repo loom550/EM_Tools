@@ -15,11 +15,12 @@
     .topbar-sub { font-size: 11px; color: #8888aa; margin-top: 2px; }
     .topbar-user { margin-left: auto; font-size: 12px; color: #8888aa; display: flex; align-items: center; gap: 8px; }
     .topbar-user strong { color: #4caf92; }
+    .topbar-signin { background: #e8620a; color: #fff; border: none; border-radius: 5px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .topbar-signin:hover { background: #d05508; }
     .card { background: #fff; border: 1px solid #e0e4ec; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
-    .card-header { padding: 10px 16px; background: #f8f9fc; border-bottom: 1px solid #e0e4ec; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+    .card-header { padding: 10px 16px; background: #f8f9fc; border-bottom: 1px solid #e0e4ec; display: flex; justify-content: space-between; align-items: center; }
     .card-header-title { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #5a6478; }
     .card-body { padding: 14px 16px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
     .field-label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #7a8499; margin-bottom: 4px; }
     input, select, textarea { width: 100%; padding: 7px 10px; font-size: 13px; font-family: 'SF Mono', 'Consolas', monospace; background: #f8f9fc; border: 1px solid #d0d5e0; border-radius: 5px; color: #1a1a2e; outline: none; transition: border-color 0.15s; }
@@ -58,13 +59,13 @@
     .center-msg { padding: 28px; text-align: center; color: #7a8499; font-size: 13px; }
     .clear-btn { font-size: 11px; color: #aab0be; cursor: pointer; text-decoration: underline; }
     .clear-btn:hover { color: #e8620a; }
-    .auth-note { font-size: 11px; color: #aab0be; margin-left: 4px; }
     .sign-warn { font-size: 12px; color: #b45309; }
     .progress-note { font-size: 12px; color: #aab0be; margin-left: auto; }
+    .auth-error { font-size: 12px; color: #b91c1c; }
   </style>
 </head>
 <body>
-  <div id="root"><div id="loading">Loading tools…</div></div>
+  <div id="root"><div id="loading">Loading…</div></div>
 
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -78,6 +79,17 @@
 
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // ── Config ───────────────────────────────────────────────────────────────
+
+    const CONFIG = {
+      siteUrl:  'https://loomex.sharepoint.com/sites/21000-response',
+      listName: 'Incident Reports',
+      clientId: '914594ac-bf39-47af-b4a1-2a5cc859beb2',
+      tenantId: 'f37e3a4c-5aaa-4bf9-93d2-cc21b157eb4c',
+    };
+
+    const SCOPES = ['https://graph.microsoft.com/Sites.ReadWrite.All', 'User.Read'];
 
     // ── Fields ───────────────────────────────────────────────────────────────
 
@@ -159,17 +171,17 @@
 
     // ── Graph API ────────────────────────────────────────────────────────────
 
-    async function resolveSiteList(siteUrl, listName, token) {
-      const u = new URL(siteUrl);
+    async function resolveSiteList(token) {
+      const u = new URL(CONFIG.siteUrl);
       const sr = await fetch(`https://graph.microsoft.com/v1.0/sites/${u.hostname}:${u.pathname}`,
         { headers: { Authorization: `Bearer ${token}` } });
       if (!sr.ok) throw new Error(`Site not found (${sr.status})`);
       const site = await sr.json();
       const lr = await fetch(
-        `https://graph.microsoft.com/v1.0/sites/${site.id}/lists?$filter=displayName eq '${encodeURIComponent(listName)}'`,
+        `https://graph.microsoft.com/v1.0/sites/${site.id}/lists?$filter=displayName eq '${encodeURIComponent(CONFIG.listName)}'`,
         { headers: { Authorization: `Bearer ${token}` } });
       const data = await lr.json();
-      if (!data.value?.length) throw new Error(`List "${listName}" not found`);
+      if (!data.value?.length) throw new Error(`List "${CONFIG.listName}" not found`);
       return { siteId: site.id, listId: data.value[0].id };
     }
 
@@ -183,59 +195,40 @@
       return r.json();
     }
 
-    // ── Constants ────────────────────────────────────────────────────────────
+    // ── Status helpers ────────────────────────────────────────────────────────
 
-    const SCOPES      = ['https://graph.microsoft.com/Sites.ReadWrite.All', 'User.Read'];
-    const S_COLOR     = { pending:'#aab0be', extracting:'#b45309', ready:'#1a56db', submitting:'#b45309', done:'#1a7a50', error:'#b91c1c', skipped:'#aab0be' };
-    const S_LABEL     = { pending:'Pending', extracting:'Extracting…', ready:'Ready', submitting:'Submitting…', done:'Done', error:'Error', skipped:'Skipped' };
-    const CFG_KEY     = 'loomex-ir-cfg';
+    const S_COLOR = { pending:'#aab0be', extracting:'#b45309', ready:'#1a56db', submitting:'#b45309', done:'#1a7a50', error:'#b91c1c', skipped:'#aab0be' };
+    const S_LABEL = { pending:'Pending', extracting:'Extracting…', ready:'Ready', submitting:'Submitting…', done:'Done', error:'Error', skipped:'Skipped' };
 
     // ── App ──────────────────────────────────────────────────────────────────
 
     function App() {
-      const saved = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-      const [cfg, setCfgRaw] = useState({
-        siteUrl:  saved.siteUrl  || '',
-        listName: saved.listName || 'Incident Reports',
-        clientId: saved.clientId || '',
-        tenantId: saved.tenantId || '',
-      });
-      const setCfg = u => setCfgRaw(p => {
-        const n = typeof u === 'function' ? u(p) : { ...p, ...u };
-        localStorage.setItem(CFG_KEY, JSON.stringify(n));
-        return n;
-      });
-
-      const configured = cfg.siteUrl && cfg.clientId && cfg.tenantId;
-      const [cfgOpen,   setCfgOpen]   = useState(!configured);
-      const [msalInst,  setMsalInst]  = useState(null);
-      const [account,   setAccount]   = useState(null);
-      const [authErr,   setAuthErr]   = useState('');
-      const [queue,     setQueue]     = useState([]);
-      const [activeId,  setActiveId]  = useState(null);
-      const [drag,      setDrag]      = useState(false);
+      const [msalInst, setMsalInst] = useState(null);
+      const [account,  setAccount]  = useState(null);
+      const [authErr,  setAuthErr]  = useState('');
+      const [queue,    setQueue]    = useState([]);
+      const [activeId, setActiveId] = useState(null);
+      const [drag,     setDrag]     = useState(false);
       const fileRef = useRef();
 
-      const upd = (id, patch) => setQueue(q => q.map(i => i.id === id ? { ...i, ...patch } : i));
-
-      const initMsal = async () => {
-        if (!cfg.clientId || !cfg.tenantId) { setAuthErr('Client ID and Tenant ID required'); return; }
-        try {
-          const inst = new msal.PublicClientApplication({
-            auth: {
-              clientId: cfg.clientId,
-              authority: `https://login.microsoftonline.com/${cfg.tenantId}`,
-              redirectUri: window.location.origin + window.location.pathname,
-            },
-            cache: { cacheLocation: 'localStorage' },
-          });
-          await inst.initialize();
-          setMsalInst(inst);
-          const accounts = inst.getAllAccounts();
-          if (accounts.length) setAccount(accounts[0]);
-          setAuthErr('');
-        } catch (e) { setAuthErr(e.message); }
-      };
+      useEffect(() => {
+        (async () => {
+          try {
+            const inst = new msal.PublicClientApplication({
+              auth: {
+                clientId: CONFIG.clientId,
+                authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+                redirectUri: window.location.origin + window.location.pathname,
+              },
+              cache: { cacheLocation: 'localStorage' },
+            });
+            await inst.initialize();
+            setMsalInst(inst);
+            const accounts = inst.getAllAccounts();
+            if (accounts.length) setAccount(accounts[0]);
+          } catch (e) { setAuthErr(e.message); }
+        })();
+      }, []);
 
       const signIn  = async () => {
         try { const r = await msalInst.loginPopup({ scopes: SCOPES }); setAccount(r.account); setAuthErr(''); }
@@ -247,6 +240,8 @@
         try { return (await msalInst.acquireTokenSilent({ scopes: SCOPES, account })).accessToken; }
         catch { return (await msalInst.acquireTokenPopup({ scopes: SCOPES, account })).accessToken; }
       };
+
+      const upd = (id, patch) => setQueue(q => q.map(i => i.id === id ? { ...i, ...patch } : i));
 
       const processFile = async (id, file) => {
         upd(id, { status: 'extracting' });
@@ -286,7 +281,7 @@
         upd(id, { status: 'submitting', error: '' });
         try {
           const token = await getToken();
-          const { siteId, listId } = await resolveSiteList(cfg.siteUrl, cfg.listName, token);
+          const { siteId, listId } = await resolveSiteList(token);
           const spFields = {};
           FIELDS.forEach(({ key, type }) => {
             const v = item.form[key];
@@ -349,51 +344,11 @@
               <div className="topbar-sub">Queue · Review · Import to SharePoint</div>
             </div>
             <div className="topbar-user">
-              {account
-                ? <><strong>{account.username}</strong><button className="ghost" onClick={signOut}>Sign out</button></>
-                : <span>Not signed in</span>}
+              {authErr && <span className="auth-error">{authErr}</span>}
+              {!account && msalInst && <button className="topbar-signin" onClick={signIn}>Sign in with Microsoft</button>}
+              {!account && !msalInst && !authErr && <span>Initializing…</span>}
+              {account && <><strong>{account.username}</strong><button className="ghost" onClick={signOut}>Sign out</button></>}
             </div>
-          </div>
-
-          {/* Config */}
-          <div className="card">
-            <div className="card-header" onClick={() => setCfgOpen(o => !o)}>
-              <span className="card-header-title">Configuration</span>
-              <span style={{fontSize:11,color:'#aab0be'}}>{cfgOpen ? '▲' : '▼'}</span>
-            </div>
-            {cfgOpen && (
-              <div className="card-body">
-                <div className="grid-4">
-                  <div>
-                    <label className="field-label">SharePoint site URL</label>
-                    <input type="text" placeholder="https://org.sharepoint.com/sites/loomi"
-                      value={cfg.siteUrl} onChange={e => setCfg(c => ({ ...c, siteUrl: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="field-label">List name</label>
-                    <input type="text" value={cfg.listName}
-                      onChange={e => setCfg(c => ({ ...c, listName: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="field-label">Azure AD client ID</label>
-                    <input type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                      value={cfg.clientId} onChange={e => setCfg(c => ({ ...c, clientId: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="field-label">Tenant ID</label>
-                    <input type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                      value={cfg.tenantId} onChange={e => setCfg(c => ({ ...c, tenantId: e.target.value }))} />
-                  </div>
-                </div>
-                <div style={{display:'flex',gap:10,alignItems:'center'}}>
-                  {!msalInst && <button className="primary" onClick={initMsal}>Initialize auth</button>}
-                  {msalInst && !account && <button className="primary" onClick={signIn}>Sign in with Microsoft →</button>}
-                  {msalInst && account && <button onClick={signOut}>Sign out</button>}
-                  {authErr && <span style={{fontSize:12,color:'#b91c1c'}}>{authErr}</span>}
-                  {msalInst && !account && <span className="auth-note">Config is saved — just sign in each session</span>}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="main-layout">
@@ -414,7 +369,7 @@
 
               {queue.length > 0 && (
                 <div className="card">
-                  <div className="card-header" style={{cursor:'default'}}>
+                  <div className="card-header">
                     <span className="card-header-title">Queue</span>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
                       <span style={{fontSize:11,color:'#7a8499'}}>{doneCount}/{queue.length}</span>
@@ -440,14 +395,17 @@
             {/* Review panel */}
             <div>
               {!active && queue.length === 0 && (
-                <div className="card"><div className="empty-state">Upload reports to get started</div></div>
+                <div className="card">
+                  <div className="empty-state">
+                    {!account ? 'Sign in with Microsoft to get started' : 'Upload reports to get started'}
+                  </div>
+                </div>
               )}
 
               {active && (
                 <div className="review-layout">
-                  {/* Raw text */}
                   <div className="card sticky">
-                    <div className="card-header" style={{cursor:'default'}}>
+                    <div className="card-header">
                       <span className="card-header-title">Extracted text</span>
                       <span style={{fontSize:11,color:'#aab0be'}}>{(active.rawText?.length || 0).toLocaleString()} chars</span>
                     </div>
@@ -456,7 +414,6 @@
                       : <pre className="raw-pre">{active.rawText}</pre>}
                   </div>
 
-                  {/* Form */}
                   <div>
                     {active.status === 'done' ? (
                       <div className="card">
@@ -474,7 +431,7 @@
                       <>
                         {grouped.map(({ group, fields }) => (
                           <div key={group} className="card">
-                            <div className="card-header" style={{cursor:'default'}}>
+                            <div className="card-header">
                               <span className="card-header-title">{group}</span>
                               {['LOOMI Reference','System'].includes(group) &&
                                 <span className="badge-warn">Set manually</span>}
