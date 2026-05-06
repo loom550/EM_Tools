@@ -249,7 +249,14 @@
       statusEl.textContent = '✓'; statusEl.style.color = 'var(--green-dark)';
       setTimeout(() => statusEl.textContent = '', 2000);
     } catch(e) {
-      statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--error)';
+      if (e.message === 'Unauthorized' || e.message.includes('401')) {
+        sessionToken = null; sessionTs = null;
+        document.getElementById('repoView').style.display  = 'none';
+        document.getElementById('loginView').style.display = 'block';
+        document.getElementById('loginError').textContent  = 'Session expired. Please sign in again.';
+      } else {
+        statusEl.textContent = '✗ ' + e.message; statusEl.style.color = 'var(--error)';
+      }
     }
   }
 
