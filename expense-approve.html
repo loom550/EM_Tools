@@ -1280,7 +1280,7 @@
       const res = await fetch(`${WORKER_URL}/expense-approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, adminName, totalApproved: calcApprovedTotal(), adminNotes: document.getElementById('adminNotes').value.trim(), adminSignatureBase64, approvedExcelBase64, approvedPDFBase64, approvedPDFSPBase64, decisions: rowDecisions })
+        body: JSON.stringify({ token, approvedBy: adminName, totalApproved: calcApprovedTotal(), adminNotes: document.getElementById('adminNotes').value.trim(), adminSignatureBase64, approvedExcelBase64, approvedPDFEmailBase64: approvedPDFBase64, approvedPDFSPBase64, decisions: rowDecisions })
       });
 
       const result = await res.json();
