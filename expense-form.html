@@ -1437,10 +1437,15 @@
   async function submitForm() {
     const rows = await collectRows();
     if (!validate(rows)) return;
+
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Building report...';
+
     try {
+      // Generate a random upload session token
+      const uploadToken = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+
       const total = parseFloat(rows.reduce((s, r) => s + r.value, 0).toFixed(2));
       const formData = {
         contractorName:  document.getElementById('contractorName').value.trim(),
@@ -1451,27 +1456,69 @@
         periodEnd:       document.getElementById('periodEnd').value,
         jobNumber:       document.getElementById('jobNumber').value || '',
         generalNotes:    document.getElementById('generalNotes').value.trim(),
-        rows, total
+        rows: rows.map(({ receipts, ...rest }) => rest), // strip receipt bytes from metadata
+        total
       };
-      const signatureBase64 = canvas.toDataURL('image/png');
-      const excelBase64     = buildExcel(formData);
-      const allReceipts = [];
-      const typeLabels = { hotel: 'Hotel', meal: 'Meal', mileage: 'Mileage', rental: 'Rental', misc: 'Misc' };
-      rows.forEach((row, ri) => {
-        (row.receipts || []).forEach((rec, rj) => {
+
+      const fileRefs = [];
+      let totalFiles = 2; // signature + excel
+      rows.forEach(row => { totalFiles += (row.receipts || []).length; });
+      let uploadedFiles = 0;
+
+      const uploadFile = async (blob, mimeType, originalName, kind, rowIndex) => {
+        btn.innerHTML = `<span class="spinner"></span>Uploading files\u2026 (${uploadedFiles + 1}/${totalFiles})`;
+        const headers = {
+          'Content-Type': mimeType,
+          'X-Upload-Token': uploadToken,
+          'X-Kind': kind,
+          'X-Original-Name': encodeURIComponent(originalName)
+        };
+        if (rowIndex != null) headers['X-Row-Index'] = String(rowIndex);
+        const res = await fetch(`${WORKER_URL}/expense-upload-file`, { method: 'POST', headers, body: blob });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || `Upload failed: ${res.status}`); }
+        const ref = await res.json();
+        uploadedFiles++;
+        return ref;
+      };
+
+      // Upload signature
+      const sigB64 = canvas.toDataURL('image/png').split(',')[1];
+      const sigBytes = Uint8Array.from(atob(sigB64), c => c.charCodeAt(0));
+      const sigRef = await uploadFile(new Blob([sigBytes], { type: 'image/png' }), 'image/png', 'signature.png', 'signature', null);
+      fileRefs.push({ ...sigRef, originalName: 'signature.png', mimeType: 'image/png', sizeBytes: sigBytes.length });
+
+      // Build and upload Excel
+      btn.innerHTML = `<span class="spinner"></span>Uploading files\u2026 (${uploadedFiles + 1}/${totalFiles})`;
+      const excelB64 = buildExcel(formData);
+      const excelBytes = Uint8Array.from(atob(excelB64), c => c.charCodeAt(0));
+      const excelMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const excelRef = await uploadFile(new Blob([excelBytes], { type: excelMime }), excelMime, 'expenses.xlsx', 'submitted_excel', null);
+      fileRefs.push({ ...excelRef, originalName: 'expenses.xlsx', mimeType: excelMime, sizeBytes: excelBytes.length });
+
+      // Upload receipts one at a time
+      const typeLabels = { hotel: 'Hotel', meal: 'Meal', mileage: 'Mileage', rental: 'Rental', misc: 'Misc', evacuee: 'Evacuee' };
+      for (let ri = 0; ri < rows.length; ri++) {
+        const row = rows[ri];
+        for (let rj = 0; rj < (row.receipts || []).length; rj++) {
+          const rec = row.receipts[rj];
           const typeLabel = typeLabels[row.type] || row.type;
           const amt = row.value > 0 ? `$${row.value.toFixed(2)}` : '';
-          const dateStr = row.date || 'no-date';
-          const ext = rec.name.split('.').pop();
-          const baseName = `Item${ri+1}-${typeLabel}${amt ? '-' + amt : ''}-${dateStr}-Receipt${rj+1}.${ext}`;
-          allReceipts.push({ filename: baseName, type: rec.type, data: rec.data, rowIndex: ri });
-        });
-      });
+          const ext = rec.name.includes('.') ? rec.name.split('.').pop() : 'jpg';
+          const origName = `Item${ri+1}-${typeLabel}${amt ? '-' + amt : ''}-${row.date || 'no-date'}-Receipt${rj+1}.${ext}`;
+          const mime = rec.type || 'application/octet-stream';
+          const bytes = Uint8Array.from(atob(rec.data), c => c.charCodeAt(0));
+          const ref = await uploadFile(new Blob([bytes], { type: mime }), mime, origName, 'receipt', ri);
+          fileRefs.push({ ...ref, originalName: origName, mimeType: mime, sizeBytes: bytes.length, rowIndex: ri });
+        }
+      }
+
+      // Submit metadata only - no file bytes
       btn.innerHTML = '<span class="spinner"></span>Sending to EOC...';
       const endpoint = revisionMode ? `${WORKER_URL}/expense-resubmit` : `${WORKER_URL}/expense-submit`;
-      const payload  = revisionMode
-        ? { revisionToken, formData, signatureBase64, receipts: allReceipts, submittedAt: new Date().toISOString(), keptFilenames: getKeptFilenames() }
-        : { formData, excelBase64, signatureBase64, receipts: allReceipts, submittedAt: new Date().toISOString() };
+      const payload = revisionMode
+        ? { revisionToken, formData, fileRefs, submittedAt: new Date().toISOString(), keptFilenames: getKeptFilenames() }
+        : { formData, fileRefs, submittedAt: new Date().toISOString() };
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1479,39 +1526,37 @@
       });
       const result = await res.json();
       if (!result.success) throw new Error(result.error || 'Unknown error');
+
       const savedName  = formData.contractorName;
-const savedEmail = formData.contractorEmail;
-showStatus(`<strong>&#10003; Submitted successfully.</strong><br>Your expense report has been sent to EOC Admin for review. A copy has been emailed to <strong>${formData.contractorEmail}</strong>.<br><small style="opacity:0.75">Reference: ${result.token}</small>`, 'success');
-setTimeout(() => {
-  document.getElementById('expenseRows').innerHTML = '';
-  rowCount = 0;
-  Object.keys(rowReceipts).forEach(k => delete rowReceipts[k]);
-  clearSig();
-  document.getElementById('activation').value  = '';
-  document.getElementById('site').value         = '';
-  document.getElementById('periodStart').value  = '';
-  document.getElementById('periodEnd').value    = '';
-  document.getElementById('generalNotes').value = '';
-  document.getElementById('contractorName').value  = savedName;
-  document.getElementById('contractorEmail').value = savedEmail;
-  document.getElementById('statusMsg').className   = 'status-msg';
-  btn.style.display  = '';
-  btn.disabled       = false;
-  btn.innerHTML      = 'Submit Expense Report';
-  addRow();
-  addRow();
-}, 4000);
+      const savedEmail = formData.contractorEmail;
+      showStatus(`<strong>&#10003; Submitted successfully.</strong><br>Your expense report has been sent to EOC Admin for review. A copy has been emailed to <strong>${formData.contractorEmail}</strong>.<br><small style="opacity:0.75">Reference: ${result.token}</small>`, 'success');
+      setTimeout(() => {
+        document.getElementById('expenseRows').innerHTML = '';
+        rowCount = 0;
+        Object.keys(rowReceipts).forEach(k => delete rowReceipts[k]);
+        clearSig();
+        document.getElementById('activation').value  = '';
+        document.getElementById('site').value         = '';
+        document.getElementById('periodStart').value  = '';
+        document.getElementById('periodEnd').value    = '';
+        document.getElementById('generalNotes').value = '';
+        document.getElementById('contractorName').value  = savedName;
+        document.getElementById('contractorEmail').value = savedEmail;
+        document.getElementById('statusMsg').className   = 'status-msg';
+        btn.style.display  = '';
+        btn.disabled       = false;
+        btn.innerHTML      = 'Submit Expense Report';
+        addRow();
+        addRow();
+      }, 4000);
+
     } catch (err) {
       let msg = 'Submission failed. Please try again or email eocadmin@loomex.ca directly.';
       const e = err.message || '';
-      if (e.includes('413') || e.includes('too large') || e.includes('length')) {
-        msg = 'Submission failed: your receipts are too large to upload. Please reduce the file size or number of receipts and try again. If you need help, email eocadmin@loomex.ca.';
-      } else if (e.includes('Failed to fetch') || e.includes('NetworkError') || e.includes('network')) {
+      if (e.includes('Failed to fetch') || e.includes('NetworkError') || e.includes('network')) {
         msg = 'Submission failed: could not reach the server. Please check your internet connection and try again.';
-      } else if (e.includes('timeout') || e.includes('Timeout')) {
-        msg = 'Submission timed out. Your receipts may be too large. Try reducing file sizes and resubmitting.';
-      } else if (e.includes('500') || e.includes('Internal')) {
-        msg = 'Submission failed due to a server error. Please try again in a few minutes or email eocadmin@loomex.ca.';
+      } else if (e.includes('Upload failed: 4') || e.includes('Upload failed: 5')) {
+        msg = `A file could not be uploaded: ${e}. Please try again or email eocadmin@loomex.ca.`;
       } else if (e.length > 0) {
         msg = `Submission failed: ${e}. Please try again or email eocadmin@loomex.ca directly.`;
       }
