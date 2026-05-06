@@ -1471,7 +1471,7 @@
           'Content-Type': mimeType,
           'X-Upload-Token': uploadToken,
           'X-Kind': kind,
-          'X-Original-Name': encodeURIComponent(originalName)
+          'X-Original-Name': originalName
         };
         if (rowIndex != null) headers['X-Row-Index'] = String(rowIndex);
         const res = await fetch(`${WORKER_URL}/expense-upload-file`, { method: 'POST', headers, body: blob });
