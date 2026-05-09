@@ -231,6 +231,24 @@
     .receipt-link:hover { background: var(--green-light); border-color: var(--green-mid); }
     .no-receipts { color: var(--text-muted); font-size: 12px; font-style: italic; }
 
+    /* Schedule flags */
+.flag-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  width: 100%;
+  margin-bottom: 6px;
+}
+.flag-banner.flag-date { background: #fff8e1; border: 1.5px solid #f5d88a; color: #7a5200; }
+.flag-banner.flag-meal { background: #fff0f6; border: 1.5px solid #f5b8d4; color: #9d174d; }
+.flag-banner .flag-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.row-flagged > td:first-child { border-left: 3px solid #f59e0b; }
+    
     /* Decision controls */
     .decision-controls { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-left: auto; }
     .btn-dec {
@@ -797,6 +815,13 @@
     const tbody = document.getElementById('expTableBody');
     tbody.innerHTML = '';
 
+    // Build per-row flag index from schedule check
+    const flagsByRow = {};
+    (submission.scheduleFlags || []).forEach(f => {
+      if (!flagsByRow[f.rowIndex]) flagsByRow[f.rowIndex] = [];
+      flagsByRow[f.rowIndex].push(f);
+    });
+
     (fd.rows || []).forEach((r, i) => {
       const badgeCls = BADGE_CLS[r.type] || 'badge-misc';
       const badgeLbl = BADGE_LBL[r.type] || r.type;
@@ -822,14 +847,18 @@
 
       // Main expense row
       const tr = document.createElement('tr');
-      tr.className = 'expense-row row-approved';
+      const rowFlags = flagsByRow[i] || [];
+      tr.className = `expense-row row-approved${rowFlags.length ? ' row-flagged' : ''}`;
       tr.id = `erow-${i}`;
       const isHstEligible = (r.type === 'hotel' || r.type === 'rental' || r.type === 'misc' || r.type === 'evacuee');
       const hstCell = isHstEligible
         ? `<span style="color:inherit; white-space: nowrap;">$<input type="number" class="hst-input" id="hst-${i}" value="${r.hst || 0}" step="0.01" min="0" oninput="updateHst(${i})"></span>`
         : `<span style="color:var(--text-muted)">—</span>`;
+      const flagIndicator = rowFlags.length
+        ? ` <span title="${rowFlags.map(f => f.message).join(' | ')}" style="color:#d4a017;cursor:default;">⚠</span>`
+        : '';
       tr.innerHTML = `
-        <td style="color:var(--text-muted);font-size:12px;font-weight:700;">#${i + 1}</td>
+        <td style="color:var(--text-muted);font-size:12px;font-weight:700;">#${i + 1}${flagIndicator}</td>
         <td><span class="type-badge ${badgeCls}">${badgeLbl}</span></td>
         <td>${r.date || '—'}</td>
         <td>${detail}</td>
@@ -869,6 +898,11 @@
       tr2.innerHTML = `<td colspan="8">
         <div class="detail-inner" id="detail-inner-${i}">
           ${evacueeBreakdown}
+          ${(flagsByRow[i] || []).map(f => `
+            <div class="flag-banner ${f.type === 'date_not_worked' ? 'flag-date' : 'flag-meal'}">
+              <span class="flag-icon">${f.type === 'date_not_worked' ? '⚠️' : '🌙'}</span>
+              <span>${f.message}</span>
+            </div>`).join('')}
           <div class="receipts-inline" id="receipts-${i}">
             ${rowReceipts.length === 0 ? '<span class="no-receipts">No receipts</span>' : '<span class="no-receipts">Loading receipts...</span>'}
           </div>
@@ -948,7 +982,8 @@
 
     document.getElementById(`abtn-${index}`).classList.toggle('active', approved);
     document.getElementById(`rbtn-${index}`).classList.toggle('active', !approved);
-    document.getElementById(`erow-${index}`).className = `expense-row ${approved ? 'row-approved' : 'row-rejected'}`;
+    const isFlagged = (submission.scheduleFlags || []).some(f => f.rowIndex === index);
+    document.getElementById(`erow-${index}`).className = `expense-row ${approved ? 'row-approved' : 'row-rejected'}${isFlagged ? ' row-flagged' : ''}`;
     document.getElementById(`reason-wrap-${index}`).style.display = approved ? 'none' : 'block';
     const amountWrap = document.getElementById(`approved-amount-wrap-${index}`);
     if (amountWrap) amountWrap.style.display = approved ? 'flex' : 'none';
