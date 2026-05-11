@@ -16,13 +16,13 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'DM Sans', sans-serif; background: var(--grey-bg); color: var(--text); min-height: 100vh; padding: 32px 16px 64px; }
     body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 20% 10%, rgba(0,166,81,0.06) 0%, transparent 50%); pointer-events: none; z-index: 0; }
-    .container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
-    .header { background: var(--navy); border-radius: 12px 12px 0 0; padding: 28px 36px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .container { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+    .header { background: var(--navy); border-radius: 12px 12px 0 0; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .header-left h1 { color: var(--white); font-size: 20px; font-weight: 700; }
     .header-left p  { color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 4px; }
     .header-badge { background: var(--green); color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; padding: 6px 12px; border-radius: 20px; white-space: nowrap; font-family: 'DM Mono', monospace; }
     .card { background: var(--white); box-shadow: var(--shadow-card); }
-    .card-section { padding: 32px 36px; border-bottom: 1px solid #eef0f3; }
+    .card-section { padding: 20px 24px; border-bottom: 1px solid #eef0f3; }
     #loginView { max-width: 400px; margin: 60px auto; }
     #loginView .card-section { border-radius: 12px; border: none; }
     .field-group { display: flex; flex-direction: column; gap: 6px; }
@@ -34,8 +34,8 @@
     .btn-login:disabled { background: #a0adb8; cursor: not-allowed; }
     .login-error { font-size: 13px; color: var(--error); margin-top: 10px; min-height: 20px; }
     #repoView { display: none; }
-    .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 20px 36px; border-bottom: 1px solid #eef0f3; background: #fafbfc; }
-    .toolbar input[type="text"] { border: 1.5px solid var(--grey-border); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-family: inherit; width: 260px; color: var(--text); }
+    .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid #eef0f3; background: #fafbfc; }
+    .toolbar input[type="text"] { border: 1.5px solid var(--grey-border); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-family: inherit; width: 200px; color: var(--text); }
     .toolbar input[type="text"]:focus { outline: none; border-color: var(--green); }
     .filter-btn { padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; border: 1.5px solid var(--grey-border); background: white; color: var(--text-muted); transition: all 0.12s; }
     .filter-btn.active { background: var(--navy); border-color: var(--navy); color: white; }
@@ -45,10 +45,10 @@
     .count-badge { font-size: 12px; color: var(--text-muted); }
     .table-wrap { overflow-x: auto; padding: 0; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    thead th { background: var(--navy); color: rgba(255,255,255,0.8); padding: 9px 10px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; white-space: nowrap; }
+    thead th { background: var(--navy); color: rgba(255,255,255,0.8); padding: 7px 8px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; white-space: nowrap; }
     tbody tr { border-bottom: 1px solid #eef0f3; }
     tbody tr:hover td { background: #fafbfc; }
-    td { padding: 8px 10px; vertical-align: middle; white-space: nowrap; }
+    td { padding: 6px 8px; vertical-align: middle; }
     td.mono { font-family: 'DM Mono', monospace; font-size: 11px; }
     .status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
     .status-pending          { background: #fff8e1; color: #7a5200; }
@@ -66,7 +66,7 @@
     .spinner-lg { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
     .state-box { padding: 48px 36px; text-align: center; }
     .state-box p { color: var(--text-muted); font-size: 14px; }
-    .page-footer { background: var(--grey-footer); border-radius: 0 0 12px 12px; padding: 14px 36px; text-align: center; }
+    .page-footer { background: var(--grey-footer); border-radius: 0 0 12px 12px; padding: 12px 20px; text-align: center; }
     .page-footer p { color: rgba(255,255,255,0.7); font-size: 12px; }
     @media (max-width: 640px) {
       body { padding: 0 0 48px; }
@@ -128,14 +128,11 @@
         <table>
           <thead>
             <tr>
-              <th>Report #</th>
+              <th>Submission</th>
               <th>Contractor</th>
-              <th>Activation</th>
-              <th>Site</th>
+              <th>Deployment</th>
               <th>Period</th>
-              <th>Submitted</th>
-              <th>Claimed</th>
-              <th>Approved</th>
+              <th>Amount</th>
               <th>Status</th>
               <th>Documents</th>
               <th></th>
@@ -230,7 +227,6 @@
   async function saveNoteFromList(token, el) {
     const notes    = el.value.trim();
     const statusEl = document.getElementById(`note-status-${token}`);
-    // Skip if nothing changed
     const original = el.dataset.original ?? '';
     if (notes === original) return;
     el.dataset.original = notes;
@@ -243,7 +239,6 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
-      // Update local data so re-renders don't reset it
       const entry = allData.find(e => e.token === token);
       if (entry) entry.internalNotes = notes;
       statusEl.textContent = '✓'; statusEl.style.color = 'var(--green-dark)';
@@ -320,7 +315,7 @@
         s.rejectionReason ? `<div style="margin-top:6px;padding:5px 8px;background:#fff0f0;border-left:3px solid #cc2936;border-radius:0 4px 4px 0;font-size:11px;color:#7a1a1a;line-height:1.4;">&#10007; ${s.rejectionReason}</div>` : '',
         `<div style="margin-top:6px;">
           <textarea id="notes-${s.token}" rows="2"
-            style="width:100%;min-width:220px;border:1.5px solid #e8c96a;border-radius:6px;padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;background:#fffbf0;color:#5a3e00;resize:vertical;line-height:1.4;"
+            style="width:100%;min-width:160px;border:1.5px solid #e8c96a;border-radius:6px;padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;background:#fffbf0;color:#5a3e00;resize:vertical;line-height:1.4;"
             placeholder="Add internal note..."
             onblur="saveNoteFromList('${s.token}', this)"
           >${s.internalNotes || ''}</textarea>
@@ -333,16 +328,31 @@
       const spLink = s.spFolderUrl
         ? `<a class="sp-link" href="${s.spFolderUrl}" target="_blank">&#128193; SharePoint</a>`
         : `<span class="no-sp">—</span>`;
+
+      // Merged columns:
+      // Submission = Report # + date + review link
+      // Deployment = Activation + Site
+      // Amount     = Claimed (top) + Approved (bottom)
       return `<tr>
-        <td class="mono">${s.reportNumber || '—'}</td>
-        <td><strong>${s.contractorName || '—'}</strong><br><span style="font-size:11px;color:var(--text-muted)">${s.contractorEmail || ''}</span></td>
-        <td>${s.activation || '—'}</td>
-        <td>${s.site || '—'}</td>
+        <td class="mono" style="white-space:nowrap;">
+          ${s.reportNumber || '—'}
+          <br><span style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">${submitted}</span>
+          <br><a href="expense-approve.html?token=${s.token}" target="_blank" style="font-size:11px;color:var(--green-dark);text-decoration:none;">Review &rarr;</a>
+        </td>
+        <td>
+          <strong>${s.contractorName || '—'}</strong>
+          <br><span style="font-size:11px;color:var(--text-muted)">${s.contractorEmail || ''}</span>
+        </td>
+        <td>
+          ${s.activation || '—'}
+          <br><span style="font-size:11px;color:var(--text-muted)">${s.site || ''}</span>
+        </td>
         <td>${period}</td>
-       <td style="white-space:nowrap">${submitted}<br><a href="expense-approve.html?token=${s.token}" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">Review →</a></td>
-        <td class="mono">${claimed}</td>
-        <td class="mono">${approved}</td>
-        <td style="white-space:normal;min-width:150px">${status}${approvedBy}${financeBtn}${notesBlock}</td>
+        <td class="mono" style="white-space:nowrap;">
+          ${claimed}
+          <br>${approved}
+        </td>
+        <td style="white-space:normal;min-width:130px">${status}${approvedBy}${financeBtn}${notesBlock}</td>
         <td>${spLink}</td>
         <td><button class="btn-delete" onclick="deleteReport('${s.reportNumber}')" title="Remove from tracker">&times;</button></td>
       </tr>`;
