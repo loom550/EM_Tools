@@ -1757,11 +1757,12 @@ function renderReviewTable() {
     var ptClass = !row.passengerType ? 'conf-missing' : c.passengerType === 'low' ? 'conf-low' : '';
 
     // Count flags
-    [firstClass, lastClass, dobClass, ptClass].forEach(function(cl) {
-      if (cl === 'conf-missing') missing++;
-      else if (cl === 'conf-low') low++;
-      else high++;
-    });
+    [firstClass, lastClass, ptClass].forEach(function(cl) {
+  if (cl === 'conf-missing') missing++;
+  else if (cl === 'conf-low') low++;
+  else high++;
+});
+if (dobClass === 'conf-low') low++;
 
     return '<tr data-idx="' + i + '">' +
       '<td style="color:var(--text-muted);font-size:12px;padding-left:6px">' + (i+1) + '</td>' +
