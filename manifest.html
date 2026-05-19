@@ -1620,8 +1620,8 @@ function openUploadModal(flightId, flightNum) {
 function closeUploadModal() {
   document.getElementById('upload-modal-overlay').classList.remove('open');
   if (uploadId) {
-    showToast('Refreshing passenger pool...', '');
-    setTimeout(loadData, 2500);
+    showToast('Loading passengers into pool...', '');
+    setTimeout(loadData, 3000);
   }
 }
 
