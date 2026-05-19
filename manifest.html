@@ -1753,7 +1753,7 @@ function renderReviewTable() {
     var c = row.confidence || {};
     var firstClass = !row.firstName ? 'conf-missing' : c.firstName === 'low' ? 'conf-low' : '';
     var lastClass = !row.lastName ? 'conf-missing' : c.lastName === 'low' ? 'conf-low' : '';
-    var dobClass = !row.dob ? 'conf-missing' : c.dob === 'low' ? 'conf-low' : '';
+    var dobClass = !row.dob ? '' : c.dob === 'low' ? 'conf-low' : '';
     var ptClass = !row.passengerType ? 'conf-missing' : c.passengerType === 'low' ? 'conf-low' : '';
 
     // Count flags
