@@ -1102,7 +1102,10 @@ function renderPaxPanel(flightId) {
   html += '<div class="flt-detail-hdr">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
       '<div class="flt-detail-num">' + esc(flight.flightNumber) + '</div>' +
-      (!departed ? '<button onclick="openEditFlightModal(\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.8);cursor:pointer;font-family:inherit;">&#9998; Edit</button>' : '') +
+      (!departed ? '<div style="display:flex;gap:6px;">' +
+  '<button onclick="openEditFlightModal(\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.8);cursor:pointer;font-family:inherit;">&#9998; Edit</button>' +
+  '<button onclick="removeDuplicatesFromFlight(\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,100,100,.5);background:rgba(255,100,100,.15);color:#ffcccc;cursor:pointer;font-family:inherit;">&#128465; Dedup</button>' +
+'</div>' : '') +
     '</div>' +
     '<div class="flt-detail-meta">' +
       (flight.airline ? '<span>&#9992; ' + esc(flight.airline) + '</span>' : '') +
@@ -1676,6 +1679,54 @@ function renderFileQueue() {
       '<button class="file-queue-remove" onclick="removeFromQueue(' + i + ')">&times;</button>' +
     '</div>';
   }).join('');
+}
+
+function removeDuplicatesFromFlight(flightId) {
+  var flight = flights.find(function(f) { return f.id === flightId; });
+  var isOutbound = flight && flight.direction && flight.direction.toLowerCase() !== 'inbound';
+
+  var flightPax = allPax.filter(function(p) {
+    if (isOutbound) return p.outboundFlightId === flightId || (!p.outboundFlightId && p.flightId === flightId);
+    return p.flightId === flightId;
+  });
+
+  // Sort descending by id so we keep the most recently created
+  var sorted = flightPax.slice().sort(function(a, b) { return parseInt(b.id) - parseInt(a.id); });
+  var seen = {};
+  var toDelete = [];
+  sorted.forEach(function(p) {
+    var key = (p.firstName + ' ' + p.lastName).toLowerCase().trim();
+    if (seen[key]) {
+      toDelete.push(p.id);
+    } else {
+      seen[key] = true;
+    }
+  });
+
+  if (!toDelete.length) { showToast('No duplicates found', 'ok'); return; }
+  if (!confirm('Remove ' + toDelete.length + ' duplicate passengers? This cannot be undone.')) return;
+
+  showToast('Removing ' + toDelete.length + ' duplicates...', '');
+
+  var CHUNK = 10;
+  var idx = 0;
+
+  function nextChunk() {
+    if (idx >= toDelete.length) {
+      allPax = allPax.filter(function(p) { return toDelete.indexOf(p.id) === -1; });
+      renderFlights();
+      renderPaxPanel(flightId);
+      showToast('Removed ' + toDelete.length + ' duplicates', 'ok');
+      return;
+    }
+    var chunk = toDelete.slice(idx, idx + CHUNK);
+    idx += CHUNK;
+    Promise.allSettled(chunk.map(function(id) {
+      return api('DELETE', '/api/pax/' + id).catch(function() {});
+    })).then(nextChunk);
+  }
+
+  nextChunk();
 }
 
 function removeFromQueue(idx) {
