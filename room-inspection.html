@@ -515,9 +515,12 @@
         <select id="selSite" disabled><option value="">Choose activation first</option></select>
       </div>
       <div class="form-row">
-        <label for="inpHotel">Hotel / Building name</label>
-        <input type="text" id="inpHotel" placeholder="e.g., Bon Air" autocomplete="off">
-        <div class="hint">This is the SharePoint folder name that media will be stored under.</div>
+        <label for="selHotel">Hotel / Building</label>
+        <select id="selHotel" disabled><option value="">Choose site first</option></select>
+      </div>
+      <div class="form-row" id="hotelOtherRow" style="display:none">
+        <label for="inpHotelOther">Hotel name (other)</label>
+        <input type="text" id="inpHotelOther" placeholder="Enter hotel / building name" autocomplete="off">
       </div>
 
       <button class="btn btn-primary btn-block" id="btnStart">Start</button>
@@ -1152,14 +1155,56 @@ $('#selActivation').addEventListener('change', e => {
   const actId = e.target.value;
   const act = state.activations.find(a => a.id === actId);
   const siteSel = $('#selSite');
+  const hotelSel = $('#selHotel');
   if (!act) {
     siteSel.innerHTML = '<option>Choose activation first</option>';
     siteSel.disabled = true;
+    hotelSel.innerHTML = '<option value="">Choose site first</option>';
+    hotelSel.disabled = true;
+    $('#hotelOtherRow').style.display = 'none';
     return;
   }
   siteSel.disabled = false;
   siteSel.innerHTML = '<option value="">— Select —</option>' +
     act.sites.map(s => `<option value="${s.id}" data-name="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join('');
+  hotelSel.innerHTML = '<option value="">Choose site first</option>';
+  hotelSel.disabled = true;
+  $('#hotelOtherRow').style.display = 'none';
+});
+
+$('#selSite').addEventListener('change', e => {
+  const actId = $('#selActivation').value;
+  const act = state.activations.find(a => a.id === actId);
+  const siteId = e.target.value;
+  const site = act?.sites.find(s => s.id === siteId);
+  const hotelSel = $('#selHotel');
+
+  if (!site) {
+    hotelSel.innerHTML = '<option value="">Choose site first</option>';
+    hotelSel.disabled = true;
+    $('#hotelOtherRow').style.display = 'none';
+    return;
+  }
+
+  const hotels = site.hotels || [];
+  hotelSel.disabled = false;
+  if (hotels.length) {
+    hotelSel.innerHTML =
+      '<option value="">— Select hotel —</option>' +
+      hotels.map(h => `<option value="${h.id}" data-name="${escapeHtml(h.name)}">${escapeHtml(h.name)}</option>`).join('') +
+      '<option value="__other__">Other…</option>';
+  } else {
+    // No hotels in KV config for this site — fall straight to free text
+    hotelSel.innerHTML = '<option value="__other__">Other (enter below)</option>';
+    $('#hotelOtherRow').style.display = '';
+  }
+  $('#hotelOtherRow').style.display = 'none';
+});
+
+$('#selHotel').addEventListener('change', e => {
+  const isOther = e.target.value === '__other__';
+  $('#hotelOtherRow').style.display = isOther ? '' : 'none';
+  if (isOther) $('#inpHotelOther').focus();
 });
 
 function populateAllChoiceSelects() {
@@ -1217,20 +1262,35 @@ async function populateAdjoiningSelect(currentRoom) {
 // =============================================================================
 // SETUP -> BUILD
 // =============================================================================
+// Returns { hotelName, kvHotelId } from the current dropdown state, or null if incomplete.
+function resolveHotelSelection() {
+  const sel = $('#selHotel');
+  const val = sel.value;
+  if (!val) return null;
+  if (val === '__other__') {
+    const name = $('#inpHotelOther').value.trim();
+    if (!name) return null;
+    return { hotelName: name, kvHotelId: null };
+  }
+  const opt = sel.options[sel.selectedIndex];
+  return { hotelName: opt.dataset.name || opt.textContent.trim(), kvHotelId: val };
+}
+
 $('#btnStart').addEventListener('click', () => {
   const actId = $('#selActivation').value;
   const siteSelEl = $('#selSite');
-  const siteId = siteSelEl.value;   // this is the KV site ID (e.g. "kapuskasing")
+  const siteId = siteSelEl.value;
   const siteName = siteSelEl.options[siteSelEl.selectedIndex]?.dataset.name || '';
-  const hotel = $('#inpHotel').value.trim();
+  const hotel = resolveHotelSelection();
   if (!actId || !siteId || !hotel) return toast('All fields required', 'error');
   const act = state.activations.find(a => a.id === actId);
   state.session = {
-    activationId: act.id,   // KV activation ID (e.g. "2026-KASH-HUBHOST")
+    activationId: act.id,
     activationName: act.name,
-    siteId,                 // KV site ID (e.g. "kapuskasing") — used as kvSiteId for mirror
+    siteId,
     siteName,
-    hotelName: hotel,
+    hotelName: hotel.hotelName,
+    kvHotelId: hotel.kvHotelId,
     startedAt: new Date().toISOString()
   };
   saveLS(LS.session, state.session);
@@ -1258,7 +1318,7 @@ $('#btnLoadHotel').addEventListener('click', async () => {
   const siteSelEl = $('#selSite');
   const siteId = siteSelEl.value;
   const siteName = siteSelEl.options[siteSelEl.selectedIndex]?.dataset.name || '';
-  const hotel = $('#inpHotel').value.trim();
+  const hotel = resolveHotelSelection();
   if (!actId || !siteId || !hotel) return toast('Fill all fields first', 'error');
   const act = state.activations.find(a => a.id === actId);
 
@@ -1272,7 +1332,8 @@ $('#btnLoadHotel').addEventListener('click', async () => {
       activationName: act.name,
       siteId,
       siteName,
-      hotelName: hotel,
+      hotelName: hotel.hotelName,
+      kvHotelId: hotel.kvHotelId,
       startedAt: new Date().toISOString()
     };
     saveLS(LS.session, state.session);
@@ -1616,7 +1677,8 @@ async function doCommit(uncommitted, skipRoomNumbers) {
           },
           // Mirror params — siteId is the KV site ID from bootstrap
           activationId: state.session.activationId,
-          kvSiteId: state.session.siteId
+          kvSiteId: state.session.siteId,
+          kvHotelId: state.session.kvHotelId || null
         })
       });
 
@@ -2068,7 +2130,8 @@ $('#imSave').addEventListener('click', async () => {
           spId: room.spId,
           patch: { RoomNumber: patch.RoomNumber },
           activationId: state.session.activationId,
-          kvSiteId: state.session.siteId
+          kvSiteId: state.session.siteId,
+          kvHotelId: state.session.kvHotelId || null
         })
       });
       room.roomNumber = patch.RoomNumber;
@@ -2108,7 +2171,8 @@ $('#imSave').addEventListener('click', async () => {
         folderWebUrl: folderWebUrl || room.folderWebUrl,
         patch,
         activationId: state.session.activationId,
-        kvSiteId: state.session.siteId
+        kvSiteId: state.session.siteId,
+          kvHotelId: state.session.kvHotelId || null
       })
     });
 
@@ -2123,7 +2187,8 @@ $('#imSave').addEventListener('click', async () => {
           spId: room.spId,
           adjoiningSpId: newAdjoining,
           activationId: state.session.activationId,
-          kvSiteId: state.session.siteId
+          kvSiteId: state.session.siteId,
+          kvHotelId: state.session.kvHotelId || null
         })
       });
       room.adjoiningSpId = newAdjoining;
