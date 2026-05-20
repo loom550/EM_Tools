@@ -529,15 +529,15 @@
       </div>
       <div class="field-grid cols-2" style="margin-top:16px">
         <div class="field-group">
-          <label for="activation">Activation <span class="req">*</span></label>
-          <select id="activation" onchange="handleActivationChange()">
-            <option value="">Loading...</option>
-          </select>
-        </div>
-        <div class="field-group">
           <label for="site">Site <span class="req">*</span></label>
           <select id="site" onchange="handleSiteChange()" disabled>
             <option value="">Select activation first</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="activation">Activation <span class="req">*</span></label>
+          <select id="activation" onchange="handleActivationChange()">
+            <option value="">Loading...</option>
           </select>
         </div>
         <input type="hidden" id="jobNumber" value="">
