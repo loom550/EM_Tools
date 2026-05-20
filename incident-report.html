@@ -372,19 +372,19 @@
       <div class="card-section">
         <div class="section-label">Activation Information</div>
         <div class="field-grid cols-2">
-          <div class="field-group" id="f-HubName">
-            <label>Hub / Site <span class="req">*</span></label>
-            <select name="HubName" id="hubSelect">
-              <option value="">-- Loading sites... --</option>
-            </select>
-            <input type="hidden" name="FolderName" id="folderName">
-            <div class="error-msg">Required</div>
-          </div>
           <div class="field-group">
             <label>Activation</label>
             <select name="ActivationID" id="activationID">
               <option value="">-- Loading... --</option>
             </select>
+          </div>
+         <div class="field-group" id="f-HubName">
+            <label>Hub / Host Site <span class="req">*</span></label>
+            <select name="HubName" id="hubSelect">
+              <option value="">-- Loading sites... --</option>
+            </select>
+            <input type="hidden" name="FolderName" id="folderName">
+            <div class="error-msg">Required</div>
           </div>
         </div>
       </div>
