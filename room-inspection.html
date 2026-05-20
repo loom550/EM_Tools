@@ -265,7 +265,6 @@
   }
   .checkout-room:active { background: #f8fafc; }
   .checkout-room.is-checked-out { background: #f4f8f6; }
-  .checkout-room.not-inspected { opacity: 0.55; cursor: default; }
 
   /* Damage items */
   .damage-item {
@@ -533,9 +532,9 @@
     </div>
 
     <div class="card">
-      <h2 class="card-title">Already started on another iPad?</h2>
+      <h2 class="card-title">Already started on another device?</h2>
       <p class="hint" style="margin-bottom:14px">
-        Pick the activation, site, and hotel above, then tap Load. This pulls all existing rooms from SharePoint so you can continue the inspection.
+        Use this to pick up where another inspector left off — or to open a hotel for damage recording and checkout when the initial inspection was done on a different iPad or session. Pick the activation, site, and hotel above, then tap Load.
       </p>
       <button class="btn btn-ghost btn-block" id="btnLoadHotel">Load existing rooms</button>
     </div>
@@ -856,6 +855,9 @@
       <div id="coReturnedBanner" style="display:none; background:#f4f8f6; border:1px solid #c3ddd5; border-radius:8px; padding:12px 14px; margin-bottom:12px; font-size:14px; color:var(--teal); font-weight:600;">
         ✓ This room has been returned to the vendor.
       </div>
+
+      <!-- No inspection warning (soft — doesn't block) -->
+      <div id="coInspectWarning" style="display:none; background:#fff8e8; border:1px solid #ffe082; border-radius:8px; padding:12px 14px; margin-bottom:12px; font-size:13px; color:#7a5800;"></div>
 
       <!-- Damage records -->
       <div class="card" style="margin-bottom:10px">
@@ -1855,12 +1857,12 @@ function renderCheckoutList() {
     const isReturned = r.checkedOut;
     const dmg = r.damageCount || 0;
     return `
-      <div class="checkout-room ${isReturned ? 'is-checked-out' : ''} ${!isInspected ? 'not-inspected' : ''}" data-coroom="${r.id}">
+      <div class="checkout-room ${isReturned ? 'is-checked-out' : ''}" data-coroom="${r.id}">
         <div style="flex:1; min-width:0">
           <div class="inspect-room-num" style="${isReturned ? 'color:var(--muted)' : ''}">${escapeHtml(state.session.hotelName)} — ${escapeHtml(r.roomNumber)}</div>
           <div class="inspect-room-meta">
-            ${isReturned ? '✓ Returned to vendor' : isInspected ? '✓ Inspected — ready for checkout' : '⚪ Not yet inspected'}
-            ${dmg ? ` · ⚠️ ${dmg} damage item${dmg !== 1 ? 's' : ''}` : ''}
+            ${isReturned ? '✓ Returned to vendor' : isInspected ? '✓ Inspected — ready for checkout' : '⚠️ Inspection not recorded'}
+            ${dmg ? ` · ${dmg} damage item${dmg !== 1 ? 's' : ''}` : ''}
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0">
@@ -1868,7 +1870,7 @@ function renderCheckoutList() {
             ? `<span style="background:var(--navy); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px">RETURNED</span>`
             : isInspected
             ? `<span style="background:#eef3f9; color:var(--navy); font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px">READY</span>`
-            : ''}
+            : `<span style="background:#fff3e0; color:#a05c00; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px">NO INSPECTION</span>`}
         </div>
       </div>
     `;
@@ -1897,11 +1899,6 @@ $('#checkoutList').addEventListener('click', e => {
   if (!roomEl) return;
   const r = state.rooms.find(x => x.id === roomEl.dataset.coroom);
   if (!r) return;
-  const isInspected = r.inspectionStatus === 'done' || r.inspectionStatus === 'complete';
-  if (!isInspected) {
-    toast('Complete the inspection in Tab 2 before checkout', 'error');
-    return;
-  }
   openDamageModal(r.id);
 });
 
@@ -2287,9 +2284,17 @@ async function openDamageModal(roomId) {
 
   // Show/hide sections based on checkout state
   const isReturned = r.checkedOut;
+  const isInspected = r.inspectionStatus === 'done' || r.inspectionStatus === 'complete';
   $('#coReturnedBanner').style.display = isReturned ? '' : 'none';
   $('#coCheckoutSection').style.display = isReturned ? 'none' : '';
   $('#coAddDamageToggle').style.display = isReturned ? 'none' : '';
+
+  // Soft warning if inspection wasn't recorded (still lets them proceed)
+  const warnEl = $('#coInspectWarning');
+  if (warnEl) {
+    warnEl.style.display = (!isReturned && !isInspected) ? '' : 'none';
+    warnEl.textContent = 'No inspection recorded for this room in this session. You can still record damage and checkout — use Tab 2 to add inspection photos if needed.';
+  }
 
   // Reset form
   $('#coDmgCategory').value = '';
