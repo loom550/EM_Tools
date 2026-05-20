@@ -901,9 +901,9 @@
             <label for="coDmgDescription">Description</label>
             <textarea id="coDmgDescription" placeholder="Describe the damage" style="min-height:60px"></textarea>
           </div>
-          <div class="form-row">
-            <label for="coDmgCost">Estimated cost (optional, $)</label>
-            <input type="number" id="coDmgCost" placeholder="0.00" min="0" step="0.01">
+          <div class="checkbox-row" style="padding: 8px 0 4px">
+            <input type="checkbox" id="coDmgReportedToProperty">
+            <label for="coDmgReportedToProperty">Reported to property front desk</label>
           </div>
           <div class="media-row" style="margin-bottom:8px">
             <label class="capture-btn">
@@ -2053,7 +2053,7 @@ async function uploadToGraph(uploadUrl, file, onProgress) {
   return finalItem;
 }
 
-async function uploadOneFile(file, kind, index) {
+async function uploadOneFile(file, kind, index, subfolder) {
   const ts = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
   const safeExt = (file.name.split('.').pop() || (kind === 'video' ? 'mp4' : 'jpg')).toLowerCase().replace(/[^a-z0-9]/g, '');
   const filename = kind === 'video'
@@ -2070,7 +2070,8 @@ async function uploadOneFile(file, kind, index) {
       siteName: state.session.siteName,
       hotelName: state.session.hotelName,
       roomNumber: room.roomNumber,
-      filename
+      filename,
+      subfolder: subfolder || null
     })
   });
 
@@ -2300,7 +2301,7 @@ async function openDamageModal(roomId) {
   $('#coDmgCategory').value = '';
   $('#coDmgSeverity').value = '';
   $('#coDmgDescription').value = '';
-  $('#coDmgCost').value = '';
+  $('#coDmgReportedToProperty').checked = false;
   $('#coAddDamageForm').style.display = 'none';
   $('#coAddDamageToggle').textContent = '+ Add damage';
   renderDamageFormPhotos();
@@ -2345,20 +2346,21 @@ function renderDamageList() {
   }
   list.innerHTML = state.coDamages.map(d => {
     const cat = (d.damage_category || '').replace(/_/g, ' ');
-    const costStr = d.estimated_cost_cents
-      ? ` · Est. $${(d.estimated_cost_cents / 100).toFixed(2)}`
-      : '';
     const photoStr = d.photo_urls && d.photo_urls.length
       ? ` · 📷 ${d.photo_urls.length}`
+      : '';
+    const reportedStr = d.reported_to_property
+      ? `<span style="font-size:11px; color:var(--teal); font-weight:600; margin-top:4px; display:block">✓ Reported to property</span>`
       : '';
     return `
       <div class="damage-item severity-${d.severity}">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap">
           <span class="severity-badge ${d.severity}">${escapeHtml(d.severity)}</span>
           <span style="font-size:13px; font-weight:600; text-transform:capitalize">${escapeHtml(cat)}</span>
-          <span style="font-size:12px; color:var(--muted)">${costStr}${photoStr}</span>
+          <span style="font-size:12px; color:var(--muted)">${photoStr}</span>
         </div>
         <div style="font-size:13px">${escapeHtml(d.description)}</div>
+        ${reportedStr}
       </div>
     `;
   }).join('');
@@ -2415,17 +2417,14 @@ $('#coSaveDamage').addEventListener('click', async () => {
   btn.disabled = true;
 
   try {
-    // Upload any damage photos to SP (same room folder)
+    // Upload damage photos to Damages subfolder (separate from inspection photos)
     const photoUrls = [];
     for (let i = 0; i < state.coDmgNewPhotos.length; i++) {
       const p = state.coDmgNewPhotos[i];
       $('#coSaveDamageLabel').innerHTML = `<span class="spinner"></span> Uploading photo ${i + 1}…`;
-      const r = await uploadOneFile(p.file, 'photo', i + 1);
+      const r = await uploadOneFile(p.file, 'photo', i + 1, 'Damages');
       photoUrls.push(r.webUrl);
     }
-
-    const costDollars = parseFloat($('#coDmgCost').value || '0');
-    const estimatedCostCents = costDollars > 0 ? Math.round(costDollars * 100) : null;
 
     $('#coSaveDamageLabel').innerHTML = '<span class="spinner"></span> Saving…';
     const res = await api('/api/damages/create', {
@@ -2436,7 +2435,7 @@ $('#coSaveDamage').addEventListener('click', async () => {
         severity,
         description,
         photoUrls,
-        estimatedCostCents,
+        reportedToProperty: $('#coDmgReportedToProperty').checked,
         reportedBy: $('#coInspectorName').value.trim() || null,
         notes: null,
         kvSiteId: state.session.siteId,
@@ -2452,7 +2451,7 @@ $('#coSaveDamage').addEventListener('click', async () => {
     $('#coDmgCategory').value = '';
     $('#coDmgSeverity').value = '';
     $('#coDmgDescription').value = '';
-    $('#coDmgCost').value = '';
+    $('#coDmgReportedToProperty').checked = false;
     state.coDmgNewPhotos = [];
     renderDamageFormPhotos();
     $('#coAddDamageForm').style.display = 'none';
