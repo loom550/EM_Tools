@@ -659,7 +659,10 @@
     </div>
 
     <div class="card">
-      <p class="hint" style="margin-bottom:12px">Tap a room to record damage and mark it returned to the property. Rooms must be inspected first.</p>
+      <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center">
+        <p class="hint" style="margin:0; flex:1">Tap a room to record damage and mark it returned to the property.</p>
+        <button class="btn btn-ghost" id="btnRefreshCheckout" style="padding-left:12px; padding-right:12px; flex-shrink:0" title="Reload rooms from SharePoint">↻</button>
+      </div>
       <div id="checkoutList"></div>
     </div>
   </section>
@@ -1834,7 +1837,16 @@ function renderCheckoutList() {
 
   const list = $('#checkoutList');
   if (!sorted.length) {
-    list.innerHTML = '<div class="empty-state">No rooms. Commit classes in Tab 1 first.</div>';
+    if (state.session) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div style="margin-bottom:12px">No rooms loaded. Tap ↻ to load from SharePoint.</div>
+          <button class="btn btn-ghost" id="btnLoadCheckoutRooms">Load rooms from SharePoint</button>
+        </div>`;
+      $('#btnLoadCheckoutRooms')?.addEventListener('click', refreshCheckoutFromSP);
+    } else {
+      list.innerHTML = '<div class="empty-state">Go to Setup to pick an activation, site, and hotel first.</div>';
+    }
     return;
   }
 
@@ -1862,6 +1874,23 @@ function renderCheckoutList() {
     `;
   }).join('');
 }
+
+async function refreshCheckoutFromSP() {
+  if (!state.session) return toast('Go to Setup first', 'error');
+  const btn = $('#btnRefreshCheckout');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    await loadHotelFromSP();
+    renderCheckoutList();
+    toast(`Loaded ${state.rooms.length} rooms`, 'success');
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↻'; }
+  }
+}
+
+$('#btnRefreshCheckout').addEventListener('click', refreshCheckoutFromSP);
 
 $('#checkoutList').addEventListener('click', e => {
   const roomEl = e.target.closest('.checkout-room');
@@ -2277,7 +2306,11 @@ async function openDamageModal(roomId) {
   try {
     const res = await api('/api/damages/list', {
       method: 'POST',
-      body: JSON.stringify({ spId: r.spId })
+      body: JSON.stringify({
+        spId: r.spId,
+        kvSiteId: state.session.siteId,
+        kvHotelId: state.session.kvHotelId || null
+      })
     });
     state.coDamages = res.damages || [];
     renderDamageList();
@@ -2400,7 +2433,9 @@ $('#coSaveDamage').addEventListener('click', async () => {
         photoUrls,
         estimatedCostCents,
         reportedBy: $('#coInspectorName').value.trim() || null,
-        notes: null
+        notes: null,
+        kvSiteId: state.session.siteId,
+        kvHotelId: state.session.kvHotelId || null
       })
     });
 
@@ -2448,7 +2483,9 @@ $('#coCheckout').addEventListener('click', async () => {
       body: JSON.stringify({
         spId: room.spId,
         checkedOutBy: inspectorName,
-        checkoutNotes: $('#coCheckoutNotes').value.trim() || null
+        checkoutNotes: $('#coCheckoutNotes').value.trim() || null,
+        kvSiteId: state.session.siteId,
+        kvHotelId: state.session.kvHotelId || null
       })
     });
 
