@@ -373,6 +373,75 @@ body {
   display: inline-block;
 }
 .feedback-btn:hover { background: rgba(0,166,81,.1); }
+
+/* SUPPORT SECTION */
+.support-section {
+  background: rgba(0,166,81,.05);
+  border: 1px solid rgba(0,166,81,.2);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 28px;
+}
+.support-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.support-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.support-list {
+  list-style: none;
+  margin-bottom: 16px;
+}
+.support-list li {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 6px 0 6px 18px;
+  position: relative;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border);
+}
+.support-list li:last-child { border-bottom: none; }
+.support-list li::before {
+  content: '\203a';
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-weight: 700;
+}
+.support-contact {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.support-contact-item {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.support-contact-item a { color: var(--green); text-decoration: none; }
+.support-contact-item a:hover { text-decoration: underline; }
+.support-flyer-btn {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid rgba(0,166,81,.4);
+  color: var(--green);
+  padding: 7px 16px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  text-decoration: none;
+  transition: background .15s;
+}
+.support-flyer-btn:hover { background: rgba(0,166,81,.1); }
 </style>
 </head>
 <body>
@@ -469,6 +538,26 @@ body {
       <div class="docs-note">Upload your certificates below. Each document is reviewed and approved by the Loomex team. Once approved it is locked. Contact <a href="mailto:eocstaffing@loomex.ca" style="color:var(--green)">eocstaffing@loomex.ca</a> if a correction is needed.</div>
       <div class="docs-grid" id="docs-grid">
         <div style="grid-column:1/-1;color:var(--text-muted);font-size:13px;padding:10px 0"><span class="loading-spinner"></span>Loading documents...</div>
+      </div>
+    </div>
+
+    <!-- MENTAL HEALTH SUPPORT -->
+    <div class="support-section">
+      <div class="support-header">
+        <div class="section-title" style="margin-bottom:0">Mental Health Support</div>
+        <a href="https://tools.loomex.ca/trauma-support.pdf" target="_blank" rel="noopener" class="support-flyer-btn">&#8599;&nbsp;View Full Details</a>
+      </div>
+      <div class="support-subtitle">Loomex has partnered with <strong style="color:var(--text)">Lori Gill Psychotherapy (LGP)</strong> to offer rapid, confidential trauma support for all staff. Sessions are virtual, 45&#8211;60 minutes, and available 7 days a week (7am&#8211;8pm).</div>
+      <ul class="support-list">
+        <li>This service is completely confidential. No information is shared with Loomex leadership.</li>
+        <li>You do not need permission to access it.</li>
+        <li>Up to 2 sessions per contractor are approved between now and June 15. Additional support can be arranged on a case-by-case basis.</li>
+        <li>Sessions may be scheduled during shifts if needed, provided there is no impact to operations.</li>
+      </ul>
+      <div class="support-contact">
+        <div class="support-contact-item">&#128222;&nbsp;<a href="tel:9056847340">(905) 684-7340</a></div>
+        <div class="support-contact-item">&#9993;&nbsp;<a href="mailto:lorigillpsychotherapy@attch.org">lorigillpsychotherapy@attch.org</a></div>
+        <div class="support-contact-item">&#127760;&nbsp;<a href="https://holisticwellnessforhealth.com" target="_blank" rel="noopener">holisticwellnessforhealth.com</a></div>
       </div>
     </div>
 
