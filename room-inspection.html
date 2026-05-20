@@ -9,7 +9,6 @@
 <meta name="theme-color" content="#1a4e7e">
 <title>Room Inspector — LOOMI</title>
 <style>
-  
   :root {
     --navy: #1a4e7e;
     --navy-dark: #123656;
@@ -177,7 +176,7 @@
   }
 
   .inspect-room.inspect-room-done { background: #f4f8f6; }
-.inspect-room.inspect-room-done .inspect-room-num { color: var(--muted); }
+  .inspect-room.inspect-room-done .inspect-room-num { color: var(--muted); }
 
   /* Room list & classes */
   .room-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -250,6 +249,52 @@
   }
   .status-dot.partial { background: var(--amber); }
   .status-dot.done { background: var(--teal); }
+
+  /* Checkout room list */
+  .checkout-room {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .checkout-room:active { background: #f8fafc; }
+  .checkout-room.is-checked-out { background: #f4f8f6; }
+  .checkout-room.not-inspected { opacity: 0.55; cursor: default; }
+
+  /* Damage items */
+  .damage-item {
+    background: #fff8f8;
+    border: 1px solid #fce8e8;
+    border-left: 4px solid var(--red);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .damage-item.severity-moderate {
+    background: #fffdf5;
+    border-color: #fef0cc;
+    border-left-color: var(--amber);
+  }
+  .damage-item.severity-minor {
+    background: #f5fcf9;
+    border-color: #d4eddf;
+    border-left-color: var(--teal);
+  }
+  .severity-badge {
+    display: inline-block;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+    padding: 2px 7px; border-radius: 10px;
+    text-transform: uppercase;
+  }
+  .severity-badge.minor { background: var(--teal); color: #fff; }
+  .severity-badge.moderate { background: var(--amber); color: #fff; }
+  .severity-badge.severe { background: var(--red); color: #fff; }
 
   /* Modals */
   .overlay {
@@ -419,7 +464,7 @@
     flex: 1;
     padding: 9px;
     text-align: center;
-    font-size: 14px; font-weight: 600;
+    font-size: 13px; font-weight: 600;
     color: var(--muted);
     border-radius: 7px;
     cursor: pointer;
@@ -498,6 +543,7 @@
     <div class="tabs">
       <div class="tab active" data-tab="build">1. Build list</div>
       <div class="tab" data-tab="inspect">2. Inspect</div>
+      <div class="tab" data-tab="checkout">3. Checkout</div>
     </div>
 
     <div class="card">
@@ -574,6 +620,7 @@
     <div class="tabs">
       <div class="tab" data-tab="build">1. Build list</div>
       <div class="tab active" data-tab="inspect">2. Inspect</div>
+      <div class="tab" data-tab="checkout">3. Checkout</div>
     </div>
 
     <div class="stats">
@@ -590,6 +637,27 @@
         <button class="btn btn-ghost" id="btnRefreshHotel" style="padding-left:12px; padding-right:12px" title="Refresh from SharePoint">↻</button>
       </div>
       <div id="inspectList"></div>
+    </div>
+  </section>
+
+  <!-- ======================= SCREEN: CHECKOUT ======================= -->
+  <section class="screen" id="screenCheckout">
+    <div class="tabs">
+      <div class="tab" data-tab="build">1. Build list</div>
+      <div class="tab" data-tab="inspect">2. Inspect</div>
+      <div class="tab active" data-tab="checkout">3. Checkout</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="coTotal">0</div><div class="stat-label">Rooms</div></div>
+      <div class="stat"><div class="stat-num" id="coInspected">0</div><div class="stat-label">Inspected</div></div>
+      <div class="stat"><div class="stat-num" id="coDamaged">0</div><div class="stat-label">Damaged</div></div>
+      <div class="stat"><div class="stat-num" id="coReturned">0</div><div class="stat-label">Returned</div></div>
+    </div>
+
+    <div class="card">
+      <p class="hint" style="margin-bottom:12px">Tap a room to record damage and mark it returned to the property. Rooms must be inspected first.</p>
+      <div id="checkoutList"></div>
     </div>
   </section>
 
@@ -769,13 +837,114 @@
   </div>
 </div>
 
+<!-- ======================= DAMAGE & CHECKOUT MODAL ======================= -->
+<div class="overlay" id="damageModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="coTitle">Room Checkout</div>
+      <button class="icon-btn" id="coClose">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Already returned banner -->
+      <div id="coReturnedBanner" style="display:none; background:#f4f8f6; border:1px solid #c3ddd5; border-radius:8px; padding:12px 14px; margin-bottom:12px; font-size:14px; color:var(--teal); font-weight:600;">
+        ✓ This room has been returned to the vendor.
+      </div>
+
+      <!-- Damage records -->
+      <div class="card" style="margin-bottom:10px">
+        <h3 class="card-title">Damage records</h3>
+        <div id="coDamageList">
+          <div class="empty-state" style="padding:12px 0">No damage recorded.</div>
+        </div>
+
+        <button class="btn btn-ghost btn-block" id="coAddDamageToggle" style="margin-top:8px">+ Add damage</button>
+
+        <!-- Add damage form (collapsed by default) -->
+        <div id="coAddDamageForm" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border)">
+          <div class="form-grid">
+            <div class="form-row">
+              <label for="coDmgCategory">Category</label>
+              <select id="coDmgCategory">
+                <option value="">— Select —</option>
+                <option value="furniture">Furniture</option>
+                <option value="walls">Walls</option>
+                <option value="flooring">Flooring</option>
+                <option value="bathroom">Bathroom</option>
+                <option value="appliances">Appliances</option>
+                <option value="fixtures">Fixtures</option>
+                <option value="linens">Linens</option>
+                <option value="door_lock">Door / Lock</option>
+                <option value="window">Window</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="coDmgSeverity">Severity</label>
+              <select id="coDmgSeverity">
+                <option value="">— Select —</option>
+                <option value="minor">Minor</option>
+                <option value="moderate">Moderate</option>
+                <option value="severe">Severe</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="coDmgDescription">Description</label>
+            <textarea id="coDmgDescription" placeholder="Describe the damage" style="min-height:60px"></textarea>
+          </div>
+          <div class="form-row">
+            <label for="coDmgCost">Estimated cost (optional, $)</label>
+            <input type="number" id="coDmgCost" placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div class="media-row" style="margin-bottom:8px">
+            <label class="capture-btn">
+              <span class="emoji">📷</span><span>Take photo</span>
+              <input type="file" class="hidden-file" id="coDmgPhotoCapture" accept="image/*" capture="environment">
+            </label>
+            <label class="capture-btn">
+              <span class="emoji">🖼️</span><span>From gallery</span>
+              <input type="file" class="hidden-file" id="coDmgPhotoGallery" accept="image/*" multiple>
+            </label>
+          </div>
+          <div class="media-grid" id="coDmgPhotoGrid" style="margin-bottom:12px"></div>
+          <button class="btn btn-danger btn-block" id="coSaveDamage">
+            <span id="coSaveDamageLabel">Save damage</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Checkout section -->
+      <div class="card" id="coCheckoutSection">
+        <h3 class="card-title">Checkout</h3>
+        <div class="form-row">
+          <label for="coInspectorName">Your name</label>
+          <input type="text" id="coInspectorName" placeholder="Inspector name" autocomplete="name">
+        </div>
+        <div class="form-row">
+          <label for="coCheckoutNotes">Checkout notes</label>
+          <textarea id="coCheckoutNotes" placeholder="Overall condition, handoff notes, anything for the property" style="min-height:60px"></textarea>
+        </div>
+        <p class="hint" style="margin-bottom:10px">Marking a room as returned to vendor cannot be undone from this app.</p>
+        <button class="btn btn-primary btn-block" id="coCheckout">
+          <span id="coCheckoutLabel">Mark as returned to vendor</span>
+        </button>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-block" id="coCancel">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-stack" id="toasts"></div>
 
 <script>
 // =============================================================================
 // CONFIG
 // =============================================================================
-const API_BASE = 'https://loomex-room-inspector.loomex-it.workers.dev'; // << CHANGE to your worker URL after deploy
+const API_BASE = 'https://loomex-room-inspector.loomex-it.workers.dev';
 
 const LS = {
   auth: 'roomInspector:auth',
@@ -788,17 +957,23 @@ const LS = {
 // STATE
 // =============================================================================
 let state = {
-  auth: null,              // { token, ts }
-  session: null,           // { activationId, activationName, siteId, siteName, hotelName, startedAt }
-  activations: [],         // [{ id, name, sites: [] }]
-  choices: {},             // { RoomType: [...], BedConfiguration: [...], BathroomType: [...] }
-  classes: [],             // [{ id, roomType, ..., roomNumbers: [], committed: bool, spIds: {roomNumber: spId} }]
-  rooms: [],               // [{ id, classId, spId, roomNumber, ..., photoUrls, videoUrl, folderWebUrl, inspectionStatus }]
+  auth: null,
+  session: null,          // { activationId, activationName, siteId, siteName, hotelName, startedAt }
+  activations: [],
+  choices: {},
+  classes: [],
+  rooms: [],              // rooms also carry: checkedOut, damageCount (local only, not persisted)
   currentInspectingRoomId: null,
-  imPhotos: [],            // Photos in the modal right now: { id, file, previewUrl, uploadedUrl, progress }
-  imVideo: null,           // { file, previewUrl, uploadedUrl, progress } or null
+  imPhotos: [],
+  imVideo: null,
+  imInitialPhotoUrls: [],
+  imInitialVideoUrl: '',
   filterQuery: '',
-  filterOnlyIncomplete: false
+  filterOnlyIncomplete: false,
+  // Damage/checkout modal
+  coDamageRoomId: null,
+  coDamages: [],
+  coDmgNewPhotos: []
 };
 
 // =============================================================================
@@ -826,7 +1001,6 @@ function loadAuth() { try { return JSON.parse(sessionStorage.getItem(LS.auth) ||
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
-// Parse room number input like "101, 102, 105-110, 115" into array
 function parseRoomNumbers(input) {
   const out = new Set();
   const parts = input.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
@@ -845,13 +1019,11 @@ function parseRoomNumbers(input) {
   return [...out];
 }
 
-// Default floor = first digit of numeric room number
 function deriveFloor(roomNumber) {
   const m = String(roomNumber || '').match(/^(\d)/);
   return m ? m[1] : '';
 }
 
-// Make a 200x200 JPEG thumbnail as data URL. Used for local caching of uploaded photos.
 async function makeThumbnail(file, maxDim = 200) {
   const dataUrl = await new Promise((res, rej) => {
     const r = new FileReader();
@@ -945,7 +1117,6 @@ async function doLogin() {
 
 async function onSignedIn() {
   showScreen('screenSetup');
-  // Show resume option if we had a prior session
   const prior = loadLS(LS.session);
   if (prior && prior.activationId) {
     $('#resumeCard').style.display = '';
@@ -959,14 +1130,12 @@ async function onSignedIn() {
     const boot = await api('/api/session/bootstrap', { method: 'POST', body: '{}' });
     state.activations = boot.activations || [];
     populateActivationSelect();
-    // Pre-fetch choices
     try {
       const ch = await api('/api/rooms/choices');
       state.choices = ch.choices || {};
       populateAllChoiceSelects();
     } catch (e) {
       console.warn('Choices fetch failed:', e);
-      // Non-fatal - use empty selects, users type values
     }
   } catch (e) {
     toast(e.message, 'error');
@@ -1008,8 +1177,7 @@ function populateChoiceSelect(elId, choiceKey) {
   const el = $('#' + elId);
   if (!el) return;
   const list = state.choices[choiceKey] || [];
-  const blank = '<option value="">—</option>';
-  el.innerHTML = blank + list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  el.innerHTML = '<option value="">—</option>' + list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
 }
 
 async function populateAdjoiningSelect(currentRoom) {
@@ -1017,9 +1185,7 @@ async function populateAdjoiningSelect(currentRoom) {
   sel.innerHTML = '<option value="">— Loading… —</option>';
   sel.disabled = true;
   try {
-    const sessionSpIds = state.rooms
-      .map(r => r.spId)
-      .filter(Boolean);
+    const sessionSpIds = state.rooms.map(r => r.spId).filter(Boolean);
     const res = await api('/api/rooms/list-by-building', {
       method: 'POST',
       body: JSON.stringify({
@@ -1030,19 +1196,14 @@ async function populateAdjoiningSelect(currentRoom) {
     });
     const available = (res.rooms || [])
       .filter(r => String(r.spId) !== String(currentRoom.spId))
-      // A room is available as an adjoin option if it's unlinked, OR already linked to current room
       .filter(r => !r.adjoiningSpId || String(r.adjoiningSpId) === String(currentRoom.spId))
       .sort((a, b) => {
-        const an = parseInt(a.roomNumber, 10);
-        const bn = parseInt(b.roomNumber, 10);
+        const an = parseInt(a.roomNumber, 10), bn = parseInt(b.roomNumber, 10);
         if (!isNaN(an) && !isNaN(bn)) return an - bn;
         return String(a.roomNumber).localeCompare(String(b.roomNumber));
       });
-
-    // Find the current adjoining spId from the full room list (includes current room itself)
     const mine = (res.rooms || []).find(r => String(r.spId) === String(currentRoom.spId));
     const currentAdjoin = mine?.adjoiningSpId || '';
-
     sel.innerHTML = '<option value="">— None —</option>' +
       available.map(r => `<option value="${r.spId}">${escapeHtml(r.roomNumber)}</option>`).join('');
     sel.value = currentAdjoin;
@@ -1059,21 +1220,20 @@ async function populateAdjoiningSelect(currentRoom) {
 $('#btnStart').addEventListener('click', () => {
   const actId = $('#selActivation').value;
   const siteSelEl = $('#selSite');
-  const siteId = siteSelEl.value;
+  const siteId = siteSelEl.value;   // this is the KV site ID (e.g. "kapuskasing")
   const siteName = siteSelEl.options[siteSelEl.selectedIndex]?.dataset.name || '';
   const hotel = $('#inpHotel').value.trim();
   if (!actId || !siteId || !hotel) return toast('All fields required', 'error');
   const act = state.activations.find(a => a.id === actId);
   state.session = {
-    activationId: act.id,
+    activationId: act.id,   // KV activation ID (e.g. "2026-KASH-HUBHOST")
     activationName: act.name,
-    siteId,
+    siteId,                 // KV site ID (e.g. "kapuskasing") — used as kvSiteId for mirror
     siteName,
     hotelName: hotel,
     startedAt: new Date().toISOString()
   };
   saveLS(LS.session, state.session);
-  // Fresh classes/rooms for new session
   state.classes = [];
   state.rooms = [];
   saveLS(LS.classes, state.classes);
@@ -1116,7 +1276,7 @@ $('#btnLoadHotel').addEventListener('click', async () => {
       startedAt: new Date().toISOString()
     };
     saveLS(LS.session, state.session);
-    state.classes = []; // loaded rooms don't belong to classes
+    state.classes = [];
     saveLS(LS.classes, state.classes);
     await loadHotelFromSP();
     renderClasses();
@@ -1147,7 +1307,6 @@ $('#btnRefreshHotel').addEventListener('click', async () => {
   }
 });
 
-// Fetch all rooms for the current hotel from SP and merge into local state
 async function loadHotelFromSP() {
   const res = await api('/api/rooms/load-hotel', {
     method: 'POST',
@@ -1156,9 +1315,6 @@ async function loadHotelFromSP() {
       building: state.session.hotelName
     })
   });
-
-  // Build new room list. Preserve local id + pending media state if the room was
-  // already in state.rooms (so an in-progress inspection on THIS iPad isn't wiped).
   const existingById = new Map(state.rooms.map(r => [String(r.spId), r]));
   const merged = [];
   for (const spRoom of (res.rooms || [])) {
@@ -1184,12 +1340,14 @@ async function loadHotelFromSP() {
       folderWebUrl: existing?.folderWebUrl || '',
       inspectionStatus: spRoom.inspectionStatus || 'not-started',
       committedAt: existing?.committedAt || new Date().toISOString(),
-      finalizedAt: existing?.finalizedAt || null
+      finalizedAt: existing?.finalizedAt || null,
+      checkedOut: existing?.checkedOut || false,
+      damageCount: existing?.damageCount || 0
     });
   }
   state.rooms = merged;
   saveLS(LS.rooms, state.rooms);
-}  
+}
 
 // =============================================================================
 // BUILD SCREEN
@@ -1255,7 +1413,7 @@ function renderClasses() {
             <span>${escapeHtml(c.bedConfig || '')}</span>
             <span>${escapeHtml(c.bathroom || '')}</span>
             <span>Max: ${c.maxOcc}</span>
-           ${c.kitchenette ? '<span>🍳</span>' : ''}
+            ${c.kitchenette ? '<span>🍳</span>' : ''}
             ${c.accessible ? '<span>♿</span>' : ''}
             ${c.petFriendly ? '<span>🐾</span>' : ''}
             <span style="color:${c.committed ? 'var(--teal)' : 'var(--amber)'}; font-weight:600">${statusTxt}</span>
@@ -1299,9 +1457,7 @@ document.body.addEventListener('click', e => {
     const c = state.classes.find(x => x.id === clsId);
     if (!c) return;
     c.roomNumbers = c.roomNumbers.filter(n => n !== num);
-    if (!c.roomNumbers.length) {
-      state.classes = state.classes.filter(x => x.id !== clsId);
-    }
+    if (!c.roomNumbers.length) state.classes = state.classes.filter(x => x.id !== clsId);
     saveLS(LS.classes, state.classes);
     renderClasses();
   } else if (action === 'delete-class') {
@@ -1310,6 +1466,16 @@ document.body.addEventListener('click', e => {
     state.classes = state.classes.filter(x => x.id !== clsId);
     saveLS(LS.classes, state.classes);
     renderClasses();
+  } else if (e.target.dataset.action === 'rm-photo') {
+    const pid = e.target.dataset.photo;
+    state.imPhotos = state.imPhotos.filter(p => p.id !== pid);
+    renderMediaPhotos();
+  } else if (e.target.dataset.action === 'rm-video') {
+    state.imVideo = null;
+    renderMediaVideo();
+  } else if (e.target.dataset.action === 'rm-co-photo') {
+    state.coDmgNewPhotos = state.coDmgNewPhotos.filter(p => p.id !== e.target.dataset.photo);
+    renderDamageFormPhotos();
   }
 });
 
@@ -1336,7 +1502,6 @@ $('#smCancel').addEventListener('click', () => $('#singleModal').classList.remov
 $('#smSave').addEventListener('click', () => {
   const rn = $('#smRoomNumber').value.trim();
   if (!rn) return toast('Room number required', 'error');
-  // Treat a single room as its own class of 1
   const cls = {
     id: uid(),
     roomType: $('#smRoomType').value,
@@ -1363,7 +1528,7 @@ $('#smSave').addEventListener('click', () => {
 // =============================================================================
 // COMMIT TO SHAREPOINT
 // =============================================================================
-let pendingCommit = null; // { classes, proceedWithSkips }
+let pendingCommit = null;
 
 $('#btnCommitAll').addEventListener('click', async () => {
   const uncommitted = state.classes.filter(c => !c.committed);
@@ -1374,7 +1539,6 @@ $('#btnCommitAll').addEventListener('click', async () => {
   $('#commitLabel').innerHTML = '<span class="spinner"></span> Checking for duplicates…';
 
   try {
-    // Flatten all room numbers across uncommitted classes
     const allNums = [];
     for (const c of uncommitted) for (const n of c.roomNumbers) allNums.push(n);
 
@@ -1388,7 +1552,6 @@ $('#btnCommitAll').addEventListener('click', async () => {
     });
 
     if (dup.existing && dup.existing.length) {
-      // Show dupes modal
       pendingCommit = { uncommitted, existing: dup.existing };
       $('#dupesList').textContent = dup.existing.join(', ');
       $('#dupesModal').classList.add('active');
@@ -1396,8 +1559,6 @@ $('#btnCommitAll').addEventListener('click', async () => {
       btn.disabled = false;
       return;
     }
-
-    // No dupes — proceed
     await doCommit(uncommitted, []);
   } catch (e) {
     toast(e.message, 'error');
@@ -1406,12 +1567,13 @@ $('#btnCommitAll').addEventListener('click', async () => {
   }
 });
 
-$('#dmCancel').addEventListener('click', () => {
+// Note: #dmClose and #dmCancel are used by the dupes modal (legacy IDs kept)
+$('#dmClose').addEventListener('click', () => {
   $('#dupesModal').classList.remove('active');
   pendingCommit = null;
   updateCommitLabel();
 });
-$('#dmClose').addEventListener('click', () => {
+$('#dmCancel').addEventListener('click', () => {
   $('#dupesModal').classList.remove('active');
   pendingCommit = null;
   updateCommitLabel();
@@ -1451,14 +1613,14 @@ async function doCommit(uncommitted, skipRoomNumbers) {
             hasKitchenette: !!c.kitchenette,
             petFriendly: !!c.petFriendly,
             maxOccupancy: c.maxOcc ? Number(c.maxOcc) : null
-          }
+          },
+          // Mirror params — siteId is the KV site ID from bootstrap
+          activationId: state.session.activationId,
+          kvSiteId: state.session.siteId
         })
       });
 
-      // Add each created room to state.rooms
-      const spIdMap = {};
       for (const cr of res.created || []) {
-        spIdMap[cr.roomNumber] = cr.spId;
         state.rooms.push({
           id: uid(),
           classId: c.id,
@@ -1479,20 +1641,20 @@ async function doCommit(uncommitted, skipRoomNumbers) {
           videoUrl: '',
           folderWebUrl: '',
           inspectionStatus: 'not-started',
-          committedAt: new Date().toISOString()
+          committedAt: new Date().toISOString(),
+          checkedOut: false,
+          damageCount: 0
         });
         totalCreated++;
       }
 
       c.committed = true;
-      c.spIds = spIdMap;
 
       if (res.errors && res.errors.length) {
         totalErrors += res.errors.length;
         for (const er of res.errors) console.error('Commit error', er);
-        toast(`${res.errors.length} room${res.errors.length === 1 ? '' : 's'} in "${c.roomType || 'class'}" failed to commit — check console`, 'error');
+        toast(`${res.errors.length} room${res.errors.length === 1 ? '' : 's'} in "${c.roomType || 'class'}" failed to commit`, 'error');
       }
-      // Warn if NO rooms were created at all in this class (silent total failure)
       if ((!res.created || !res.created.length) && numsToCommit.length > 0) {
         toast(`All ${numsToCommit.length} rooms in "${c.roomType || 'class'}" failed — check console`, 'error');
       }
@@ -1510,7 +1672,7 @@ async function doCommit(uncommitted, skipRoomNumbers) {
   btn.disabled = false;
   updateCommitLabel();
 
-  if (totalErrors) toast(`Committed ${totalCreated}, ${totalErrors} errors — check console`, 'error');
+  if (totalErrors) toast(`Committed ${totalCreated}, ${totalErrors} errors`, 'error');
   else toast(`Committed ${totalCreated} rooms. Switch to Inspect.`, 'success');
 
   if (totalCreated > 0) showScreen('screenInspect');
@@ -1535,10 +1697,8 @@ function renderInspectList() {
   if (state.filterOnlyIncomplete) {
     filtered = filtered.filter(r => r.inspectionStatus !== 'done');
   }
-  // Sort by room number
   filtered = [...filtered].sort((a, b) => {
-    const an = parseInt(a.roomNumber, 10);
-    const bn = parseInt(b.roomNumber, 10);
+    const an = parseInt(a.roomNumber, 10), bn = parseInt(b.roomNumber, 10);
     if (!isNaN(an) && !isNaN(bn)) return an - bn;
     return String(a.roomNumber).localeCompare(String(b.roomNumber));
   });
@@ -1591,15 +1751,79 @@ $('#btnFilterToggle').addEventListener('click', () => {
 });
 
 // =============================================================================
+// CHECKOUT SCREEN (TAB 3)
+// =============================================================================
+function renderCheckoutList() {
+  const rooms = state.rooms;
+  const inspected = rooms.filter(r => r.inspectionStatus === 'done' || r.inspectionStatus === 'complete');
+  const damaged = rooms.filter(r => r.damageCount > 0);
+  const returned = rooms.filter(r => r.checkedOut);
+
+  $('#coTotal').textContent = rooms.length;
+  $('#coInspected').textContent = inspected.length;
+  $('#coDamaged').textContent = damaged.length;
+  $('#coReturned').textContent = returned.length;
+
+  const sorted = [...rooms].sort((a, b) => {
+    const an = parseInt(a.roomNumber, 10), bn = parseInt(b.roomNumber, 10);
+    if (!isNaN(an) && !isNaN(bn)) return an - bn;
+    return String(a.roomNumber).localeCompare(String(b.roomNumber));
+  });
+
+  const list = $('#checkoutList');
+  if (!sorted.length) {
+    list.innerHTML = '<div class="empty-state">No rooms. Commit classes in Tab 1 first.</div>';
+    return;
+  }
+
+  list.innerHTML = sorted.map(r => {
+    const isInspected = r.inspectionStatus === 'done' || r.inspectionStatus === 'complete';
+    const isReturned = r.checkedOut;
+    const dmg = r.damageCount || 0;
+    return `
+      <div class="checkout-room ${isReturned ? 'is-checked-out' : ''} ${!isInspected ? 'not-inspected' : ''}" data-coroom="${r.id}">
+        <div style="flex:1; min-width:0">
+          <div class="inspect-room-num" style="${isReturned ? 'color:var(--muted)' : ''}">${escapeHtml(state.session.hotelName)} — ${escapeHtml(r.roomNumber)}</div>
+          <div class="inspect-room-meta">
+            ${isReturned ? '✓ Returned to vendor' : isInspected ? '✓ Inspected — ready for checkout' : '⚪ Not yet inspected'}
+            ${dmg ? ` · ⚠️ ${dmg} damage item${dmg !== 1 ? 's' : ''}` : ''}
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0">
+          ${isReturned
+            ? `<span style="background:var(--navy); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px">RETURNED</span>`
+            : isInspected
+            ? `<span style="background:#eef3f9; color:var(--navy); font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px">READY</span>`
+            : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+$('#checkoutList').addEventListener('click', e => {
+  const roomEl = e.target.closest('.checkout-room');
+  if (!roomEl) return;
+  const r = state.rooms.find(x => x.id === roomEl.dataset.coroom);
+  if (!r) return;
+  const isInspected = r.inspectionStatus === 'done' || r.inspectionStatus === 'complete';
+  if (!isInspected) {
+    toast('Complete the inspection in Tab 2 before checkout', 'error');
+    return;
+  }
+  openDamageModal(r.id);
+});
+
+// =============================================================================
 // TABS
 // =============================================================================
 document.body.addEventListener('click', e => {
-  if (e.target.classList.contains('tab')) {
-    const which = e.target.dataset.tab;
-    if (which === 'build') showScreen('screenBuild');
-    else if (which === 'inspect') showScreen('screenInspect');
-    $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
-  }
+  if (!e.target.classList.contains('tab')) return;
+  const which = e.target.dataset.tab;
+  if (which === 'build') showScreen('screenBuild');
+  else if (which === 'inspect') { showScreen('screenInspect'); renderInspectList(); }
+  else if (which === 'checkout') { showScreen('screenCheckout'); renderCheckoutList(); }
+  $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
 });
 
 // =============================================================================
@@ -1609,7 +1833,6 @@ function openInspectModal(roomId) {
   const r = state.rooms.find(x => x.id === roomId);
   if (!r) return;
   state.currentInspectingRoomId = roomId;
-  // Populate form
   $('#imTitle').textContent = `${state.session.hotelName} — ${r.roomNumber}`;
   $('#imRoomNumber').value = r.roomNumber;
   $('#imFloor').value = r.floor || deriveFloor(r.roomNumber);
@@ -1624,20 +1847,17 @@ function openInspectModal(roomId) {
   $('#imNotes').value = r.notes || '';
   populateAdjoiningSelect(r);
 
-  // Media: load already-uploaded items (cannot re-upload, they're on SP)
-  // Use cached thumbnails where available so previews actually render
   const thumbCache = loadLS('roomInspector:thumbs') || {};
   state.imPhotos = (r.photoUrls || []).map(url => ({
     id: uid(),
     file: null,
-    previewUrl: thumbCache[url] || url,  // cached thumb if we have it, else SP URL (may show broken image)
+    previewUrl: thumbCache[url] || url,
     uploadedUrl: url,
     progress: 1
   }));
   state.imVideo = r.videoUrl
     ? { file: null, previewUrl: r.videoUrl, uploadedUrl: r.videoUrl, progress: 1 }
     : null;
-  // Snapshot existing uploaded URLs so we can detect what gets removed during this session
   state.imInitialPhotoUrls = (r.photoUrls || []).slice();
   state.imInitialVideoUrl = r.videoUrl || '';
   renderMediaPhotos();
@@ -1655,7 +1875,6 @@ function closeInspectModal() {
 $('#imClose').addEventListener('click', closeInspectModal);
 $('#imCancel').addEventListener('click', closeInspectModal);
 
-// Photo capture
 $('#imPhotoCapture').addEventListener('change', e => handlePhotoFiles(e.target.files));
 $('#imPhotoGallery').addEventListener('change', e => handlePhotoFiles(e.target.files));
 $('#imVideoCapture').addEventListener('change', e => handleVideoFile(e.target.files[0]));
@@ -1663,37 +1882,22 @@ $('#imVideoCapture').addEventListener('change', e => handleVideoFile(e.target.fi
 function handlePhotoFiles(files) {
   if (!files || !files.length) return;
   for (const f of files) {
-    state.imPhotos.push({
-      id: uid(),
-      file: f,
-      previewUrl: URL.createObjectURL(f),
-      uploadedUrl: null,
-      progress: 0
-    });
+    state.imPhotos.push({ id: uid(), file: f, previewUrl: URL.createObjectURL(f), uploadedUrl: null, progress: 0 });
   }
   renderMediaPhotos();
-  // Reset inputs so same file can be re-picked
   $('#imPhotoCapture').value = '';
   $('#imPhotoGallery').value = '';
 }
 function handleVideoFile(f) {
   if (!f) return;
-  state.imVideo = {
-    file: f,
-    previewUrl: URL.createObjectURL(f),
-    uploadedUrl: null,
-    progress: 0
-  };
+  state.imVideo = { file: f, previewUrl: URL.createObjectURL(f), uploadedUrl: null, progress: 0 };
   renderMediaVideo();
   $('#imVideoCapture').value = '';
 }
 
 function renderMediaPhotos() {
   const grid = $('#photoGrid');
-  if (!state.imPhotos.length) {
-    grid.innerHTML = '';
-    return;
-  }
+  if (!state.imPhotos.length) { grid.innerHTML = ''; return; }
   grid.innerHTML = state.imPhotos.map(p => `
     <div class="media-tile" data-photo="${p.id}">
       <img src="${p.previewUrl}" alt="">
@@ -1729,22 +1933,11 @@ function renderMediaVideo() {
   `;
 }
 
-document.body.addEventListener('click', e => {
-  if (e.target.dataset.action === 'rm-photo') {
-    const pid = e.target.dataset.photo;
-    state.imPhotos = state.imPhotos.filter(p => p.id !== pid);
-    renderMediaPhotos();
-  } else if (e.target.dataset.action === 'rm-video') {
-    state.imVideo = null;
-    renderMediaVideo();
-  }
-});
-
 // =============================================================================
 // CHUNKED UPLOAD TO GRAPH
 // =============================================================================
 async function uploadToGraph(uploadUrl, file, onProgress) {
-  const CHUNK = 10 * 1024 * 1024; // 10 MiB (multiple of 320 KiB)
+  const CHUNK = 10 * 1024 * 1024;
   const total = file.size;
   let start = 0;
   let finalItem = null;
@@ -1773,7 +1966,6 @@ async function uploadToGraph(uploadUrl, file, onProgress) {
 }
 
 async function uploadOneFile(file, kind, index) {
-  // kind = 'photo' | 'video'; index = 1-based for naming
   const ts = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
   const safeExt = (file.name.split('.').pop() || (kind === 'video' ? 'mp4' : 'jpg')).toLowerCase().replace(/[^a-z0-9]/g, '');
   const filename = kind === 'video'
@@ -1797,28 +1989,19 @@ async function uploadOneFile(file, kind, index) {
   const item = await uploadToGraph(sess.uploadUrl, file, p => {
     if (kind === 'photo') {
       const target = state.imPhotos.find(x => x.file === file);
-      if (target) {
-        target.progress = p;
-        renderMediaPhotos();
-      }
+      if (target) { target.progress = p; renderMediaPhotos(); }
     } else {
-      if (state.imVideo && state.imVideo.file === file) {
-        state.imVideo.progress = p;
-        renderMediaVideo();
-      }
+      if (state.imVideo && state.imVideo.file === file) { state.imVideo.progress = p; renderMediaVideo(); }
     }
   });
 
-  // Cache a small thumbnail locally so future opens of this room show previews
   if (kind === 'photo') {
     try {
       const thumb = await makeThumbnail(file, 200);
       const cache = loadLS('roomInspector:thumbs') || {};
       cache[item.webUrl] = thumb;
       saveLS('roomInspector:thumbs', cache);
-    } catch (e) {
-      console.warn('Thumbnail cache failed:', e);
-    }
+    } catch (e) { console.warn('Thumbnail cache failed:', e); }
   }
 
   return { webUrl: item.webUrl, folderWebUrl: sess.folderWebUrl };
@@ -1836,15 +2019,11 @@ $('#imSave').addEventListener('click', async () => {
   $('#imSaveLabel').innerHTML = '<span class="spinner"></span> Saving…';
 
   try {
-    // Upload pending photos
     let folderWebUrl = '';
     const uploadedPhotoUrls = [];
-    let photoIdx = state.imPhotos.filter(p => p.uploadedUrl).length; // start numbering after existing
+    let photoIdx = state.imPhotos.filter(p => p.uploadedUrl).length;
     for (const p of state.imPhotos) {
-      if (p.uploadedUrl) {
-        uploadedPhotoUrls.push(p.uploadedUrl);
-        continue;
-      }
+      if (p.uploadedUrl) { uploadedPhotoUrls.push(p.uploadedUrl); continue; }
       photoIdx++;
       $('#imSaveLabel').innerHTML = `<span class="spinner"></span> Uploading photo ${photoIdx}…`;
       const r = await uploadOneFile(p.file, 'photo', photoIdx);
@@ -1853,7 +2032,6 @@ $('#imSave').addEventListener('click', async () => {
       uploadedPhotoUrls.push(r.webUrl);
     }
 
-    // Upload pending video
     let videoUrl = '';
     if (state.imVideo) {
       if (state.imVideo.uploadedUrl) {
@@ -1867,7 +2045,6 @@ $('#imSave').addEventListener('click', async () => {
       }
     }
 
-    // Build patch from form
     const willBeComplete = uploadedPhotoUrls.length > 0 || !!videoUrl;
     const patch = {
       RoomNumber: $('#imRoomNumber').value.trim(),
@@ -1884,16 +2061,20 @@ $('#imSave').addEventListener('click', async () => {
       InspectionStatus: willBeComplete ? "Complete" : "Partial"
     };
 
-    // If RoomNumber changed, update Title via the generic update endpoint first
     if (patch.RoomNumber && patch.RoomNumber !== room.roomNumber) {
       await api('/api/rooms/update', {
         method: 'POST',
-        body: JSON.stringify({ spId: room.spId, patch: { RoomNumber: patch.RoomNumber } })
+        body: JSON.stringify({
+          spId: room.spId,
+          patch: { RoomNumber: patch.RoomNumber },
+          activationId: state.session.activationId,
+          kvSiteId: state.session.siteId
+        })
       });
       room.roomNumber = patch.RoomNumber;
     }
 
-    // Delete any photos/video that were in the initial state but are no longer present
+    // Delete removed photos/video from SP
     const stillPresentPhotos = new Set(uploadedPhotoUrls);
     const toDelete = [];
     for (const origUrl of (state.imInitialPhotoUrls || [])) {
@@ -1909,17 +2090,14 @@ $('#imSave').addEventListener('click', async () => {
           method: 'POST',
           body: JSON.stringify({ webUrl: url })
         });
-        // Also remove from thumb cache
         const tc = loadLS('roomInspector:thumbs') || {};
         delete tc[url];
         saveLS('roomInspector:thumbs', tc);
       } catch (e) {
         console.warn('Failed to delete removed file:', url, e);
-        // Non-fatal - the file stays in SP as orphan, but save proceeds
       }
     }
 
-    // Finalize (sets RoomPhotoURL + patches everything else)
     $('#imSaveLabel').innerHTML = '<span class="spinner"></span> Saving to SharePoint…';
     await api('/api/rooms/finalize', {
       method: 'POST',
@@ -1928,7 +2106,9 @@ $('#imSave').addEventListener('click', async () => {
         videoUrl,
         photoUrls: uploadedPhotoUrls,
         folderWebUrl: folderWebUrl || room.folderWebUrl,
-        patch
+        patch,
+        activationId: state.session.activationId,
+        kvSiteId: state.session.siteId
       })
     });
 
@@ -1941,12 +2121,14 @@ $('#imSave').addEventListener('click', async () => {
         method: 'POST',
         body: JSON.stringify({
           spId: room.spId,
-          adjoiningSpId: newAdjoining
+          adjoiningSpId: newAdjoining,
+          activationId: state.session.activationId,
+          kvSiteId: state.session.siteId
         })
       });
       room.adjoiningSpId = newAdjoining;
     }
-    // Update local state
+
     room.floor = patch.Floor;
     room.roomType = patch.RoomType;
     room.beds = patch.NumberOfBeds;
@@ -1979,7 +2161,7 @@ $('#imSave').addEventListener('click', async () => {
 $('#imDelete').addEventListener('click', async () => {
   const room = state.rooms.find(x => x.id === state.currentInspectingRoomId);
   if (!room) return;
-  if (!confirm(`Remove room ${room.roomNumber} from SharePoint? (It will be marked inactive, not hard-deleted.)`)) return;
+  if (!confirm(`Remove room ${room.roomNumber} from SharePoint?`)) return;
   try {
     await api('/api/rooms/update', {
       method: 'POST',
@@ -1996,11 +2178,234 @@ $('#imDelete').addEventListener('click', async () => {
 });
 
 // =============================================================================
+// DAMAGE & CHECKOUT MODAL
+// =============================================================================
+async function openDamageModal(roomId) {
+  const r = state.rooms.find(x => x.id === roomId);
+  if (!r) return;
+
+  state.coDamageRoomId = roomId;
+  state.currentInspectingRoomId = roomId; // needed for uploadOneFile
+  state.coDmgNewPhotos = [];
+  state.coDamages = [];
+
+  $('#coTitle').textContent = `${state.session.hotelName} — ${r.roomNumber}`;
+
+  // Show/hide sections based on checkout state
+  const isReturned = r.checkedOut;
+  $('#coReturnedBanner').style.display = isReturned ? '' : 'none';
+  $('#coCheckoutSection').style.display = isReturned ? 'none' : '';
+  $('#coAddDamageToggle').style.display = isReturned ? 'none' : '';
+
+  // Reset form
+  $('#coDmgCategory').value = '';
+  $('#coDmgSeverity').value = '';
+  $('#coDmgDescription').value = '';
+  $('#coDmgCost').value = '';
+  $('#coAddDamageForm').style.display = 'none';
+  $('#coAddDamageToggle').textContent = '+ Add damage';
+  renderDamageFormPhotos();
+
+  $('#coDamageList').innerHTML = '<div class="empty-state" style="padding:12px 0">Loading…</div>';
+  $('#damageModal').classList.add('active');
+
+  try {
+    const res = await api('/api/damages/list', {
+      method: 'POST',
+      body: JSON.stringify({ spId: r.spId })
+    });
+    state.coDamages = res.damages || [];
+    renderDamageList();
+  } catch (e) {
+    state.coDamages = [];
+    renderDamageList();
+    // Non-fatal: mirror may not have run yet for this room
+    console.warn('Could not load damages:', e.message);
+  }
+}
+
+function closeDamageModal() {
+  $('#damageModal').classList.remove('active');
+  state.coDamageRoomId = null;
+  state.coDamages = [];
+  state.coDmgNewPhotos = [];
+  state.currentInspectingRoomId = null;
+}
+$('#coClose').addEventListener('click', closeDamageModal);
+$('#coCancel').addEventListener('click', closeDamageModal);
+
+function renderDamageList() {
+  const list = $('#coDamageList');
+  if (!state.coDamages.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:12px 0">No damage recorded.</div>';
+    return;
+  }
+  list.innerHTML = state.coDamages.map(d => {
+    const cat = (d.damage_category || '').replace(/_/g, ' ');
+    const costStr = d.estimated_cost_cents
+      ? ` · Est. $${(d.estimated_cost_cents / 100).toFixed(2)}`
+      : '';
+    const photoStr = d.photo_urls && d.photo_urls.length
+      ? ` · 📷 ${d.photo_urls.length}`
+      : '';
+    return `
+      <div class="damage-item severity-${d.severity}">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap">
+          <span class="severity-badge ${d.severity}">${escapeHtml(d.severity)}</span>
+          <span style="font-size:13px; font-weight:600; text-transform:capitalize">${escapeHtml(cat)}</span>
+          <span style="font-size:12px; color:var(--muted)">${costStr}${photoStr}</span>
+        </div>
+        <div style="font-size:13px">${escapeHtml(d.description)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDamageFormPhotos() {
+  const grid = $('#coDmgPhotoGrid');
+  if (!state.coDmgNewPhotos.length) { grid.innerHTML = ''; return; }
+  grid.innerHTML = state.coDmgNewPhotos.map(p => `
+    <div class="media-tile">
+      <img src="${p.previewUrl}" alt="">
+      <button class="media-tile-remove" data-action="rm-co-photo" data-photo="${p.id}">×</button>
+    </div>
+  `).join('');
+}
+
+// Toggle damage form
+$('#coAddDamageToggle').addEventListener('click', () => {
+  const form = $('#coAddDamageForm');
+  const showing = form.style.display !== 'none';
+  form.style.display = showing ? 'none' : '';
+  $('#coAddDamageToggle').textContent = showing ? '+ Add damage' : '− Cancel';
+});
+
+// Damage photo capture
+$('#coDmgPhotoCapture').addEventListener('change', e => {
+  for (const f of e.target.files || []) {
+    state.coDmgNewPhotos.push({ id: uid(), file: f, previewUrl: URL.createObjectURL(f) });
+  }
+  renderDamageFormPhotos();
+  e.target.value = '';
+});
+$('#coDmgPhotoGallery').addEventListener('change', e => {
+  for (const f of e.target.files || []) {
+    state.coDmgNewPhotos.push({ id: uid(), file: f, previewUrl: URL.createObjectURL(f) });
+  }
+  renderDamageFormPhotos();
+  e.target.value = '';
+});
+
+// Save damage
+$('#coSaveDamage').addEventListener('click', async () => {
+  const category = $('#coDmgCategory').value;
+  const severity = $('#coDmgSeverity').value;
+  const description = $('#coDmgDescription').value.trim();
+  if (!category || !severity || !description) {
+    return toast('Category, severity, and description are required', 'error');
+  }
+
+  const room = state.rooms.find(x => x.id === state.coDamageRoomId);
+  if (!room) return;
+
+  const btn = $('#coSaveDamage');
+  btn.disabled = true;
+
+  try {
+    // Upload any damage photos to SP (same room folder)
+    const photoUrls = [];
+    for (let i = 0; i < state.coDmgNewPhotos.length; i++) {
+      const p = state.coDmgNewPhotos[i];
+      $('#coSaveDamageLabel').innerHTML = `<span class="spinner"></span> Uploading photo ${i + 1}…`;
+      const r = await uploadOneFile(p.file, 'photo', i + 1);
+      photoUrls.push(r.webUrl);
+    }
+
+    const costDollars = parseFloat($('#coDmgCost').value || '0');
+    const estimatedCostCents = costDollars > 0 ? Math.round(costDollars * 100) : null;
+
+    $('#coSaveDamageLabel').innerHTML = '<span class="spinner"></span> Saving…';
+    const res = await api('/api/damages/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        spId: room.spId,
+        damageCategory: category,
+        severity,
+        description,
+        photoUrls,
+        estimatedCostCents,
+        reportedBy: $('#coInspectorName').value.trim() || null,
+        notes: null
+      })
+    });
+
+    if (res.damage) state.coDamages.push(res.damage);
+    room.damageCount = (room.damageCount || 0) + 1;
+    saveLS(LS.rooms, state.rooms);
+
+    // Reset form
+    $('#coDmgCategory').value = '';
+    $('#coDmgSeverity').value = '';
+    $('#coDmgDescription').value = '';
+    $('#coDmgCost').value = '';
+    state.coDmgNewPhotos = [];
+    renderDamageFormPhotos();
+    $('#coAddDamageForm').style.display = 'none';
+    $('#coAddDamageToggle').textContent = '+ Add damage';
+
+    renderDamageList();
+    renderCheckoutList();
+    toast('Damage saved', 'success');
+  } catch (e) {
+    toast('Save failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    $('#coSaveDamageLabel').textContent = 'Save damage';
+  }
+});
+
+// Checkout
+$('#coCheckout').addEventListener('click', async () => {
+  const room = state.rooms.find(x => x.id === state.coDamageRoomId);
+  if (!room) return;
+
+  const inspectorName = $('#coInspectorName').value.trim();
+  if (!inspectorName) return toast('Enter your name before checkout', 'error');
+  if (!confirm(`Mark room ${room.roomNumber} as returned to vendor? This cannot be undone.`)) return;
+
+  const btn = $('#coCheckout');
+  btn.disabled = true;
+  $('#coCheckoutLabel').innerHTML = '<span class="spinner"></span> Checking out…';
+
+  try {
+    await api('/api/rooms/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        spId: room.spId,
+        checkedOutBy: inspectorName,
+        checkoutNotes: $('#coCheckoutNotes').value.trim() || null
+      })
+    });
+
+    room.checkedOut = true;
+    room.checkedOutBy = inspectorName;
+    saveLS(LS.rooms, state.rooms);
+    renderCheckoutList();
+    closeDamageModal();
+    toast(`Room ${room.roomNumber} returned to vendor`, 'success');
+  } catch (e) {
+    toast('Checkout failed: ' + e.message, 'error');
+    btn.disabled = false;
+    $('#coCheckoutLabel').textContent = 'Mark as returned to vendor';
+  }
+});
+
+// =============================================================================
 // HEADER BUTTONS
 // =============================================================================
 $('#btnBack').addEventListener('click', () => {
   const active = document.querySelector('.screen.active')?.id;
-  if (active === 'screenBuild' || active === 'screenInspect') {
+  if (active === 'screenBuild' || active === 'screenInspect' || active === 'screenCheckout') {
     if (confirm('Go back to setup? Your in-progress work stays saved locally.')) {
       showScreen('screenSetup');
     }
@@ -2008,11 +2413,7 @@ $('#btnBack').addEventListener('click', () => {
 });
 
 $('#btnMenu').addEventListener('click', () => {
-  const opts = [
-    'Sign out',
-    'Clear all local data (danger)',
-    'Cancel'
-  ];
+  const opts = ['Sign out', 'Clear all local data (danger)', 'Cancel'];
   const n = prompt(opts.map((o, i) => `${i + 1}. ${o}`).join('\n') + '\n\nEnter number:');
   const idx = parseInt(n, 10);
   if (idx === 1) {
