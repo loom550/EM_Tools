@@ -217,7 +217,7 @@
       display: grid;
       gap: 12px;
     }
-    .fields-standard { grid-template-columns: 150px 1fr 130px 130px 130px; }
+    .fields-standard { grid-template-columns: 150px 1fr 150px 150px; }
     .fields-meal     { grid-template-columns: 130px 140px 120px 120px 120px; }
     .fields-mileage  { grid-template-columns: 150px 1fr 120px 130px; }
     .fields-evacuee  { grid-template-columns: 150px 1fr 140px 140px; }
@@ -813,8 +813,11 @@
       const res = await fetch(`${WORKER_URL}/expense-config`);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      activationConfigs = data.activations || [];
-      actSel.innerHTML = '<option value="">Select...</option>';
+      activationConfigs = (data.activations || []).map(a => {
+  const hasEOC = (a.sites || []).some(s => s.name === 'EOC');
+  return hasEOC ? a : { ...a, sites: [...(a.sites || []), { name: 'EOC', jobNumber: '' }] };
+});
+actSel.innerHTML = '<option value="">Select...</option>';
       activationConfigs.forEach(a => {
         const opt = document.createElement('option');
         opt.value = a.id;
@@ -941,23 +944,26 @@
     if (type === 'evacuee') {
       evacueeItemCounts[id] = 0;
       return `
-        <div class="row-fields" style="display:grid;grid-template-columns:150px 1fr;gap:12px;">
-          <div class="field-group">
-            <label>Date</label>
-            <input type="date" id="f-date-${id}" ${da}>
-          </div>
-          <div>
-            <label style="font-size:12px;font-weight:600;color:var(--navy);letter-spacing:0.2px;display:block;margin-bottom:8px;">Categories &amp; Amounts</label>
-            <div id="evac-items-${id}"></div>
-            <button type="button" class="add-evac-item-btn" onclick="addEvacItem(${id})">+ Add Category</button>
-            <div class="evac-hst-row">
-              <div class="field-group" style="flex:0 0 180px;">
-                <label>HST (13%, auto)</label>
-                <input type="number" id="f-hst-${id}" class="auto-field" step="0.01" min="0" placeholder="Auto" oninput="confirmEvacHst(${id})" style="cursor:text;">
-              </div>
-              <button type="button" class="hst-confirm-btn" id="f-hstbtn-${id}" onclick="confirmEvacHst(${id})" style="margin-top:22px;">&#10003; Confirm HST</button>
-            </div>
-          </div>
+      <div class="row-fields fields-standard">
+        <div class="field-group">
+          <label>Date</label>
+          <input type="date" id="f-date-${id}" ${da}>
+        </div>
+        <div class="field-group">
+          <label>Description</label>
+          <input type="text" id="f-desc-${id}" placeholder="${placeholder}">
+        </div>
+        <div class="field-group">
+          <label>Total Paid ($) <span class="req">*</span></label>
+          <input type="number" id="f-totalpaid-${id}" placeholder="0.00" step="0.01" min="0" oninput="recalc(${id})">
+          <div class="field-hint">Full amount on receipt (incl. HST)</div>
+        </div>
+        <div class="field-group">
+          <label>HST ($) <span class="req">*</span></label>
+          <input type="number" id="f-hst-${id}" placeholder="e.g. 10.39" step="0.01" min="0">
+          <div class="field-hint">HST amount shown on receipt</div>
+        </div>
+      </div>`;
         </div>`;
     }
 
@@ -1048,9 +1054,8 @@
         set(`f-hst-${id}`, prefill.hst);
         recalcEvacuee(id);
       } else {
-        set(`f-amount-${id}`, prefill.amount || prefill.value);
+        set(`f-totalpaid-${id}`, prefill.totalPaid || prefill.amount || prefill.value);
         set(`f-hst-${id}`, prefill.hst);
-        if (prefill.hst > 0) confirmHst(id);
       }
     }
 
@@ -1177,17 +1182,6 @@
       }
     }
 
-    if (['hotel', 'rental', 'misc'].includes(type)) {
-      const amount = parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
-      const hst = parseFloat((amount * 0.13).toFixed(2));
-      const he = document.getElementById(`f-hst-${id}`);
-      if (he) he.value = amount > 0 ? hst.toFixed(2) : '';
-      const hb = document.getElementById(`f-hstbtn-${id}`);
-      if (hb) { hb.textContent = '✓ Confirm HST'; hb.classList.remove('confirmed'); }
-      const te = document.getElementById(`f-total-${id}`);
-      if (te) te.value = amount > 0 ? '$' + (amount + hst).toFixed(2) : '';
-    }
-
     updateTotal();
   }
 
@@ -1213,7 +1207,7 @@
       container.querySelectorAll('input[type="number"]').forEach(function(inp) { total += parseFloat(inp.value) || 0; });
       return parseFloat(total.toFixed(2));
     }
-    return parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0;
+    return parseFloat(document.getElementById(`f-totalpaid-${id}`)?.value) || 0;
   }
 
   function updateTotal() {
@@ -1369,7 +1363,9 @@
         const hst = parseFloat(document.getElementById('f-hst-' + id)?.value) || 0;
         rows.push({ type, date, evacueeItems, hst, value, receipts });
       } else {
-        rows.push({ type, date, description: document.getElementById(`f-desc-${id}`)?.value || '', amount: parseFloat(document.getElementById(`f-amount-${id}`)?.value) || 0, hst: parseFloat(document.getElementById(`f-hst-${id}`)?.value) || 0, value, receipts });
+        const totalPaid = parseFloat(document.getElementById(`f-totalpaid-${id}`)?.value) || 0;
+        const hst = parseFloat(document.getElementById(`f-hst-${id}`)?.value) || 0;
+        rows.push({ type, date, description: document.getElementById(`f-desc-${id}`)?.value || '', totalPaid, hst, value, receipts });
       }
     }
     return rows;
