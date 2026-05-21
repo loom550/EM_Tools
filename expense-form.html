@@ -944,6 +944,26 @@ actSel.innerHTML = '<option value="">Select...</option>';
     if (type === 'evacuee') {
       evacueeItemCounts[id] = 0;
       return `
+        <div class="row-fields" style="display:grid;grid-template-columns:150px 1fr;gap:12px;">
+          <div class="field-group">
+            <label>Date</label>
+            <input type="date" id="f-date-${id}" ${da}>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--navy);letter-spacing:0.2px;display:block;margin-bottom:8px;">Categories &amp; Amounts</label>
+            <div id="evac-items-${id}"></div>
+            <button type="button" class="add-evac-item-btn" onclick="addEvacItem(${id})">+ Add Category</button>
+            <div class="evac-hst-row">
+              <div class="field-group" style="flex:0 0 180px;">
+                <label>HST (13%, auto)</label>
+                <input type="number" id="f-hst-${id}" class="auto-field" step="0.01" min="0" placeholder="Auto" oninput="confirmEvacHst(${id})" style="cursor:text;">
+              </div>
+              <button type="button" class="hst-confirm-btn" id="f-hstbtn-${id}" onclick="confirmEvacHst(${id})" style="margin-top:22px;">&#10003; Confirm HST</button>
+            </div>
+          </div>
+        </div>`;
+    }
+    return `
       <div class="row-fields fields-standard">
         <div class="field-group">
           <label>Date</label>
@@ -962,33 +982,6 @@ actSel.innerHTML = '<option value="">Select...</option>';
           <label>HST ($) <span class="req">*</span></label>
           <input type="number" id="f-hst-${id}" placeholder="e.g. 10.39" step="0.01" min="0">
           <div class="field-hint">HST amount shown on receipt</div>
-        </div>
-      </div>`;
-        </div>`;
-    }
-
-    return `
-      <div class="row-fields fields-standard">
-        <div class="field-group">
-          <label>Date</label>
-          <input type="date" id="f-date-${id}" ${da}>
-        </div>
-        <div class="field-group">
-          <label>Description</label>
-          <input type="text" id="f-desc-${id}" placeholder="${placeholder}">
-        </div>
-        <div class="field-group">
-          <label>Subtotal ($)</label>
-          <input type="number" id="f-amount-${id}" placeholder="0.00" step="0.01" min="0" oninput="recalc(${id})">
-        </div>
-        <div class="field-group">
-          <label>HST (13%, auto)</label>
-          <input type="number" id="f-hst-${id}" class="auto-field" step="0.01" min="0" placeholder="Auto" oninput="confirmHst(${id})" style="cursor:text;">
-          <button type="button" class="hst-confirm-btn" id="f-hstbtn-${id}" onclick="confirmHst(${id})">&#10003; Confirm HST</button>
-        </div>
-        <div class="field-group">
-          <label>Total Amount ($)</label>
-          <input type="text" id="f-total-${id}" class="auto-field" readonly placeholder="Auto">
         </div>
       </div>`;
   }
