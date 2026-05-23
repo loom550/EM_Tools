@@ -2298,6 +2298,7 @@ async function openDamageModal(roomId) {
   }
 
   // Reset form
+  // Reset damage form
   $('#coDmgCategory').value = '';
   $('#coDmgSeverity').value = '';
   $('#coDmgDescription').value = '';
@@ -2305,6 +2306,12 @@ async function openDamageModal(roomId) {
   $('#coAddDamageForm').style.display = 'none';
   $('#coAddDamageToggle').textContent = '+ Add damage';
   renderDamageFormPhotos();
+
+  // Reset checkout section
+  $('#coInspectorName').value = '';
+  $('#coCheckoutNotes').value = '';
+  $('#coCheckout').disabled = false;
+  $('#coCheckoutLabel').textContent = 'Mark as returned to vendor';
 
   $('#coDamageList').innerHTML = '<div class="empty-state" style="padding:12px 0">Loading…</div>';
   $('#damageModal').classList.add('active');
