@@ -852,8 +852,9 @@
     <div class="modal-body">
 
       <!-- Already returned banner -->
-      <div id="coReturnedBanner" style="display:none; background:#f4f8f6; border:1px solid #c3ddd5; border-radius:8px; padding:12px 14px; margin-bottom:12px; font-size:14px; color:var(--teal); font-weight:600;">
-        ✓ This room has been returned to the vendor.
+<div id="coReturnedBanner" style="display:none; background:#f4f8f6; border:1px solid #c3ddd5; border-radius:8px; padding:12px 14px; margin-bottom:12px;">
+        <div style="font-size:14px; color:var(--teal); font-weight:600; margin-bottom:10px;">✓ This room has been returned to the vendor.</div>
+        <button class="btn btn-ghost btn-block" id="coUnlockRoom" style="font-size:13px; padding:8px 12px;">🔓 Unlock for editing</button>
       </div>
 
       <!-- No inspection warning (soft — doesn't block) -->
@@ -2525,6 +2526,37 @@ $('#coSaveDamage').addEventListener('click', async () => {
 });
 
 // Checkout
+  $('#coUnlockRoom').addEventListener('click', async () => {
+  const room = state.rooms.find(x => x.id === state.coDamageRoomId);
+  if (!room) return;
+  if (!confirm(`Unlock room ${room.roomNumber}? This reverts it from "returned to vendor" so you can add damage or re-checkout.`)) return;
+
+  const btn = $('#coUnlockRoom');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Unlocking…';
+
+  try {
+    await api('/api/rooms/unlock', {
+      method: 'POST',
+      body: JSON.stringify({
+        spId: room.spId,
+        kvSiteId: state.session.siteId,
+        kvHotelId: state.session.kvHotelId || null
+      })
+    });
+    room.checkedOut = false;
+    saveLS(LS.rooms, state.rooms);
+    renderCheckoutList();
+    const roomId = state.coDamageRoomId;
+    closeDamageModal();
+    await openDamageModal(roomId);
+    toast(`Room ${room.roomNumber} unlocked`, 'success');
+  } catch (e) {
+    toast('Unlock failed: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '🔓 Unlock for editing';
+  }
+});
 $('#coCheckout').addEventListener('click', async () => {
   const room = state.rooms.find(x => x.id === state.coDamageRoomId);
   if (!room) return;
