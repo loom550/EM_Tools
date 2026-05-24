@@ -1424,8 +1424,8 @@ async function loadHotelFromSP() {
       inspectionStatus: spRoom.inspectionStatus || 'not-started',
       committedAt: existing?.committedAt || new Date().toISOString(),
       finalizedAt: existing?.finalizedAt || null,
-      checkedOut: existing?.checkedOut || false,
-      damageCount: existing?.damageCount || 0
+      checkedOut: spRoom.checkedOut ?? existing?.checkedOut ?? false,
+      damageCount: spRoom.damageCount ?? existing?.damageCount ?? 0
     });
   }
   state.rooms = merged;
