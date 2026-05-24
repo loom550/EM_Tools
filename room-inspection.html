@@ -925,6 +925,21 @@
       <!-- Checkout section -->
       <div class="card" id="coCheckoutSection">
         <h3 class="card-title">Checkout</h3>
+      <p style="font-size:13px; font-weight:600; color:var(--text); margin:0 0 6px 0">Checkout photos</p>
+        <p class="hint" style="margin-bottom:10px">Document room condition at checkout. No damage? A quick walkthrough photo is enough.</p>
+        <div class="media-row" style="margin-bottom:8px">
+          <label class="capture-btn" style="padding:14px 10px">
+            <span class="emoji">📷</span><span>Take photo</span>
+            <input type="file" class="hidden-file" id="coCheckoutPhotoCapture" accept="image/*" capture="environment">
+          </label>
+          <label class="capture-btn" style="padding:14px 10px">
+            <span class="emoji">🖼️</span><span>From gallery</span>
+            <input type="file" class="hidden-file" id="coCheckoutPhotoGallery" accept="image/*" multiple>
+          </label>
+        </div>
+        <div class="media-grid" id="coCheckoutPhotoGrid" style="margin-bottom:14px"></div>
+        <div class="divider"></div>
+
         <div class="form-row">
           <label for="coInspectorName">Your name</label>
           <input type="text" id="coInspectorName" placeholder="Inspector name" autocomplete="name">
@@ -981,7 +996,8 @@ let state = {
   // Damage/checkout modal
   coDamageRoomId: null,
   coDamages: [],
-  coDmgNewPhotos: []
+  coDmgNewPhotos: [],
+  coCheckoutPhotos: []
 };
 
 // =============================================================================
@@ -1542,6 +1558,9 @@ document.body.addEventListener('click', e => {
   } else if (e.target.dataset.action === 'rm-co-photo') {
     state.coDmgNewPhotos = state.coDmgNewPhotos.filter(p => p.id !== e.target.dataset.photo);
     renderDamageFormPhotos();
+  } else if (e.target.dataset.action === 'rm-co-checkout-photo') {
+    state.coCheckoutPhotos = state.coCheckoutPhotos.filter(p => p.id !== e.target.dataset.photo);
+    renderCheckoutPhotos();
   }
 });
 
@@ -2315,6 +2334,8 @@ async function openDamageModal(roomId) {
 
   $('#coDamageList').innerHTML = '<div class="empty-state" style="padding:12px 0">Loading…</div>';
   $('#damageModal').classList.add('active');
+  state.coCheckoutPhotos = [];
+  renderCheckoutPhotos();
 
   try {
     const res = await api('/api/damages/list', {
@@ -2340,6 +2361,7 @@ function closeDamageModal() {
   state.coDamageRoomId = null;
   state.coDamages = [];
   state.coDmgNewPhotos = [];
+  state.coCheckoutPhotos = [];
   state.currentInspectingRoomId = null;
 }
 $('#coClose').addEventListener('click', closeDamageModal);
@@ -2352,7 +2374,7 @@ function renderDamageList() {
     return;
   }
   list.innerHTML = state.coDamages.map(d => {
-    const cat = (d.damage_category || '').replace(/_/g, ' ');
+    const cat = (d.damage_type || '').replace(/_/g, ' ');
     const photoStr = d.photo_urls && d.photo_urls.length
       ? ` · 📷 ${d.photo_urls.length}`
       : '';
@@ -2373,6 +2395,18 @@ function renderDamageList() {
   }).join('');
 }
 
+function renderCheckoutPhotos() {
+  const grid = $('#coCheckoutPhotoGrid');
+  if (!grid) return;
+  if (!state.coCheckoutPhotos.length) { grid.innerHTML = ''; return; }
+  grid.innerHTML = state.coCheckoutPhotos.map(p => `
+    <div class="media-tile">
+      <img src="${p.previewUrl}" alt="">
+      <button class="media-tile-remove" data-action="rm-co-checkout-photo" data-photo="${p.id}">×</button>
+    </div>
+  `).join('');
+}
+
 function renderDamageFormPhotos() {
   const grid = $('#coDmgPhotoGrid');
   if (!state.coDmgNewPhotos.length) { grid.innerHTML = ''; return; }
@@ -2390,6 +2424,21 @@ $('#coAddDamageToggle').addEventListener('click', () => {
   const showing = form.style.display !== 'none';
   form.style.display = showing ? 'none' : '';
   $('#coAddDamageToggle').textContent = showing ? '+ Add damage' : '− Cancel';
+});
+
+$('#coCheckoutPhotoCapture').addEventListener('change', e => {
+  for (const f of e.target.files || []) {
+    state.coCheckoutPhotos.push({ id: uid(), file: f, previewUrl: URL.createObjectURL(f) });
+  }
+  renderCheckoutPhotos();
+  e.target.value = '';
+});
+$('#coCheckoutPhotoGallery').addEventListener('change', e => {
+  for (const f of e.target.files || []) {
+    state.coCheckoutPhotos.push({ id: uid(), file: f, previewUrl: URL.createObjectURL(f) });
+  }
+  renderCheckoutPhotos();
+  e.target.value = '';
 });
 
 // Damage photo capture
@@ -2489,12 +2538,21 @@ $('#coCheckout').addEventListener('click', async () => {
   $('#coCheckoutLabel').innerHTML = '<span class="spinner"></span> Checking out…';
 
   try {
+    const checkoutPhotoUrls = [];
+    for (let i = 0; i < state.coCheckoutPhotos.length; i++) {
+      const p = state.coCheckoutPhotos[i];
+      $('#coCheckoutLabel').innerHTML = `<span class="spinner"></span> Uploading photo ${i + 1} of ${state.coCheckoutPhotos.length}…`;
+      const r = await uploadOneFile(p.file, 'photo', i + 1, 'Checkout Photos');
+      checkoutPhotoUrls.push(r.webUrl);
+    }
+    $('#coCheckoutLabel').innerHTML = '<span class="spinner"></span> Checking out…';
     await api('/api/rooms/checkout', {
       method: 'POST',
       body: JSON.stringify({
         spId: room.spId,
         checkedOutBy: inspectorName,
         checkoutNotes: $('#coCheckoutNotes').value.trim() || null,
+        checkoutPhotoUrls,
         kvSiteId: state.session.siteId,
         kvHotelId: state.session.kvHotelId || null
       })
