@@ -660,6 +660,7 @@
     <div class="card">
       <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center">
         <p class="hint" style="margin:0; flex:1">Tap a room to record damage and mark it returned to the property.</p>
+        <button class="btn btn-ghost" id="btnSiteReport" style="padding-left:12px; padding-right:12px; flex-shrink:0" title="Download site report">📊</button>
         <button class="btn btn-ghost" id="btnRefreshCheckout" style="padding-left:12px; padding-right:12px; flex-shrink:0" title="Reload rooms from SharePoint">↻</button>
       </div>
       <div id="checkoutList"></div>
@@ -1194,6 +1195,112 @@ $('#selActivation').addEventListener('change', e => {
   hotelSel.disabled = true;
   $('#hotelOtherRow').style.display = 'none';
 });
+
+$('#btnSiteReport').addEventListener('click', generateSiteReport);
+
+async function generateSiteReport() {
+  if (!state.session) return toast('No active session', 'error');
+
+  const btn = $('#btnSiteReport');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    // Lazy-load SheetJS from CDN
+    if (!window.XLSX) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Failed to load SheetJS'));
+        document.head.appendChild(s);
+      });
+    }
+
+    const res = await api('/api/reports/site-checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        activationId: state.session.activationId,
+        siteName: state.session.siteName
+      })
+    });
+
+    const wb = window.XLSX.utils.book_new();
+    const reportDate = new Date(res.reportDate).toLocaleDateString('en-CA');
+
+    // Summary sheet first
+    const summaryRows = [[
+      'Hotel', 'Total Rooms', 'Inspected', 'Checked Out', 'Pending', 'Damaged'
+    ]];
+    for (const hotel of res.hotels) {
+      const total = hotel.rooms.length;
+      const inspected = hotel.rooms.filter(r =>
+        r.inspectionStatus && !['Not Started', 'not-started', 'not started'].includes(r.inspectionStatus.toLowerCase())
+      ).length;
+      const checkedOut = hotel.rooms.filter(r => r.checkedOut).length;
+      const damaged = hotel.rooms.filter(r => r.damages.length > 0).length;
+      summaryRows.push([hotel.name, total, inspected, checkedOut, total - checkedOut, damaged]);
+    }
+    const wsSummary = window.XLSX.utils.aoa_to_sheet(summaryRows);
+    wsSummary['!cols'] = [{wch:28},{wch:12},{wch:12},{wch:12},{wch:10},{wch:10}];
+    window.XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+    // One sheet per hotel
+    for (const hotel of res.hotels) {
+      const rows = [[
+        'Room #', 'Floor', 'Room Type', 'Beds', 'Bed Config', 'Bathroom',
+        'Max Occ', 'Accessible', 'Kitchenette', 'Pet Friendly',
+        'Inspection Status', 'Checkout Status', 'Checked Out By',
+        'Checkout Date', 'Checkout Notes', 'Damage Count', 'Damage Details'
+      ]];
+
+      for (const room of hotel.rooms) {
+        const dmgDetails = room.damages
+          .map(d => `[${d.severity}] ${(d.damage_type || '').replace(/_/g, ' ')}: ${d.description}${d.reported_to_property ? ' (reported)' : ''}`)
+          .join(' | ');
+        rows.push([
+          room.roomNumber,
+          room.floor,
+          room.roomType,
+          room.beds,
+          room.bedConfig,
+          room.bathroom,
+          room.maxOcc,
+          room.accessible ? 'Yes' : 'No',
+          room.kitchenette ? 'Yes' : 'No',
+          room.petFriendly ? 'Yes' : 'No',
+          room.inspectionStatus,
+          room.checkedOut ? 'Returned' : 'Pending',
+          room.checkedOutBy,
+          room.checkedOutAt ? new Date(room.checkedOutAt).toLocaleDateString('en-CA') : '',
+          room.checkoutNotes,
+          room.damages.length,
+          dmgDetails
+        ]);
+      }
+
+      const ws = window.XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [
+        {wch:8},{wch:6},{wch:14},{wch:5},{wch:16},{wch:16},
+        {wch:8},{wch:10},{wch:10},{wch:10},
+        {wch:16},{wch:14},{wch:20},{wch:14},
+        {wch:28},{wch:8},{wch:55}
+      ];
+
+      const sheetName = hotel.name.replace(/[\\\/\?\*\[\]:]/g, '').slice(0, 31);
+      window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    }
+
+    window.XLSX.writeFile(wb, `Site-Report-${res.siteName}-${reportDate}.xlsx`);
+    toast('Report downloaded', 'success');
+
+  } catch (e) {
+    toast('Report failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📊';
+  }
+}
 
 $('#selSite').addEventListener('change', e => {
   const actId = $('#selActivation').value;
