@@ -680,6 +680,7 @@
   <div class="confirm-icon">✅</div>
   <div class="confirm-title">Incident Report Submitted</div>
   <div class="confirm-sub">Your report has been received and forwarded to EOC Operations.<br>A copy has been filed in LOOMI.</div>
+  <button type="button" class="submit-btn" id="submitAnotherBtn" style="margin:0 auto 22px;">Submit Another Report</button>
   <p class="return-note">Return to LOOMI, or close this window.</p>
 </div>
 
@@ -917,6 +918,67 @@
   }
 
   loadActivations();
+
+  // ---- Submit Another ----
+  // preserveContext = true keeps the Activation + Hub selection (likely the same all shift);
+  // false wipes everything back to a blank form.
+  function resetIncidentForm(preserveContext = false) {
+    const form = document.getElementById('irForm');
+
+    // Capture activation/hub BEFORE reset wipes the selects
+    const prevActivation = document.getElementById('activationID').value;
+    const prevHub        = document.getElementById('hubSelect').value;
+    const prevFolder     = document.getElementById('folderName').value;
+
+    // Clear all native fields (text, date, time, selects, textareas, radios, checkboxes)
+    form.reset();
+
+    // Clear JS-tracked attachment state (reset() doesn't touch this)
+    selectedFiles = [];
+    renderFileList();
+    fileInput.value = '';
+
+    // reset() unchecks the casualty toggles but does NOT fire their change handlers,
+    // so the conditional panels have to be hidden manually
+    document.getElementById('cf-fatalities').classList.remove('visible');
+    document.getElementById('cf-injuries').classList.remove('visible');
+    document.getElementById('cf-evacuees').classList.remove('visible');
+
+    // Clear any leftover validation error states
+    document.querySelectorAll('.field-group.invalid').forEach(el => el.classList.remove('invalid'));
+
+    // Re-apply the default that reset() wipes
+    document.querySelector('[name=CompletedDate]').valueAsDate = new Date();
+
+    // Put the submit button back into its ready state
+    document.getElementById('btnText').style.display = 'inline';
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+
+    // Activation / hub: rebuild from scratch, or restore the prior selection
+    if (preserveContext && prevActivation) {
+      document.getElementById('activationID').value = prevActivation;
+      loadSitesForActivation(prevActivation).then(() => {
+        const hubSelect = document.getElementById('hubSelect');
+        if (prevHub) {
+          hubSelect.value = prevHub;
+          const opt = hubSelect.options[hubSelect.selectedIndex];
+          document.getElementById('folderName').value = (opt && opt.dataset.folder) || prevFolder || '';
+        }
+      });
+    } else {
+      loadActivations();
+    }
+
+    // Swap back to the form view
+    document.getElementById('confirmation').style.display = 'none';
+    document.getElementById('form-area').style.display = '';
+    document.getElementById('pageFooter').style.display = '';
+    window.scrollTo(0, 0);
+  }
+
+  document.getElementById('submitAnotherBtn')
+    .addEventListener('click', () => resetIncidentForm(true));
 </script>
 </body>
 </html>
