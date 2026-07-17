@@ -90,6 +90,14 @@ textarea{height:auto;padding:12px 14px;resize:none;font-size:15px;line-height:1.
 .rx-toggle-pill{min-width:52px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;transition:all .15s;background:var(--border);color:var(--text-muted);padding:0 10px;}
 .rx-toggle.rx-yes .rx-toggle-pill{background:var(--red);color:#fff;}
 
+/* Walk-in toggle */
+.walkin-toggle{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--input-bg);cursor:pointer;transition:all .15s;margin-top:4px;}
+.walkin-toggle.walkin-yes{border-color:var(--navy);background:rgba(26,78,126,.07);}
+.walkin-toggle-label{font-size:15px;font-weight:600;color:var(--text-dim);flex:1;}
+.walkin-toggle.walkin-yes .walkin-toggle-label{color:var(--navy);}
+.walkin-toggle-pill{min-width:52px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;transition:all .15s;background:var(--border);color:var(--text-muted);padding:0 10px;}
+.walkin-toggle.walkin-yes .walkin-toggle-pill{background:var(--navy);color:#fff;}
+
 /* Destination */
 .dest-other-field{margin-top:10px;display:none;}
 .dest-other-field.show{display:block;}
@@ -323,7 +331,7 @@ input.invalid,select.invalid{border-color:var(--red)!important;}
           </div>
           <div class="field-err" id="err-ptype">Select a passenger type</div>
         </div>
-        <div class="field-group field-row">
+      <div class="field-group field-row">
           <div>
             <label for="luggage-wt">Luggage (lbs)</label>
             <input type="number" id="luggage-wt" placeholder="0" min="0" max="9999" step="1" inputmode="numeric">
@@ -332,6 +340,15 @@ input.invalid,select.invalid{border-color:var(--red)!important;}
             <label for="carryon-wt">Carry-On (lbs)</label>
             <input type="number" id="carryon-wt" placeholder="0" min="0" max="9999" step="1" inputmode="numeric">
           </div>
+        </div>
+
+        <!-- Walk-in (both modes) -->
+        <div class="field-group" id="walkin-group">
+          <label>Walk-In</label>
+          <button class="walkin-toggle" id="walkin-toggle" type="button">
+            <span class="walkin-toggle-label" id="walkin-label">Not a walk-in</span>
+            <span class="walkin-toggle-pill" id="walkin-pill">NO</span>
+          </button>
         </div>
 
         <!-- Medical devices (incoming only) -->
@@ -404,6 +421,7 @@ var selectedPtype = '';
 // Boolean device state
 var medState = { wheelchair:false, walker:false, oxygen:false, cpap:false, hearingAid:false, other:false };
 var rxRequired = false;
+var walkIn = false;
 var queue = [];
 var session = [];
 var flights = [];
@@ -708,6 +726,10 @@ function selectFromPool(pax) {
     document.getElementById('special-toggle').classList.add('open');
     document.getElementById('special-field').classList.add('open');
   }
+  walkIn = !!pax.walkIn;
+  document.getElementById('walkin-toggle').className = 'walkin-toggle' + (walkIn ? ' walkin-yes' : '');
+  document.getElementById('walkin-label').textContent = walkIn ? 'Walk-in' : 'Not a walk-in';
+  document.getElementById('walkin-pill').textContent = walkIn ? 'YES' : 'NO';
   selectPtype(pax.passengerType);
   setTimeout(function() { document.getElementById('luggage-wt').focus(); }, 100);
 }
@@ -751,7 +773,8 @@ function setupForm() {
   document.querySelectorAll('.device-btn').forEach(function(btn) {
     btn.addEventListener('click', function() { toggleDevice(this.getAttribute('data-device')); });
   });
-  document.getElementById('rx-toggle').addEventListener('click', toggleRx);
+ document.getElementById('rx-toggle').addEventListener('click', toggleRx);
+  document.getElementById('walkin-toggle').addEventListener('click', toggleWalkIn);
   document.getElementById('special-toggle').addEventListener('click', function() {
     this.classList.toggle('open');
     document.getElementById('special-field').classList.toggle('open');
@@ -809,6 +832,13 @@ function toggleRx() {
   document.getElementById('rx-pill').textContent = rxRequired ? 'YES' : 'NO';
 }
 
+function toggleWalkIn() {
+  walkIn = !walkIn;
+  document.getElementById('walkin-toggle').className = 'walkin-toggle' + (walkIn ? ' walkin-yes' : '');
+  document.getElementById('walkin-label').textContent = walkIn ? 'Walk-in' : 'Not a walk-in';
+  document.getElementById('walkin-pill').textContent = walkIn ? 'YES' : 'NO';
+}
+
 function submitPax() {
   if (!validate()) return;
   var flightSel = document.getElementById('flight-select');
@@ -835,6 +865,7 @@ function submitPax() {
     medHearingAid: mode === 'in' ? medState.hearingAid : false,
     medOther: mode === 'in' ? medState.other : false,
     prescriptionsRequired: mode === 'in' ? rxRequired : false,
+    walkIn: walkIn,
     flightId: flightSel.value,
     flightLabel: flightSel.value ? flightSel.selectedOptions[0].text : (mode === 'in' ? 'Unassigned' : ''),
     destination: (function() { var f = flights.find(function(fl) { return fl.id === flightSel.value; }); return (f && f.destination) || ''; })(),
@@ -950,6 +981,10 @@ function resetForm() {
   document.getElementById('rx-toggle').className = 'rx-toggle';
   document.getElementById('rx-label').textContent = 'No prescriptions';
   document.getElementById('rx-pill').textContent = 'NO';
+  walkIn = false;
+  document.getElementById('walkin-toggle').className = 'walkin-toggle';
+  document.getElementById('walkin-label').textContent = 'Not a walk-in';
+  document.getElementById('walkin-pill').textContent = 'NO';
   document.getElementById('special-toggle').classList.remove('open');
   document.getElementById('special-field').classList.remove('open');
   setTimeout(function() {
@@ -989,6 +1024,7 @@ function flushQueue() {
         medHearingAid: pax.medHearingAid || false,
         medOther: pax.medOther || false,
         prescriptionsRequired: pax.prescriptionsRequired || false,
+        walkIn: pax.walkIn || false,
         flightId: pax.flightId,
         destination: pax.destination || '',
         destinationHub: pax.destinationHub || '',
@@ -1053,10 +1089,11 @@ function renderSession() {
     if (pax.prescriptionsRequired) medFlags.push('Rx');
     var medNote = medFlags.length ? ' \u2022 \u26A0 ' + medFlags.join(', ') : '';
     var destNote = pax.destinationHub ? ' \u2022 \u2192 ' + pax.destinationHub : '';
+    var walkInBadge = pax.walkIn ? '<span class="dir-pill" style="background:rgba(26,78,126,.12);color:var(--navy);">WALK-IN</span> ' : '';
     item.innerHTML =
       '<div class="pax-type-badge badge-' + pax.passengerType + '">' + pax.passengerType + '</div>' +
       '<div class="pax-info">' +
-        '<div class="pax-name">' + esc(pax.firstName) + ' ' + esc(pax.lastName) + '</div>' +
+        '<div class="pax-name">' + walkInBadge + esc(pax.firstName) + ' ' + esc(pax.lastName) + '</div>' +
         '<div class="pax-meta">' + dirPill + ' ' + (lugTotal ? lugTotal + ' lbs' : 'no weight') + medNote + destNote + '</div>' +
       '</div>' +
       '<div><div class="status-dot ' + (pax.status === 'synced' ? 'synced' : 'pending') + '"></div></div>';
