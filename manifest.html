@@ -873,6 +873,13 @@ html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSys
         <label style="margin:0;flex:1">Prescriptions Required</label>
         <input type="checkbox" id="edit-rx" style="width:22px;height:22px;accent-color:var(--navy);cursor:pointer;flex-shrink:0;">
       </div>
+      <div class="modal-field" style="display:flex;align-items:center;gap:12px;height:44px;">
+        <label style="margin:0;flex:1">Walk-In</label>
+        <input type="checkbox" id="edit-walkin" style="width:22px;height:22px;accent-color:var(--teal);cursor:pointer;flex-shrink:0;">
+      </div>
+      <div class="modal-field">
+        <label>Destination Hub</label>
+      </div>
       <div class="modal-field">
         <label>Destination Hub</label>
         <input type="text" id="edit-dest-hub" placeholder="e.g. Kingston (Kingston)">
@@ -1307,6 +1314,7 @@ function renderPaxRow(p, isUnassigned, targetFlightId, isDupe) {
   var medFlag = medFlags.length ? '<span style="color:var(--yellow);margin-right:3px" title="' + esc(medFlags.join(', ')) + '">&#9888;</span>' : '';
   var rxFlag = p.prescriptionsRequired ? '<span style="color:var(--red);margin-right:3px" title="Prescriptions required">&#8982;</span>' : '';
   var destBadge = p.destinationHub ? '<span style="font-size:10px;background:var(--navy-lt);color:var(--navy);padding:1px 6px;border-radius:8px;margin-left:4px">' + esc(p.destinationHub) + '</span>' : '';
+  var walkInBadge = p.walkIn ? '<span style="font-size:10px;background:var(--teal-lt);color:var(--teal);padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700;">WALK-IN</span>' : '';
   var dupeBadge = isDupe ? '<span style="font-size:10px;background:var(--yellow-lt);color:#8a5c00;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700;">DUP</span>' : '';
   var inboundBadge = '';
   if (isUnassigned && p.flightId) {
@@ -1317,7 +1325,7 @@ function renderPaxRow(p, isUnassigned, targetFlightId, isDupe) {
     (isUnassigned ? '<input type="checkbox" class="pool-cb pool-row-cb" data-pax-id="' + p.id + '" ' + (poolSelected[p.id] ? 'checked' : '') + '>' : '') +
     '<div class="ptype-badge b-' + p.passengerType + '">' + p.passengerType + '</div>' +
     '<div class="pax-info">' +
-      '<div class="pax-name">' + medFlag + rxFlag + esc(p.firstName) + ' ' + esc(p.lastName) + destBadge + dupeBadge + inboundBadge + '</div>' +
+      '<div class="pax-name">' + medFlag + rxFlag + esc(p.firstName) + ' ' + esc(p.lastName) + walkInBadge + destBadge + dupeBadge + inboundBadge + '</div>' +
       '<div class="pax-sub">' + (p.dob ? p.dob + ' &bull; ' : '') + (p.specialRequirements ? '&#9888; Special req.' : '') + '</div>' +
     '</div>' +
     '<div class="pax-wt"><span>' + (p.luggageWeight||0) + ' lug</span><span>' + (p.carryOnWeight||0) + ' carry</span></div>' +
@@ -1519,6 +1527,7 @@ function openEditModal(paxId) {
   document.getElementById('edit-med-hearingaid').checked = pax.medHearingAid || false;
   document.getElementById('edit-med-other').checked = pax.medOther || false;
   document.getElementById('edit-rx').checked = pax.prescriptionsRequired || false;
+  document.getElementById('edit-walkin').checked = pax.walkIn || false;
   document.getElementById('edit-dest-hub').value = pax.destinationHub || '';
 
   // Populate flight dropdown
@@ -1557,6 +1566,7 @@ function saveEditedPax() {
     medHearingAid: document.getElementById('edit-med-hearingaid').checked,
     medOther: document.getElementById('edit-med-other').checked,
     prescriptionsRequired: document.getElementById('edit-rx').checked,
+    walkIn: document.getElementById('edit-walkin').checked,
     destinationHub: document.getElementById('edit-dest-hub').value.trim(),
     flightId: document.getElementById('edit-flight').value,
   };
@@ -1569,7 +1579,7 @@ function saveEditedPax() {
       btn.disabled = false; btn.textContent = 'Save Changes';
       if (data.error) { showToast('Error: ' + data.error, 'err'); return; }
       var pax = allPax.find(function(p) { return p.id === editingPaxId; });
-      if (pax) Object.assign(pax, { firstName:body.firstName, lastName:body.lastName, dob:body.dob, passengerType:body.passengerType, luggageWeight:body.luggageWeight, carryOnWeight:body.carryOnWeight, specialRequirements:body.specialRequirements, medWheelchair:body.medWheelchair, medWalker:body.medWalker, medOxygen:body.medOxygen, medCPAP:body.medCPAP, medHearingAid:body.medHearingAid, medOther:body.medOther, prescriptionsRequired:body.prescriptionsRequired, destinationHub:body.destinationHub, flightId:body.flightId });
+     if (pax) Object.assign(pax, { firstName:body.firstName, lastName:body.lastName, dob:body.dob, passengerType:body.passengerType, luggageWeight:body.luggageWeight, carryOnWeight:body.carryOnWeight, specialRequirements:body.specialRequirements, medWheelchair:body.medWheelchair, medWalker:body.medWalker, medOxygen:body.medOxygen, medCPAP:body.medCPAP, medHearingAid:body.medHearingAid, medOther:body.medOther, prescriptionsRequired:body.prescriptionsRequired, walkIn:body.walkIn, destinationHub:body.destinationHub, flightId:body.flightId });
       closeModal();
       renderFlights();
       if (selectedFlightId) renderPaxPanel(selectedFlightId);
@@ -1981,8 +1991,10 @@ function buildClientManifestHTML(flight, paxList, didNotBoardNote) {
     if (p.medOther) med.push('Other device');
     if (p.prescriptionsRequired) med.push('Rx required');
     var medStr = med.length ? '<br><em style="color:#a00;font-size:8.5pt;">' + esc(med.join(', ')) + '</em>' : '';
+    var walkStr = p.walkIn ? '<strong style="color:#1a4e7e;font-size:8.5pt;">&#9679; WALK-IN</strong>' + ((p.specialRequirements || med.length) ? '<br>' : '') : '';
     return '<tr>' +
       '<td>' + (i+1) + '</td>' +
+      '<td>' + esc(p.firstName) + '</td><td>' + esc(p.lastName) + '</td>' +
       '<td>' + esc(p.firstName) + '</td><td>' + esc(p.lastName) + '</td>' +
       '<td style="text-align:center">' + (p.passengerType==='F'?'\u2713':'') + '</td>' +
       '<td style="text-align:center">' + (p.passengerType==='M'?'\u2713':'') + '</td>' +
@@ -1990,7 +2002,7 @@ function buildClientManifestHTML(flight, paxList, didNotBoardNote) {
       '<td style="text-align:center">' + (p.passengerType==='I'?'\u2713':'') + '</td>' +
       '<td style="text-align:right">' + (p.luggageWeight||0) + '</td>' +
       '<td style="text-align:right">' + (p.carryOnWeight||0) + '</td>' +
-      '<td>' + esc(p.specialRequirements||'') + medStr + '</td>' +
+      '<td>' + walkStr + esc(p.specialRequirements||'') + medStr + '</td>' +
     '</tr>';
   }).join('');
 
