@@ -1112,6 +1112,7 @@ function renderPaxPanel(flightId) {
       (!departed ? '<div style="display:flex;gap:6px;">' +
   '<button onclick="openEditFlightModal(\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.8);cursor:pointer;font-family:inherit;">&#9998; Edit</button>' +
   '<button onclick="removeDuplicatesFromFlight(\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,100,100,.5);background:rgba(255,100,100,.15);color:#ffcccc;cursor:pointer;font-family:inherit;">&#128465; Dedup</button>' +
+  '<button onclick="deleteFlight(\'' + flightId + '\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,140,140,.7);background:rgba(217,64,64,.35);color:#fff;cursor:pointer;font-family:inherit;">&times; Delete Flight</button>' +
 '</div>' : '') +
     '</div>' +
     '<div class="flt-detail-meta">' +
@@ -2060,6 +2061,52 @@ function unlockFlight(flightId) {
     })
     .catch(function(e) { showToast('Unlock failed: ' + e.message, 'err'); });
 }
+
+// ── DELETE FLIGHT ─────────────────────────────────────────────────────────────
+function deleteFlight(flightId) {
+  var flight = flights.find(function(f) { return f.id === flightId; });
+  if (!flight) return;
+
+  showToast('Checking flight...', '');
+
+  api('GET', '/api/flights/' + flightId + '/delete-check')
+    .then(function(check) {
+      if (check.error) { showToast('Error: ' + check.error, 'err'); return; }
+      if (!check.canDelete) { showToast(check.reason, 'err'); return; }
+
+      var msg = 'Delete Flight ' + flight.flightNumber + '?\n\n';
+      if (check.paxCount) {
+        msg += check.paxCount + ' passenger' + (check.paxCount === 1 ? '' : 's') +
+               ' will be detached and returned to the hub pool. No passenger records are deleted.\n\n';
+      } else {
+        msg += 'No passengers are attached to this flight.\n\n';
+      }
+      msg += 'The flight record itself will be permanently removed. This cannot be undone.';
+
+      if (!confirm(msg)) return;
+
+      showToast('Deleting flight...', '');
+
+      api('DELETE', '/api/flights/' + flightId)
+        .then(function(data) {
+          if (data.error) { showToast('Error: ' + data.error, 'err'); return; }
+          flights = flights.filter(function(f) { return f.id !== flightId; });
+          if (selectedFlightId === flightId) {
+            selectedFlightId = null;
+            document.getElementById('pax-panel-content').innerHTML =
+              '<div class="pax-empty-state"><div class="pax-empty-icon">&#9992;</div>' +
+              '<div>Select a flight to view passengers</div></div>';
+          }
+          renderFlights();
+          showToast('Flight deleted' + (data.detached ? ' — ' + data.detached + ' returned to pool' : ''), 'ok');
+          // Refresh so detached pax show correct flight assignment in the pool
+          loadData();
+        })
+        .catch(function(e) { showToast('Delete failed: ' + e.message, 'err'); });
+    })
+    .catch(function(e) { showToast('Check failed: ' + e.message, 'err'); });
+}
+
 // ── INBOUND PICKER ────────────────────────────────────────────────────────────
 var inboundPickerOutboundId = '';
 
